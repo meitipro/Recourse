@@ -70,3 +70,10 @@ session   32455
   13 -> stable, correct
 
   14 run 1  MISS expected unclear      got not_honored   29.4s
+  14 run 2  MISS expected unclear      got not_honored   21.0s
+  retry 1/10 on wait: Request to https://studio.genlayer.com/api failed: HTTPSConnectionPool(host='studio.genlayer.com', port=443): 
+  14 run 3  MISS expected unclear      got not_honored  221.8s
+  14 -> stable, wrong
+
+  15 run 1  ok   expected honored      got honored       32.1s
+  15 run 2  ok   expected honored      got honored       16.8s
