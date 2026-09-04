@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.env.local
+node_modules/
+.next/
+out/
+.venv/
+eval/results.json
+deployed.json
