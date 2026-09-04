@@ -64,7 +64,7 @@ const STEPS = [
   { title: "Hold", line: "A settlement window runs. The response arrives immediately." },
   { title: "Contest", line: "The buyer posts a bond and opens a case." },
   { title: "Judge", line: "Validators receive three frozen strings and one question." },
-  { title: "Settle", line: "Verdict and money land in the same transaction." },
+  { title: "Settle", line: "The verdict is written and the refund follows it on chain." },
 ];
 
 const STACK = [

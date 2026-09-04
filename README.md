@@ -54,7 +54,7 @@ prints.
                                    |                           |
                                    |  reads                    | verdict
                                    v                           v
-                     +---------------------------+    settle in one tx
+                     +---------------------------+    verdict, then settle
                      |   PUBLIC FEED (off)       |
                      |   Next.js + genlayer-js   |
                      +---------------------------+
@@ -67,7 +67,9 @@ prints.
 4. A settlement window runs. If nobody contests, the seller withdraws.
 5. To contest, the buyer posts a bond. Validators receive the promise, the
    request and the response, and answer one question.
-6. Verdict and money settle in one transaction. The receipt is public.
+6. The verdict is written and the settlement it implies is emitted with it. That
+   settlement is its own transaction, so the money follows the verdict rather
+   than landing beside it, and the feed shows both. Every receipt is public.
 
 ### The three failure modes
 
@@ -123,7 +125,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py     # house style, both contracts linted, 121 direct tests
+python scripts/test.py     # house style, both contracts linted, 125 direct tests
 python eval/run.py --runs 3    # the published accuracy number, on chain
 ```
 
@@ -143,8 +145,8 @@ Two of the tests are structural rather than behavioural:
 
 ## Contracts
 
-    escrow    0x5df6758F4eb9e9FF689f084BB209Cee377C0a3c3
-    dispute   0x0120B26844ea07ce049330920be120356b84Ca4e
+    escrow    0xD20AF93c55d3fFe82Ef3Ae578e08632d5529Ea06
+    dispute   0x9782708c51E81720cC9462d04908C46d2AA6E2ab
     network   studionet, chain id 61999
 
 Verify with `python scripts/verify.py`, which reads the source back off the

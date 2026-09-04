@@ -59,7 +59,16 @@ randomness, no float.
 | `withdraw(pid)` | that seller | `not seller`, `not open`, `window open` |
 | `open_dispute(pid)` payable | that buyer | `not buyer`, `not open`, `no response`, `window closed`, `wrong bond`, `dispute contract not set` |
 | `settle(pid, verdict, reason)` | dispute contract | `not authorised`, `not disputed`, `bad verdict` |
-| `get_payment`, `get_seller`, `recent`, `stats` | anyone | views, JSON with sorted keys |
+| `get_payment`, `get_seller`, `recent`, `recent_rows`, `stats` | anyone | views, JSON with sorted keys |
+
+`recent_rows(n)` returns a whole page of payments as one JSON array, without the
+request and response bodies. The feed used to read `recent()` and then
+`get_payment()` once per id, which is one request per row; Studio allows thirty
+requests a minute, so a dozen rows rate limited the page on an ordinary load and
+it rendered an error over an empty table. `recent_verdicts(n)` on the dispute
+contract is the same shape for cases. Between them a page load is three requests
+whatever the row count, and the evidence bodies are fetched only for the one row
+a reader expands.
 
 ### The settlement table
 
