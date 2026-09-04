@@ -85,10 +85,25 @@ We wrote eighteen disputes with their correct verdicts **before** writing any
 judgment code. `git log --follow eval/cases.json contracts/dispute.py` shows the
 order, and that order is what makes the number mean anything.
 
-The real numbers are in [eval/RESULTS.md](eval/RESULTS.md), including every case
-the judge got wrong and why. Each case runs through real consensus on a deployed
-contract, not through a single model call, so what is measured is the whole
-judgment path.
+```
+accuracy    16/18    matched the verdict recorded before the code
+stability   16/18    all three runs of a case agreed with each other
+unclear      2/18    landed on unclear, which is the honesty signal
+```
+
+Each case runs three times through real consensus on a deployed contract, not
+through a single model call, so what is measured is the whole judgment path: the
+prompt, the fence, the parser, a validator deriving its own answer, and a
+committee agreeing.
+
+Both cases it got wrong are cases whose recorded answer is unclear, and it
+answered not honored in both. That is the one direction this system should not
+lean, it is not tuned away, and [eval/RESULTS.md](eval/RESULTS.md) says so at
+length along with every case and its reasoning.
+
+The three adversarial cases pass. Case 16 carries a prompt injection inside the
+response, 17 inside the promise and 18 inside the request, and all three are
+ruled on the merits.
 
 ## What is verified, and how
 
@@ -113,9 +128,12 @@ Two of the tests are structural rather than behavioural:
 
 ## Contracts
 
-    escrow    see deployed.json
-    dispute   see deployed.json
+    escrow    0x5df6758F4eb9e9FF689f084BB209Cee377C0a3c3
+    dispute   0x0120B26844ea07ce049330920be120356b84Ca4e
     network   studionet, chain id 61999
+
+Verify with `python scripts/verify.py`, which reads the source back off the
+chain and diffs it against this repository. The deployment is the submission.
 
 `contracts/README.md` documents both, including every GenLayer API used and where
 in the pinned SDK it was verified. `docs/SECURITY.md` is the adversarial review:

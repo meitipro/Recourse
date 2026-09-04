@@ -154,7 +154,17 @@ That is the mechanism working. `run_nondet_unsafe` treats an unhandled validator
 exception as a disagreement, and the error classification is written inside the
 validator rather than delegated to a sandbox.
 
-## Two limits, stated rather than apologised for
+## Three limits, stated rather than apologised for
+
+**A dispute that never returns a verdict holds the money.** If the judgment
+contract cannot reach consensus at all, the payment stays DISPUTED and the
+amount and bond stay held. There is no timeout that releases them, and there
+should not be a naive one: anything a buyer could trigger to reclaim before a
+verdict lands would be a way to contest, wait, and take the money back if the
+verdict looked like going the other way. The right fix is a release that only
+the passage of a long window plus the absence of a case row can trigger, and it
+is not in this version. What is in this version is that the money is stuck
+rather than misdirected, and `held` still agrees with what was taken in.
 
 **A payout to an ordinary account does not land on Studio.** Measured on this
 network: a value message delivered to an address with no contract code is refused
