@@ -76,16 +76,20 @@ export type Payment = {
   buyer: string;
   seller: string;
   amount: string;
-  request: string;
-  response: string;
-  response_sig: string;
-  recorded_by: string;
+  bond: string;
   created_at: number;
   responded_at: number;
   window_ends: number;
-  bond: string;
   status: number;
   verdict: number;
+  /** List rows carry flags rather than the bodies, which only the drawer needs. */
+  has_response?: boolean;
+  signed?: boolean;
+  recorded_by?: string;
+  /** Present only on a single row fetched by loadEvidence. */
+  request?: string;
+  response?: string;
+  response_sig?: string;
 };
 
 export type Case = {
@@ -112,6 +116,8 @@ export type FeedData = {
   dispute: string;
   windowSeconds: number;
   bondWei: string;
+  /** From the contract, so it is right even when the page shows fewer rows. */
+  totalPayments: number;
   rows: Row[];
   seller?: {
     address: string;
@@ -136,6 +142,7 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
     dispute: DISPUTE,
     windowSeconds: 0,
     bondWei: "0",
+    totalPayments: 0,
     rows: [],
   };
 
@@ -144,33 +151,32 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
   }
 
   try {
+    // Three requests for the whole page, whatever the row count.
+    //
+    // This used to be one request per payment plus one per dispute. Studio
+    // allows thirty requests a minute, so a dozen rows rate limited the page on
+    // an ordinary load and it rendered an error over an empty table. The
+    // contract now answers a whole page in a single view.
     const stats = JSON.parse(await read<string>(ESCROW, "stats"));
-    const ids = await read<string[]>(ESCROW, "recent", [limit]);
+    const payments = JSON.parse(await read<string>(ESCROW, "recent_rows", [limit])) as Payment[];
+    const verdicts = JSON.parse(
+      await read<string>(DISPUTE, "recent_verdicts", [limit]),
+    ) as Case[];
 
-    const rows: Row[] = [];
-    for (const pid of ids) {
-      const payment = JSON.parse(await read<string>(ESCROW, "get_payment", [pid])) as Payment;
-      const row: Row = { ...payment };
-      // A case exists only once a dispute was opened. Reading one for every
-      // payment would spend a request per row to learn nothing.
-      if (payment.status === 2 || payment.status === 3) {
-        try {
-          row.case = JSON.parse(await read<string>(DISPUTE, "get_case", [pid])) as Case;
-        } catch {
-          // The case row is written by the adjudication transaction, so between
-          // opening a dispute and the verdict landing there is genuinely nothing
-          // to read. That is a state, not a failure.
-        }
-      }
-      rows.push(row);
-    }
+    const byPid = new Map(verdicts.map((entry) => [entry.pid, entry]));
+    const rows: Row[] = payments.map((payment) => {
+      const decided = byPid.get(payment.pid);
+      // A case exists only once the adjudication transaction has written one.
+      // Between opening a dispute and the verdict landing there is genuinely
+      // nothing to read, which is a state rather than a failure.
+      return decided ? { ...payment, case: decided } : { ...payment };
+    });
 
     let seller: FeedData["seller"];
     const sellerAddress = rows[0]?.seller;
     if (sellerAddress) {
       try {
-        const parsed = JSON.parse(await read<string>(ESCROW, "get_seller", [sellerAddress]));
-        seller = parsed;
+        seller = JSON.parse(await read<string>(ESCROW, "get_seller", [sellerAddress]));
       } catch {
         seller = undefined;
       }
@@ -182,6 +188,7 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
       readAt: Date.now(),
       windowSeconds: Number(stats.window_seconds),
       bondWei: String(stats.bond_amount),
+      totalPayments: Number(stats.payments),
       rows,
       seller,
     };
@@ -189,5 +196,35 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
     // Say so plainly with the last successful read time. Showing stale data as
     // current would be ironic in this particular project.
     return { ...base, error: String(error).slice(0, 300) };
+  }
+}
+
+/**
+ * The three frozen strings for one payment, fetched when a row is expanded.
+ *
+ * Kept out of the list read on purpose: the bodies are the largest fields by
+ * far, only one row's worth is ever on screen, and putting them in the list
+ * would make every page load carry fifty of them to show none.
+ */
+export async function loadEvidence(pid: string): Promise<{
+  ok: boolean;
+  error?: string;
+  payment?: Payment;
+  case?: Case;
+}> {
+  if (!ESCROW) return { ok: false, error: "no contract configured" };
+  try {
+    const payment = JSON.parse(await read<string>(ESCROW, "get_payment", [pid])) as Payment;
+    let decided: Case | undefined;
+    if (payment.status === 2 || payment.status === 3) {
+      try {
+        decided = JSON.parse(await read<string>(DISPUTE, "get_case", [pid])) as Case;
+      } catch {
+        decided = undefined;
+      }
+    }
+    return { ok: true, payment, case: decided };
+  } catch (error) {
+    return { ok: false, error: String(error).slice(0, 200) };
   }
 }

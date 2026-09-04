@@ -7,6 +7,7 @@ No model call appears anywhere in this file or in the contract it exercises.
 
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 
@@ -195,6 +196,74 @@ def test_paying_increments_total_and_live():
     w.pay()
     row = w.seller()
     assert row["total"] == 2 and row["live"] == 2
+
+
+def test_recent_rows_answers_the_whole_page_in_one_call():
+    """
+    The feed used to read recent() and then get_payment() per id, which is one
+    request per row. Studio allows thirty a minute, so a dozen rows rate limited
+    the page on an ordinary load and it rendered an error over an empty table.
+    """
+    w = World().wired()
+    w.register()
+    first = w.pay(amount=2 * ONE_GEN)
+    second = w.pay(amount=3 * ONE_GEN)
+    w.record(second, '{"pair":"ETH-USD"}', "0xsig")
+
+    rows = json.loads(w.escrow.recent_rows(D.u32(10)))
+    assert [row["pid"] for row in rows] == [second, first], "newest first"
+    assert rows[0]["amount"] == str(3 * ONE_GEN)
+    assert rows[0]["has_response"] is True and rows[0]["signed"] is True
+    assert rows[1]["has_response"] is False and rows[1]["signed"] is False
+    assert rows[0]["status"] == ST_OPEN and rows[0]["verdict"] == V_NONE
+
+
+def test_recent_rows_carries_no_evidence_bodies():
+    """
+    The bodies are the largest fields on chain and only one row's worth is ever
+    on screen. Carrying fifty of them to show none is what made the list read
+    expensive in the first place.
+    """
+    w = World()
+    w.register()
+    pid = w.pay()
+    body = '{"pair":"ETH-USD","price":4182.1,"sources":3,"ts":"2026-09-04T18:20:02Z"}'
+    w.record(pid, body, "0xsignature")
+    blob = w.escrow.recent_rows(D.u32(5))
+    assert body not in blob
+    assert "0xsignature" not in blob
+    assert "GET /quote" not in blob
+    row = json.loads(blob)[0]
+    assert set(row) == {
+        "pid", "buyer", "seller", "amount", "bond", "created_at", "responded_at",
+        "window_ends", "has_response", "signed", "recorded_by", "status", "verdict",
+    }
+
+
+def test_recent_rows_is_capped_and_never_negative():
+    w = World()
+    w.register()
+    for _ in range(103):
+        w.pay(amount=1)
+    assert len(json.loads(w.escrow.recent_rows(D.u32(500)))) == 100
+    assert len(json.loads(w.escrow.recent_rows(D.u32(4)))) == 4
+    assert json.loads(w.escrow.recent_rows(D.u32(0))) == []
+
+
+def test_recent_rows_and_get_payment_agree():
+    """One is a summary of the other, so they must never disagree about a fact."""
+    w = World().wired()
+    w.register()
+    pid = w.pay(amount=7 * ONE_GEN)
+    w.record(pid, '{"x":1}', "0xsig")
+    w.dispute_it(pid)
+    summary = json.loads(w.escrow.recent_rows(D.u32(1)))[0]
+    full = w.payment(pid)
+    for field in ("pid", "buyer", "seller", "amount", "bond", "created_at",
+                  "responded_at", "window_ends", "status", "verdict", "recorded_by"):
+        assert summary[field] == full[field], field
+    assert summary["has_response"] == (full["response"] != "")
+    assert summary["signed"] == (full["response_sig"] != "")
 
 
 def test_an_unknown_payment_id_is_refused():
@@ -692,6 +761,7 @@ def test_the_public_surface_is_exactly_the_specified_one():
         "get_payment",
         "get_seller",
         "recent",
+        "recent_rows",
         "stats",
     ]
     assert sorted(w.gl.public.writes) == [

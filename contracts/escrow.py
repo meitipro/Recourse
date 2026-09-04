@@ -504,6 +504,50 @@ class RecourseEscrow(gl.Contract):
         return out
 
     @gl.public.view
+    def recent_rows(self, n: u32) -> str:
+        """
+        The last n payments as one JSON array, newest first.
+
+        The feed used to read recent() and then get_payment() once per id, which
+        is one request per row. Studio allows thirty requests a minute, so a
+        page with a dozen payments on it rate limited itself on a normal load
+        and rendered an error. One call is the fix.
+
+        The request and response bodies are deliberately left out. They are the
+        largest fields by far and only one row's worth is ever on screen, so the
+        evidence drawer fetches get_payment for the row being opened.
+        """
+        want = int(n)
+        if want > MAX_RECENT:
+            want = MAX_RECENT
+        if want < 0:
+            want = 0
+        rows: list = []
+        index = len(self.payment_ids) - 1
+        while index >= 0 and len(rows) < want:
+            pid = self.payment_ids[index]
+            payment = self.payments[pid]
+            rows.append(
+                {
+                    "pid": pid,
+                    "buyer": payment.buyer.as_hex,
+                    "seller": payment.seller.as_hex,
+                    "amount": str(int(payment.amount)),
+                    "bond": str(int(payment.bond)),
+                    "created_at": int(payment.created_at),
+                    "responded_at": int(payment.responded_at),
+                    "window_ends": int(payment.window_ends),
+                    "has_response": payment.response != "",
+                    "signed": payment.response_sig != "",
+                    "recorded_by": payment.recorded_by.as_hex,
+                    "status": int(payment.status),
+                    "verdict": int(payment.verdict),
+                }
+            )
+            index -= 1
+        return json.dumps(rows, sort_keys=True)
+
+    @gl.public.view
     def stats(self) -> str:
         return json.dumps(
             {

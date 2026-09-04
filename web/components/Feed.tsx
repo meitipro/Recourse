@@ -12,7 +12,7 @@
  */
 
 import { Fragment, useEffect, useState } from "react";
-import type { FeedData, Row } from "@/lib/chain";
+import type { Case, FeedData, Payment, Row } from "@/lib/chain";
 
 const VERDICT = ["pending", "honored", "not_honored", "unclear"] as const;
 
@@ -74,14 +74,75 @@ function stateOf(row: Row, now: number) {
   return { label: "window open", tone: "open" };
 }
 
+/**
+ * The evidence for one row, fetched when it is opened.
+ *
+ * The bodies are the largest fields on chain and only one row's worth is ever
+ * on screen, so the list read leaves them out and this asks for them.
+ */
 function Evidence({ row }: { row: Row }) {
+  const [state, setState] = useState<{
+    loading: boolean;
+    error?: string;
+    payment?: Payment;
+    verdict?: Case;
+  }>({ loading: true });
+
+  useEffect(() => {
+    let live = true;
+    fetch(`/api/evidence?pid=${encodeURIComponent(row.pid)}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (!live) return;
+        setState(
+          data.ok
+            ? { loading: false, payment: data.payment, verdict: data.case }
+            : { loading: false, error: data.error || "could not read the chain" },
+        );
+      })
+      .catch((error) => live && setState({ loading: false, error: String(error).slice(0, 160) }));
+    return () => {
+      live = false;
+    };
+  }, [row.pid]);
+
+  if (state.loading) {
+    return (
+      <tr className="drawer">
+        <td colSpan={7}>
+          <div className="evidence">
+            {["promise", "request", "response"].map((label) => (
+              <div className="evidence-block" key={label}>
+                <div className="eyebrow">{label}</div>
+                <div className="skeleton" style={{ height: "2.4rem" }} />
+              </div>
+            ))}
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  if (state.error || !state.payment) {
+    return (
+      <tr className="drawer">
+        <td colSpan={7}>
+          <div className="notice bad">The evidence could not be read. {state.error}</div>
+        </td>
+      </tr>
+    );
+  }
+
+  const payment = state.payment;
+  const decided = state.verdict ?? row.case;
   const blocks: Array<[string, string]> = [
-    ["promise", row.case?.promise ?? "recorded on the seller's row"],
-    ["request", row.request || "-"],
-    ["response", row.response || "not yet recorded"],
+    ["promise", decided?.promise ?? "on the seller's row, and frozen into a case when contested"],
+    ["request", payment.request || "-"],
+    ["response", payment.response || "not yet recorded"],
   ];
-  if (row.case?.timing) blocks.push(["timing, written by the chain", row.case.timing]);
-  if (row.case?.reason) blocks.push(["reason given with the verdict", row.case.reason]);
+  if (decided?.timing) blocks.push(["timing, written by the chain", decided.timing]);
+  if (decided?.reason) blocks.push(["reason given with the verdict", decided.reason]);
+
   return (
     <tr className="drawer">
       <td colSpan={7}>
@@ -93,9 +154,9 @@ function Evidence({ row }: { row: Row }) {
             </div>
           ))}
           <div className="caption">
-            {row.response_sig
-              ? `Signed by the seller: ${short(row.response_sig)}`
-              : row.recorded_by && row.recorded_by !== row.seller
+            {payment.response_sig
+              ? `Signed by the seller: ${short(payment.response_sig)}`
+              : payment.recorded_by && payment.recorded_by !== payment.seller
                 ? "Recorded by the buyer. The seller did not sign it."
                 : "No signature recorded."}
           </div>
@@ -124,25 +185,32 @@ export default function Feed({ data }: { data: FeedData }) {
     .sort((a, b) => a - b);
   const median = elapsed.length ? elapsed[Math.floor(elapsed.length / 2)] : 0;
 
+  // A failed read means these numbers are not known, so they are not shown. A
+  // zero beside a notice saying the chain could not be read is an invented
+  // number, and inventing one in a project about worthless data is the single
+  // worst thing this page could do.
+  const known = !data.error;
+  const value = (shown: string) => (known ? shown : "-");
+
   return (
     <>
       <div className="stats">
         <div className="stat">
-          <div className="stat-value">{rows.length}</div>
+          <div className="stat-value">{value(String(data.totalPayments || rows.length))}</div>
           <div className="stat-label">payments</div>
         </div>
         <div className="stat">
-          <div className="stat-value">{disputes.length}</div>
+          <div className="stat-value">{value(String(disputes.length))}</div>
           <div className="stat-label">disputes opened</div>
         </div>
         <div className="stat">
           <div className="stat-value">
-            {resolved.length ? `${upheld.length}/${resolved.length}` : "-"}
+            {value(resolved.length ? `${upheld.length}/${resolved.length}` : "-")}
           </div>
           <div className="stat-label">upheld</div>
         </div>
         <div className="stat">
-          <div className="stat-value">{median ? `${median}s` : "-"}</div>
+          <div className="stat-value">{value(median ? `${median}s` : "-")}</div>
           <div className="stat-label">median settlement</div>
         </div>
       </div>

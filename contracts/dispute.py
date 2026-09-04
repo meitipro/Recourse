@@ -414,6 +414,39 @@ class RecourseDispute(gl.Contract):
         return out
 
     @gl.public.view
+    def recent_verdicts(self, n: u32) -> str:
+        """
+        The last n decided cases as one JSON array, newest first.
+
+        Verdict and timing only, no evidence strings. The feed needs to know
+        which payments were judged and when, for every row at once; it needs the
+        evidence for at most one row, which get_case answers. Reading a case per
+        row instead costs one request each and rate limits the page.
+        """
+        want = int(n)
+        if want > MAX_RECENT:
+            want = MAX_RECENT
+        if want < 0:
+            want = 0
+        rows: list = []
+        index = len(self.case_ids) - 1
+        while index >= 0 and len(rows) < want:
+            pid = self.case_ids[index]
+            case = self.cases[pid]
+            rows.append(
+                {
+                    "pid": pid,
+                    "verdict": int(case.verdict),
+                    "verdict_name": NAMES.get(int(case.verdict), "pending"),
+                    "reason": case.reason,
+                    "opened_at": int(case.opened_at),
+                    "decided_at": int(case.decided_at),
+                }
+            )
+            index -= 1
+        return json.dumps(rows, sort_keys=True)
+
+    @gl.public.view
     def gate_reason(self, seller: str) -> str:
         key = Address(seller).as_hex.lower()
         if key not in self.gate_reasons:
