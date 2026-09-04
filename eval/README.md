@@ -17,7 +17,7 @@ consistent mistake. Both are published, whatever they are, in `RESULTS.md`.
 
 ## The distribution
 
-    not_honored   9    02 03 04 05 10 11 13 16 17 18
+    not_honored  10    02 03 04 05 10 11 13 16 17 18
     honored       4    01 06 09 15
     unclear       4    07 08 12 14
 

@@ -77,6 +77,11 @@ def _seconds(iso: str) -> int:
     return delta.days * 86400 + delta.seconds
 
 
+def _iso(seconds: int) -> str:
+    """The inverse, for the timing block the validators read. Integer only."""
+    return (_EPOCH + datetime.timedelta(seconds=int(seconds))).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 # --- payout ---------------------------------------------------------------
 # A buyer and a seller are ordinary accounts, and an ordinary account lives on
 # the chain layer rather than in GenVM. gl.get_contract_at(addr).emit_transfer()
@@ -134,6 +139,10 @@ class Payment:
     #: staying silent.
     recorded_by: Address
     created_at: u64
+    #: When the response was written on chain. Zero until it is. This is the
+    #: tightest chain observed upper bound on when the response existed, and it
+    #: is what a freshness promise has to be judged against.
+    responded_at: u64
     window_ends: u64
     bond: u256
     status: u8
@@ -238,6 +247,22 @@ class RecourseEscrow(gl.Contract):
         self.sellers[who].promise = promise
 
     @gl.public.write
+    def set_judgeable(self, seller: str, ok: bool) -> None:
+        """
+        The judgeability gate's verdict on a promise.
+
+        Only the dispute contract may call it. A seller who could clear their own
+        promise would face no gate at all, and an owner who could unlist a seller
+        would be an operator choosing which endpoints get judged.
+        """
+        if gl.message.sender_address != self.dispute_contract:
+            raise gl.vm.UserError(E + "not authorised")
+        key = Address(seller)
+        if key not in self.sellers:
+            raise gl.vm.UserError(E + "unknown seller")
+        self.sellers[key].judgeable = ok
+
+    @gl.public.write
     def set_active(self, active: bool) -> None:
         who = gl.message.sender_address
         if who not in self.sellers:
@@ -273,6 +298,7 @@ class RecourseEscrow(gl.Contract):
             response_sig="",
             recorded_by=ZERO,
             created_at=now,
+            responded_at=u64(0),
             window_ends=u64(now + u64(self.window_seconds)),
             bond=u256(0),
             status=ST_OPEN,
@@ -313,6 +339,7 @@ class RecourseEscrow(gl.Contract):
         self.payments[pid].response = response
         self.payments[pid].response_sig = sig if who == payment.seller else ""
         self.payments[pid].recorded_by = who
+        self.payments[pid].responded_at = self._now()
 
     @gl.public.write
     def withdraw(self, pid: str) -> None:
@@ -353,8 +380,19 @@ class RecourseEscrow(gl.Contract):
         self.held = u256(self.held + gl.message.value)
 
         promise = self.sellers[payment.seller].promise
+        # The three party strings travel exactly as recorded. The fourth is the
+        # chain's own account of when each arrived, which is the reference clock
+        # a freshness promise has to be judged against. Neither party writes it,
+        # so neither party can move the boundary they are being judged on.
+        timing = (
+            "Request recorded on chain at "
+            + _iso(int(payment.created_at))
+            + ". Response recorded on chain at "
+            + _iso(int(payment.responded_at))
+            + "."
+        )
         gl.get_contract_at(self.dispute_contract).emit(on="finalized").adjudicate(
-            pid, promise, payment.request, payment.response
+            pid, promise, payment.request, payment.response, timing
         )
 
     @gl.public.write
@@ -411,6 +449,7 @@ class RecourseEscrow(gl.Contract):
                 "response_sig": payment.response_sig,
                 "recorded_by": payment.recorded_by.as_hex,
                 "created_at": int(payment.created_at),
+                "responded_at": int(payment.responded_at),
                 "window_ends": int(payment.window_ends),
                 "bond": str(int(payment.bond)),
                 "status": int(payment.status),

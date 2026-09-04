@@ -701,6 +701,7 @@ def test_the_public_surface_is_exactly_the_specified_one():
         "register_seller",
         "set_active",
         "set_dispute_contract",
+        "set_judgeable",
         "settle",
         "update_promise",
         "withdraw",
