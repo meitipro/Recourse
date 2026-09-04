@@ -11,10 +11,9 @@
  * misreport the protocol.
  */
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { FeedData, Row } from "@/lib/chain";
 
-const STATUS = ["open", "withdrawn", "disputed", "resolved"] as const;
 const VERDICT = ["pending", "honored", "not_honored", "unclear"] as const;
 
 function short(address: string) {
@@ -178,9 +177,10 @@ export default function Feed({ data }: { data: FeedData }) {
                 const verdict = VERDICT[row.verdict] ?? "pending";
                 const settledIn = row.case ? row.case.decided_at - row.created_at : 0;
                 return (
-                  <>
+                  // The key belongs on the fragment, not on the elements inside
+                  // it. React reconciles the list by the outermost child.
+                  <Fragment key={row.pid}>
                     <tr
-                      key={row.pid}
                       className="expandable"
                       onClick={() => setOpen(open === row.pid ? null : row.pid)}
                     >
@@ -197,16 +197,22 @@ export default function Feed({ data }: { data: FeedData }) {
                         </span>
                       </td>
                       <td>
-                        <span className={`verdict ${verdict}`}>
-                          {verdict === "pending" && row.status !== 2
-                            ? STATUS[row.status]
-                            : verdict.replace("_", " ")}
-                        </span>
+                        {row.verdict === 0 && row.status !== 2 ? (
+                          // Nobody contested, so there is no verdict. Printing
+                          // the status again here would read as one.
+                          <span className="mono" style={{ color: "var(--dim)" }}>
+                            not contested
+                          </span>
+                        ) : (
+                          <span className={`verdict ${verdict}`}>
+                            {verdict === "pending" ? "in consensus" : verdict.replace("_", " ")}
+                          </span>
+                        )}
                       </td>
                       <td className="num mono">{settledIn ? `${settledIn}s` : "-"}</td>
                     </tr>
-                    {open === row.pid ? <Evidence key={`${row.pid}-e`} row={row} /> : null}
-                  </>
+                    {open === row.pid ? <Evidence row={row} /> : null}
+                  </Fragment>
                 );
               })}
             </tbody>

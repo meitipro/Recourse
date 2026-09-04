@@ -62,7 +62,10 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 6): P
   throw new Error(`${what} failed after ${attempts} attempts: ${String(last).slice(0, 160)}`);
 }
 
-async function read<T = unknown>(address: string, functionName: string, args: unknown[] = []) {
+/** Every argument this feed ever passes is a payment id or a row count. */
+type ReadArg = string | number;
+
+async function read<T = unknown>(address: string, functionName: string, args: ReadArg[] = []) {
   return withRetry(functionName, () =>
     client().readContract({ address: address as `0x${string}`, functionName, args }),
   ) as Promise<T>;

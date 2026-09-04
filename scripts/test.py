@@ -62,6 +62,21 @@ def main() -> int:
 
     failed = [label for label, command, env in steps if not run(label, command, env)]
 
+    # The feed is only checked when it has been installed. A judge cloning this
+    # to read the contracts should not be told the repository is broken because
+    # they have not run npm install.
+    if (ROOT / "web" / "node_modules").is_dir():
+        npx = "npx.cmd" if os.name == "nt" else "npx"
+        result = subprocess.run(
+            [npx, "tsc", "--noEmit"], cwd=ROOT / "web", env=dict(os.environ)
+        )
+        print("\n=== feed types " + "=" * 47)
+        if result.returncode != 0:
+            print("--- feed types FAILED")
+            failed.append("feed types")
+    else:
+        print("\n=== feed types: skipped, web/node_modules is not installed")
+
     print("\n" + "=" * 62)
     if failed:
         print(f"FAILED: {', '.join(failed)}")
