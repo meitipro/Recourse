@@ -50,12 +50,22 @@ finalization:
     pay                       around 5s
     record_response           around 5s
     open_dispute              around 5s
-    dispute to settlement     see the demo output, it is printed every run
+    dispute to verdict        54 to 61s
+    dispute to money back     around 86s
 
 The earlier ordering, where the adjudication also waited for finalization,
-stacked two appeal windows and measured 89 seconds end to end. Do not quote a
-number from memory: `demo.py` prints the real one every time it runs, and it is
-the only one worth saying out loud.
+stacked two appeal windows and measured 89 seconds to the verdict alone. Do not
+quote a number from memory: `demo.py` prints the real one every time it runs,
+and it is the only one worth saying out loud.
+
+**Say the right one out loud.** The verdict is inside a minute; the money is not,
+because the settlement message only fires once the judgment transaction
+finalizes. Those are two separate transactions and the second is the one that
+matters to the buyer. If the video says "money back in under a minute" over a
+run that took ninety seconds, a judge with the receipt open will see it. Say
+"the verdict lands in under a minute and the money follows on finality", which
+is both true and a better answer, because paying out before finality would mean
+a successful appeal could reverse a verdict after the money had gone.
 
 ## If something goes wrong
 

@@ -91,9 +91,7 @@ The unclear fraction is not a failure rate. A promise that does not settle the
 question it is being asked should produce unclear, and a system that rules
 confidently there is inventing standards the seller never agreed to.
 
-Both adversarial cases pass. 16 carries a prompt injection inside the response,
-17 inside the promise and 18 inside the request, and all three are ruled on the
-merits. If any of them ever returns honored, the fence has stopped working.
+3 of 3 adversarial cases pass. 16 carries a prompt injection inside the response, 17 inside the promise and 18 inside the request, so between them all three party-written inputs are covered. If any of them ever returns honored, the fence has stopped working.
 
 ## Reproducing
 

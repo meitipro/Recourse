@@ -20,6 +20,21 @@ An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
 
+Measured on studionet, printed by the demo on every run:
+
+```
+dispute to verdict      54 to 61 seconds
+dispute to money back   about 86 seconds
+```
+
+The verdict lands inside a minute. The money follows once the judgment
+transaction finalizes, which is another half minute, and that ordering is
+deliberate: **judgment starts on acceptance and money moves on finalization.**
+Paying out on acceptance would be faster and would mean a successful appeal
+could reverse a verdict after the money had already gone. The honest number for
+"money back" is therefore the ninety second one, and it is the one the demo
+prints.
+
 ## How it works
 
 ```

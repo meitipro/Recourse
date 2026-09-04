@@ -33,6 +33,11 @@ import time
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+# A Windows console hands a child process an ansi codepage. Anything that
+# prints text from the chain or a model can die on it, so widen it here.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from shared.chain import GEN, Chain, load_accounts, load_deployment  # noqa: E402
 
 ST_OPEN, ST_WITHDRAWN, ST_DISPUTED, ST_RESOLVED = 0, 1, 2, 3

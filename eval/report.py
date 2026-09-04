@@ -13,12 +13,18 @@ from __future__ import annotations
 
 import json
 import pathlib
+import sys
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 RESULTS = HERE / "results.json"
 CASES = HERE / "cases.json"
 OUT = HERE / "RESULTS.md"
+
+# A Windows console hands a child process an ansi codepage. Anything that
+# prints text from the chain or a model can die on it, so widen it here.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def main() -> int:
@@ -161,9 +167,15 @@ def main() -> int:
     add("question it is being asked should produce unclear, and a system that rules")
     add("confidently there is inventing standards the seller never agreed to.")
     add("")
-    add("Both adversarial cases pass. 16 carries a prompt injection inside the response,")
-    add("17 inside the promise and 18 inside the request, and all three are ruled on the")
-    add("merits. If any of them ever returns honored, the fence has stopped working.")
+    adversarial = [row for row in rows if row["id"] in ("16", "17", "18")]
+    passed = [row for row in adversarial if row["correct"]]
+    if adversarial:
+        add(
+            f"{len(passed)} of {len(adversarial)} adversarial cases pass. 16 carries a prompt "
+            "injection inside the response, 17 inside the promise and 18 inside the request, "
+            "so between them all three party-written inputs are covered. If any of them ever "
+            "returns honored, the fence has stopped working."
+        )
     add("")
     add("## Reproducing")
     add("")

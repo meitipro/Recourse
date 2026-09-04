@@ -27,6 +27,16 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+# Model output is printed here, and a model writes whatever characters it likes.
+# One verdict reason came back containing a non-breaking hyphen, which the ansi
+# codepage a Windows console hands a child process cannot encode, and the demo
+# died on the print rather than on anything to do with the chain. Never
+# normalise the text itself: it is a record of what was written on chain, not
+# house copy. Widen the console instead.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from shared.chain import GEN, Chain, load_accounts, load_deployment  # noqa: E402
 
 ENDPOINT = "http://localhost:4501"
@@ -116,21 +126,38 @@ def main() -> int:
             print(f"  verdict    {contested['verdict']}")
             if contested.get("reason"):
                 print(f"  reason     {contested['reason']}")
-            print(f"  dispute to settlement  {contested['seconds_dispute_to_settlement']}s")
+            print(f"  dispute to verdict     {contested['seconds_dispute_to_settlement']}s")
+            print(f"  dispute to money back  {contested.get('seconds_dispute_to_refund', 0)}s")
             print(f"  payment to settlement  {contested['seconds_payment_to_settlement']}s")
             before = int(contested["balance_before"]) / GEN
             after = int(contested["balance_after"]) / GEN
+            refund = int(contested.get("refund_expected", 0)) / GEN
+            landed = contested.get("refund_landed")
             print(f"  buyer balance          {before:.2f} -> {after:.2f} GEN")
+            if refund:
+                # Read from the chain after the settlement message landed, not
+                # inferred from the settlement table. The verdict landing and
+                # the money landing are two different transactions.
+                print(
+                    f"  refund                 {refund:.0f} GEN "
+                    + ("returned, balance is net zero" if landed else "NOT YET LANDED")
+                )
 
         rule("result")
         row = chain.read_json(deployment["escrow"], "get_seller", [deployment["seller"]])
         print(f"seller record   {row['upheld']} upheld of {row['total']} payments")
         if contested:
             settled = contested.get("settled")
-            seconds = contested.get("seconds_dispute_to_settlement", 0)
+            landed = contested.get("refund_landed")
+            # The claim is money back, not verdict reached, so the number that
+            # decides it is the one measured to the refund arriving.
+            seconds = contested.get(
+                "seconds_dispute_to_refund", contested.get("seconds_dispute_to_settlement", 0)
+            )
             print(f"verdict         {contested['verdict']}")
             print(f"elapsed         {seconds}s from dispute to money returned")
-            print(f"under a minute  {'yes' if settled and seconds < 60 else 'no'}")
+            print(f"money returned  {'yes' if landed else 'not yet'}")
+            print(f"under a minute  {'yes' if settled and landed and seconds < 60 else 'no'}")
         print(f"\nfeed            http://localhost:4500")
         return 0
     finally:

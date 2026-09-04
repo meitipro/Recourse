@@ -28,6 +28,14 @@ import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+# The verdict reason is model output and can carry any character. A Windows
+# console hands a child process an ansi codepage that cannot encode most of
+# them, so printing one kills the run somewhere that has nothing to do with the
+# chain. The text is never normalised, because it is a record of what was
+# written on chain rather than copy this project owns.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from agent.checks import check
 from seller.signing import verify
 from shared.chain import GEN, Chain, load_accounts, load_deployment
@@ -155,6 +163,12 @@ def main() -> int:
     code, body, headers = http(
         f"{args.endpoint}/quote?pair={args.pair}", headers={"x-payment-proof": pid}
     )
+    # The moment the response arrived. Freshness has to be judged against this
+    # and not against the clock at checking time: recording the response on
+    # chain takes a consensus round, and measuring after it would call a five
+    # second promise stale purely because a transaction took six seconds. The
+    # question is whether the response was fresh when it was delivered.
+    received_at = datetime.datetime.now(datetime.timezone.utc)
     signature = headers.get("x-response-sig", "")
     report["http_status"] = code
     report["response"] = body
@@ -177,7 +191,7 @@ def main() -> int:
         parsed = json.loads(body)
     except ValueError:
         parsed = {}
-    verdict = check(parsed, args.pair, max_age, min_sources)
+    verdict = check(parsed, args.pair, max_age, min_sources, now=received_at)
     report["check"] = {"ok": verdict.ok, "reason": verdict.reason, "mode": verdict.mode}
     out(report, args.json, f"check            {'pass' if verdict.ok else 'FAIL'}: {verdict.reason}")
 
@@ -226,21 +240,47 @@ def main() -> int:
             case_reason = ""
     report["reason"] = case_reason
 
-    # 8 - report. Balances are read after settlement, not assumed from the table.
+    # 8 - the money. Balances are read from the chain, never assumed from the
+    # settlement table.
+    #
+    # The verdict landing is not the money landing. Settlement emits a value
+    # message, that message becomes its own transaction, and the emitting
+    # receipt finalizing means only that it was queued. Reading the balance the
+    # instant the status turns RESOLVED reports a refund that is still in
+    # flight as one that never came, which is a worse lie than saying nothing.
+    expected = int(row.get("amount", 0)) + int(row.get("bond", 0)) if name == "not_honored" else 0
     balance_after = buyer.balance(accounts["buyer"].address)
+    refund_deadline = time.time() + 90
+    while expected and balance_after < balance_before and time.time() < refund_deadline:
+        time.sleep(5)
+        balance_after = buyer.balance(accounts["buyer"].address)
+    refund_seconds = round(time.time() - (refund_deadline - 90), 1)
+
     report["balance_before"] = str(balance_before)
     report["balance_after"] = str(balance_after)
+    report["refund_expected"] = str(expected)
+    report["refund_landed"] = bool(expected) and balance_after >= balance_before
+    report["seconds_verdict_to_refund"] = refund_seconds
+    report["seconds_dispute_to_refund"] = round(time.time() - contested_at, 1)
 
     out(report, args.json, "")
     out(report, args.json, f"verdict          {name}")
     if case_reason:
         out(report, args.json, f"reason           {case_reason}")
-    out(report, args.json, f"dispute to settlement   {elapsed:.0f}s")
+    out(report, args.json, f"dispute to verdict      {elapsed:.0f}s")
+    out(report, args.json, f"dispute to money back   {report['seconds_dispute_to_refund']:.0f}s")
     out(report, args.json, f"payment to settlement   {total:.0f}s")
     out(
         report,
         args.json,
-        f"buyer balance    {balance_before / GEN:.2f} -> {balance_after / GEN:.2f} GEN",
+        f"buyer balance    {balance_before / GEN:.2f} -> {balance_after / GEN:.2f} GEN"
+        + (
+            f"  ({expected / GEN:.0f} returned)"
+            if report["refund_landed"]
+            else f"  (waiting on {expected / GEN:.0f} GEN)"
+            if expected
+            else ""
+        ),
     )
     if not settled:
         out(report, args.json, f"  still {STATUS.get(int(row.get('status', 0)), '?')} after {args.timeout}s")

@@ -30,6 +30,11 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+# A Windows console hands a child process an ansi codepage. Anything that
+# prints text from the chain or a model can die on it, so widen it here.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 from shared.chain import Chain, load_accounts, load_deployment
 
 HERE = pathlib.Path(__file__).resolve().parent
