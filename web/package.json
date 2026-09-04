@@ -1,0 +1,26 @@
+{
+  "name": "recourse-feed",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 4500",
+    "build": "next build",
+    "start": "next start -p 4500",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8",
+    "next": "15.1.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@fontsource-variable/source-serif-4": "^5.0.0",
+    "@fontsource-variable/work-sans": "^5.0.0",
+    "@fontsource/geist-mono": "^5.0.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}

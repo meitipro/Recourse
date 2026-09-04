@@ -15,3 +15,58 @@ session   32455
   02 -> stable, correct
 
   03 run 1  ok   expected not_honored  got not_honored   36.4s
+  03 run 2  ok   expected not_honored  got not_honored   23.2s
+  03 run 3  ok   expected not_honored  got not_honored   21.7s
+  03 -> stable, correct
+
+  04 run 1  ok   expected not_honored  got not_honored   16.4s
+  04 run 2  ok   expected not_honored  got not_honored   21.9s
+  04 run 3  ok   expected not_honored  got not_honored  171.8s
+  04 -> stable, correct
+
+  05 run 1  ok   expected not_honored  got not_honored   17.7s
+  05 run 2  ok   expected not_honored  got not_honored   20.2s
+  05 run 3  ok   expected not_honored  got not_honored   17.3s
+  05 -> stable, correct
+
+  06 run 1  ok   expected honored      got honored       20.1s
+  06 run 2  ok   expected honored      got honored       17.3s
+  06 run 3  ok   expected honored      got honored       16.6s
+  06 -> stable, correct
+
+  07 run 1  MISS expected unclear      got honored       14.2s
+  07 run 2  MISS expected unclear      got not_honored   20.2s
+  07 run 3  MISS expected unclear      got not_honored   27.5s
+  07 -> UNSTABLE, wrong
+
+  08 run 1  ok   expected unclear      got unclear       16.7s
+  08 run 2  ok   expected unclear      got unclear       14.8s
+  08 run 3  ok   expected unclear      got unclear       79.9s
+  08 -> stable, correct
+
+  09 run 1  ok   expected honored      got honored       14.8s
+  09 run 2  ok   expected honored      got honored       17.2s
+  09 run 3  ok   expected honored      got honored       28.0s
+  09 -> stable, correct
+
+  10 run 1  ok   expected not_honored  got not_honored   17.8s
+  10 run 2  ok   expected not_honored  got not_honored   25.2s
+  10 run 3  ok   expected not_honored  got not_honored   20.1s
+  10 -> stable, correct
+
+  11 run 1  ok   expected not_honored  got not_honored   46.0s
+  11 run 2  ok   expected not_honored  got not_honored   27.2s
+  11 run 3  ok   expected not_honored  got not_honored   15.8s
+  11 -> stable, correct
+
+  12 run 1  MISS expected unclear      got not_honored   17.5s
+  12 run 2  MISS expected unclear      got not_honored   24.0s
+  12 run 3  MISS expected unclear      got not_honored   21.7s
+  12 -> stable, wrong
+
+  13 run 1  ok   expected not_honored  got not_honored   74.7s
+  13 run 2  ok   expected not_honored  got not_honored   38.5s
+  13 run 3  ok   expected not_honored  got not_honored   15.4s
+  13 -> stable, correct
+
+  14 run 1  MISS expected unclear      got not_honored   29.4s
