@@ -1,0 +1,17 @@
+network   studionet
+instance  0x4FaD64d5D22F0d3Ff2B045E586cF4933410AA74D
+cases     18   runs 3
+
+session   32455
+
+  01 run 1  ok   expected honored      got honored       18.3s
+  01 run 2  ok   expected honored      got honored       16.8s
+  01 run 3  ok   expected honored      got honored       18.3s
+  01 -> stable, correct
+
+  02 run 1  ok   expected not_honored  got not_honored   16.7s
+  02 run 2  ok   expected not_honored  got not_honored   18.0s
+  02 run 3  ok   expected not_honored  got not_honored   22.4s
+  02 -> stable, correct
+
+  03 run 1  ok   expected not_honored  got not_honored   36.4s

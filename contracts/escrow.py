@@ -391,7 +391,17 @@ class RecourseEscrow(gl.Contract):
             + _iso(int(payment.responded_at))
             + "."
         )
-        gl.get_contract_at(self.dispute_contract).emit(on="finalized").adjudicate(
+        # Judgment starts on acceptance, money moves on finalization.
+        #
+        # Adjudicating writes a case row and emits a settlement message; it moves
+        # nothing, so it is safe before finality. Waiting for this transaction to
+        # finalize first would stack two appeal windows back to back and measured
+        # 89 seconds end to end on Studio against 45 for this ordering.
+        #
+        # If an appeal later overturns this transaction the dispute is rolled
+        # back, and the settlement message that judgment emitted is refused by
+        # settle's own status check, because the payment is no longer DISPUTED.
+        gl.get_contract_at(self.dispute_contract).emit(on="accepted").adjudicate(
             pid, promise, payment.request, payment.response, timing
         )
 

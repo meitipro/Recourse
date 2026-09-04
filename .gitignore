@@ -8,3 +8,4 @@ out/
 .venv/
 eval/results.json
 deployed.json
+.accounts.json
