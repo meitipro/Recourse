@@ -140,8 +140,12 @@ def main() -> int:
     request_text = f"GET /quote?pair={args.pair}"
     started = time.time()
     paid = buyer.send(escrow, "pay", [seller_address, request_text], value=args.amount * GEN)
-    ids = buyer.read(escrow, "recent", [1])
-    pid = ids[0]
+    # The payment id comes from the transaction's own return value. Reading
+    # recent(1) instead would hand back whichever payment landed last, which is
+    # not necessarily this one.
+    pid = paid["result"]
+    if not isinstance(pid, str) or not pid.startswith("p-"):
+        raise SystemExit(f"pay did not return a payment id, got {pid!r}")
     report["pid"] = pid
     report["pay_hash"] = paid["hash"]
     out(report, args.json, f"paid             {args.amount} GEN, payment {pid}")

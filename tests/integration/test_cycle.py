@@ -122,8 +122,9 @@ def main() -> int:
     # --- the quiet close ---------------------------------------------------
     print("\nthe quiet close")
     started = time.time()
-    buyer.send(escrow, "pay", [deployment["seller"], "GET /quote?pair=ETH-USD"], value=2 * GEN)
-    quiet_pid = buyer.read(escrow, "recent", [1])[0]
+    quiet_pid = buyer.send(
+        escrow, "pay", [deployment["seller"], "GET /quote?pair=ETH-USD"], value=2 * GEN
+    )["result"]
     seller.send(escrow, "record_response", [quiet_pid, GOOD_BODY, "0xsig"])
     row = buyer.read_json(escrow, "get_payment", [quiet_pid])
     check("a payment opens with a window", int(row["status"]) == ST_OPEN, quiet_pid)
@@ -144,8 +145,9 @@ def main() -> int:
 
     # --- the contested path ------------------------------------------------
     print("\nthe contested path")
-    buyer.send(escrow, "pay", [deployment["seller"], "GET /quote?pair=ETH-USD"], value=4 * GEN)
-    pid = buyer.read(escrow, "recent", [1])[0]
+    pid = buyer.send(
+        escrow, "pay", [deployment["seller"], "GET /quote?pair=ETH-USD"], value=4 * GEN
+    )["result"]
     seller.send(escrow, "record_response", [pid, STALE_BODY, "0xsig"])
 
     try:

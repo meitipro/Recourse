@@ -306,17 +306,27 @@ def check(receipt) -> dict:
     stderr = str(genvm.get("stderr", ""))[:400]
     stdout = str(genvm.get("stdout", ""))[:400]
 
+    # The sentence the contract raised is NOT in stderr, which is empty, and not
+    # in any field named error. It is the payload of the leader's result, beside
+    # a status of "rollback". Measured on Studio: a refused settle answers
+    # execution_result ERROR, empty stderr, and
+    # consensus_data.leader_receipt[0].result.payload == "[EXPECTED] not authorised".
+    outcome = first.get("result") or {}
+    refusal = ""
+    if isinstance(outcome, dict) and str(outcome.get("status", "")).lower() == "rollback":
+        payload = outcome.get("payload")
+        refusal = payload if isinstance(payload, str) else str(payload)
+
     ok = status in SETTLED and execution in ("SUCCESS", "FINISHED_WITH_RETURN", "")
     detail = ""
     if not ok:
-        # A refusal the contract raised is plain text in stderr, not in any
-        # error field, so it is surfaced here rather than left to be dug out.
-        detail = f"status={status} execution={execution} stderr={stderr or stdout}"
+        detail = f"status={status} execution={execution} {refusal or stderr or stdout}".strip()
     return {
         "ok": ok,
         "status": status,
         "execution": execution,
         "detail": detail,
+        "refusal": refusal,
         "stderr": stderr,
         "stdout": stdout,
         "receipt": receipt,
@@ -325,11 +335,24 @@ def check(receipt) -> dict:
 
 
 def _returned(leader_receipt: dict) -> typing.Any:
-    """The value the contract returned, when the node exposes it decoded."""
-    for key in ("result", "return_value", "returned"):
-        if key in leader_receipt:
-            return leader_receipt[key]
-    return None
+    """
+    The value the contract returned.
+
+    A successful call answers {"status": "return", "payload": {"readable": ...}},
+    where readable is the value as JSON text. A refusal answers status rollback
+    and the payload is the message instead, which is why the status is checked
+    before the payload is read as a value.
+    """
+    outcome = leader_receipt.get("result")
+    if isinstance(outcome, dict) and str(outcome.get("status", "")).lower() == "return":
+        payload = outcome.get("payload")
+        if isinstance(payload, dict) and "readable" in payload:
+            try:
+                return json.loads(payload["readable"])
+            except (ValueError, TypeError):
+                return payload["readable"]
+        return payload
+    return outcome
 
 
 # --- the deployment record ------------------------------------------------
