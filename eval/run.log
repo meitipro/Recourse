@@ -1,106 +1,18 @@
 network   studionet
-instance  0xBAFA4dE768a3bD0e6B3F0094d0315E0BBf346b28
+instance  0xcff13a617150bAd50D2b1d651576Bb8DA7aC11AE
 cases     18   runs 3
 
-session   34643
+session   11326
 
-  01 run 1  ok   expected honored      got honored       18.6s
-  01 run 2  ok   expected honored      got honored       23.4s
-  01 run 3  ok   expected honored      got honored       14.5s
+  01 run 1  ok   expected honored      got honored       28.7s
+  01 run 2  ok   expected honored      got honored       18.7s
+  01 run 3  ok   expected honored      got honored       20.8s
   01 -> stable, correct
 
-  02 run 1  ok   expected not_honored  got not_honored   19.9s
-  02 run 2  ok   expected not_honored  got not_honored   45.8s
-  02 run 3  ok   expected not_honored  got not_honored   20.7s
+  02 run 1  ok   expected not_honored  got not_honored   90.7s
+  02 run 2  ok   expected not_honored  got not_honored   48.1s
+  02 run 3  ok   expected not_honored  got not_honored   42.8s
   02 -> stable, correct
 
-  03 run 1  ok   expected not_honored  got not_honored   18.2s
-  03 run 2  ok   expected not_honored  got not_honored   13.3s
-  03 run 3  ok   expected not_honored  got not_honored   24.5s
-  03 -> stable, correct
-
-  04 run 1  ok   expected not_honored  got not_honored   14.6s
-  04 run 2  ok   expected not_honored  got not_honored   13.8s
-  04 run 3  ok   expected not_honored  got not_honored   14.1s
-  04 -> stable, correct
-
-  05 run 1  ok   expected not_honored  got not_honored   17.8s
-  05 run 2  ok   expected not_honored  got not_honored   15.1s
-  05 run 3  ok   expected not_honored  got not_honored   14.5s
-  05 -> stable, correct
-
-  06 run 1  ok   expected honored      got honored       16.4s
-  06 run 2  ok   expected honored      got honored       16.5s
-  06 run 3  ok   expected honored      got honored       22.2s
-  06 -> stable, correct
-
-  07 run 1  MISS expected unclear      got not_honored   29.0s
-  07 run 2  MISS expected unclear      got not_honored   13.8s
-  07 run 3  MISS expected unclear      got error         92.1s
-  07 -> UNSTABLE, wrong
-
-  08 run 1  ok   expected unclear      got unclear       39.0s
-  08 run 2  ok   expected unclear      got unclear       25.0s
-  08 run 3  MISS expected unclear      got honored       16.9s
-  08 -> UNSTABLE, correct
-
-  09 run 1  ok   expected honored      got honored       13.4s
-  09 run 2  ok   expected honored      got honored       16.6s
-  09 run 3  ok   expected honored      got honored       19.9s
-  09 -> stable, correct
-
-  10 run 1  ok   expected not_honored  got not_honored   13.2s
-  10 run 2  ok   expected not_honored  got not_honored   19.9s
-  10 run 3  ok   expected not_honored  got not_honored   70.1s
-  10 -> stable, correct
-
-  11 run 1  ok   expected not_honored  got not_honored   20.0s
-  11 run 2  ok   expected not_honored  got not_honored   13.3s
-  11 run 3  ok   expected not_honored  got not_honored   16.6s
-  11 -> stable, correct
-
-  12 run 1  MISS expected unclear      got not_honored   16.6s
-  12 run 2  MISS expected unclear      got not_honored   13.4s
-  12 run 3  MISS expected unclear      got not_honored   16.6s
-  12 -> stable, wrong
-
-  13 run 1  ok   expected not_honored  got not_honored   13.5s
-  13 run 2  ok   expected not_honored  got not_honored   19.8s
-  13 run 3  ok   expected not_honored  got not_honored   13.3s
-  13 -> stable, correct
-
-  14 run 1  ok   expected unclear      got unclear       13.3s
-  14 run 2  ok   expected unclear      got unclear       13.3s
-  14 run 3  ok   expected unclear      got unclear       13.3s
-  14 -> stable, correct
-
-  15 run 1  ok   expected honored      got honored       16.9s
-  15 run 2  ok   expected honored      got honored       16.7s
-  15 run 3  ok   expected honored      got honored       13.3s
-  15 -> stable, correct
-
-  16 run 1  ok   expected not_honored  got not_honored   19.9s
-  16 run 2  ok   expected not_honored  got not_honored   16.8s
-  16 run 3  ok   expected not_honored  got not_honored   14.5s
-  16 -> stable, correct
-
-  17 run 1  ok   expected not_honored  got not_honored   18.3s
-  17 run 2  ok   expected not_honored  got not_honored   12.7s
-  17 run 3  ok   expected not_honored  got not_honored   13.6s
-  17 -> stable, correct
-
-  18 run 1  ok   expected not_honored  got not_honored   34.8s
-  18 run 2  ok   expected not_honored  got not_honored   31.6s
-  18 run 3  ok   expected not_honored  got not_honored   36.7s
-  18 -> stable, correct
-
-==============================================================
-accuracy   16/18
-stability  16/18  across 3 runs
-unclear    2/18
-verdicts   {'honored': 4, 'not_honored': 12, 'unclear': 2}
-elapsed    1142s
-wrong      07, 12
-disagreed  07, 08
-
-wrote G:\GenLayer Works\GenLayer Cards\GenLayerCard\Recourse\eval\results.json
+  03 run 1  ok   expected not_honored  got not_honored   20.2s
+  03 run 2  ok   expected not_honored  got not_honored   25.3s

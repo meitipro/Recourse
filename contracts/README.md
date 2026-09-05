@@ -44,7 +44,7 @@ because `.timestamp()` returns a float and no float appears anywhere here.
 
 ## RecourseEscrow
 
-Fourteen methods, four view and ten write. No model call, no web access, no
+Seventeen methods, five view and twelve write. No model call, no web access, no
 randomness, no float.
 
 | Method | Caller | Refuses with |
@@ -59,7 +59,27 @@ randomness, no float.
 | `withdraw(pid)` | that seller | `not seller`, `not open`, `window open` |
 | `open_dispute(pid)` payable | that buyer | `not buyer`, `not open`, `no response`, `window closed`, `wrong bond`, `dispute contract not set` |
 | `settle(pid, verdict, reason)` | dispute contract | `not authorised`, `not disputed`, `bad verdict` |
+| `reclaim(pid)` | either party, after `dispute_ends` | `not a party`, `not disputed`, `judgment still running` |
+| `request_review()` | that seller | `not registered`, `dispute contract not set`, `open payments`, `promise unchanged since the last review` |
 | `get_payment`, `get_seller`, `recent`, `recent_rows`, `stats` | anyone | views, JSON with sorted keys |
+
+### The two routes out
+
+A refusal, and a judgment that never arrives, both have to leave the refused
+party somewhere to go, or the contract describes a role an actor cannot perform.
+
+`reclaim` unwinds a dispute that never produced a verdict, after a deadline set
+when the dispute opened. It applies the unclear split, because the judgment
+failed rather than a party. It is deliberately unattractive to a buyer who might
+stall for it: waiting out the clock returns the bond and nothing else, which is
+what dropping the dispute would have returned anyway. A verdict that lands late
+finds the payment RESOLVED and `settle` refuses it, so this can never pay twice.
+
+`request_review` is the way back for a seller the judgeability gate refused,
+who would otherwise be unable to trade and unable to do anything about it. It
+refuses an unchanged promise, so the route out is changing the thing that was
+judged rather than asking again, and it sends the promise from storage rather
+than one the caller supplies.
 
 `recent_rows(n)` returns a whole page of payments as one JSON array, without the
 request and response bodies. The feed used to read `recent()` and then
@@ -115,7 +135,7 @@ either by walking `payment_ids` grows without bound and would eventually make
 
 ## RecourseDispute
 
-Six methods, four view and two write. Exactly one non-deterministic block runs
+Seven methods, five view and two write. Exactly one non-deterministic block runs
 per case, and `test_exactly_one_non_deterministic_block_runs_per_case` asserts it.
 
 ### The equivalence design
@@ -123,12 +143,30 @@ per case, and `test_exactly_one_non_deterministic_block_runs_per_case` asserts i
 Partial field matching, which is the pattern the documentation recommends for
 this shape of problem.
 
-    def leader_fn():        return _ask(prompt)          # one verdict, one reason
-    def validator_fn(res):  return _ask(prompt)["verdict"] == res.calldata["verdict"]
+    def leader_fn():        return judge(p, q, r, t)     # both orders, resolved
+    def validator_fn(res):  return judge(...)["verdict"] == res.calldata["verdict"]
 
 The **verdict** is compared, after checking it is inside the closed set of three.
 The **reason** is never compared: two correct judgments never word their
 reasoning identically, and comparing free text would make consensus impossible.
+
+### Both presentation orders, inside one block
+
+`judge()` asks the same question twice, with the evidence blocks in two orders,
+sequentially inside one non-deterministic block. Nested blocks are not legal;
+sequential prompts in one block are.
+
+Position bias is invisible to consensus on its own. Every validator builds the
+prompt the same way and leans the same way, so a committee agrees confidently on
+an artefact of ordering and nothing downstream can tell. Asking both orders is
+the only place it can be caught.
+
+When the two orders disagree, the answer depended on which way round the evidence
+was read, which is what a promise that does not settle the question looks like.
+That resolves to `unclear` **in the value**, and unclear is then stored and
+compared exactly like any other verdict. Nothing is forgiven at comparison time:
+a validator that let a mismatch pass would be voting agree while privately
+believing something else.
 
 Not `strict_eq`, which the documentation says never to use on model output and
 which would fail on the first differing character. Not `prompt_non_comparative`,

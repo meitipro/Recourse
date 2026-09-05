@@ -125,10 +125,11 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 125 direct tests
-python scripts/mutate.py       # break the escrow seven ways, check the suite notices
+python scripts/test.py         # house style, both contracts linted, 146 direct tests
+python scripts/mutate.py --table docs/MUTATIONS.md   # 30 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
-python tests/integration/test_cycle.py    # 26 checks against the live pair
+python scripts/evidence.py     # put the refusals on chain and record them
+RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # 26 live checks
 python eval/run.py --runs 3    # the published accuracy number, on chain
 ```
 
@@ -162,12 +163,31 @@ Two of the tests are structural rather than behavioural:
 
 ## Contracts
 
-    escrow    0xD20AF93c55d3fFe82Ef3Ae578e08632d5529Ea06
-    dispute   0x9782708c51E81720cC9462d04908C46d2AA6E2ab
+    escrow    0x6a226d9B0E813C5D95277bf92fdB341A7bA1b342
+    dispute   0x48E6088B871E76b1bD59c4BAd3d5b074799C60F7
     network   studionet, chain id 61999
 
 Verify with `python scripts/verify.py`, which reads the source back off the
-chain and diffs it against this repository. The deployment is the submission.
+chain, diffs it against this repository, and runs the linter over the bytes that
+came back rather than over the file on disk. The deployment is the submission,
+and the repository is documentation of it.
+
+### Refusals on chain
+
+A page showing only successes proves the file compiles. Refusing is what this
+contract is for, so the refusals are on chain deliberately and
+`python scripts/evidence.py` records them into `deployed.json`:
+
+| what was attempted | what the chain says |
+| --- | --- |
+| `settle` from an ordinary account | `[EXPECTED] not authorised` |
+| a seller clearing its own judgeability flag | `[EXPECTED] not authorised` |
+| unwinding a dispute that is not stuck | refused |
+
+Every one is ACCEPTED with an execution result of ERROR. That is not a
+contradiction and it is the thing worth understanding about this protocol: a
+committee agreed that the refusal was the correct execution result. Accepted is
+never the same question as succeeded.
 
 `contracts/README.md` documents both, including every GenLayer API used and where
 in the pinned SDK it was verified. `docs/SECURITY.md` is the adversarial review:
