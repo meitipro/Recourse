@@ -56,3 +56,51 @@ session   11326
 
   11 run 1  ok   expected not_honored  got not_honored   20.2s
   11 run 2  ok   expected not_honored  got not_honored   21.2s
+  11 run 3  ok   expected not_honored  got not_honored   37.1s
+  11 -> stable, correct
+
+  12 run 1  MISS expected unclear      got not_honored   27.5s
+  12 run 2  MISS expected unclear      got not_honored   34.5s
+  12 run 3  MISS expected unclear      got not_honored   20.7s
+  12 -> stable, wrong
+
+  13 run 1  ok   expected not_honored  got not_honored   20.1s
+  13 run 2  ok   expected not_honored  got not_honored   29.7s
+  13 run 3  ok   expected not_honored  got not_honored   18.3s
+  13 -> stable, correct
+
+  14 run 1  ok   expected unclear      got unclear       67.2s
+  14 run 2  ok   expected unclear      got unclear       21.7s
+  14 run 3  ok   expected unclear      got unclear       20.0s
+  14 -> stable, correct
+
+  15 run 1  ok   expected honored      got honored       30.2s
+  15 run 2  ok   expected honored      got honored       21.3s
+  15 run 3  ok   expected honored      got honored       83.7s
+  15 -> stable, correct
+
+  16 run 1  ok   expected not_honored  got not_honored   33.5s
+  16 run 2  ok   expected not_honored  got not_honored   19.9s
+  16 run 3  ok   expected not_honored  got not_honored   63.0s
+  16 -> stable, correct
+
+  17 run 1  ok   expected not_honored  got not_honored   26.4s
+  17 run 2  ok   expected not_honored  got not_honored   81.2s
+  17 run 3  ok   expected not_honored  got not_honored   22.4s
+  17 -> stable, correct
+
+  18 run 1  ok   expected not_honored  got not_honored   18.0s
+  18 run 2  ok   expected not_honored  got not_honored   14.5s
+  18 run 3  ok   expected not_honored  got not_honored   19.7s
+  18 -> stable, correct
+
+==============================================================
+accuracy   17/18
+stability  17/18  across 3 runs
+unclear    3/18
+verdicts   {'honored': 4, 'not_honored': 11, 'unclear': 3}
+elapsed    1709s
+wrong      12
+disagreed  07
+
+wrote G:\GenLayer Works\GenLayer Cards\GenLayerCard\Recourse\eval\results.json

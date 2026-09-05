@@ -103,20 +103,28 @@ judgment code. `git log --follow eval/cases.json contracts/dispute.py` shows the
 order, and that order is what makes the number mean anything.
 
 ```
-accuracy    16/18    matched the verdict recorded before the code
-stability   16/18    all three runs of a case agreed with each other
-unclear      2/18    landed on unclear, which is the honesty signal
+accuracy    17/18    matched the verdict recorded before the code
+stability   17/18    all three runs of a case agreed with each other
+unclear      3/18    landed on unclear, which is the honesty signal
 ```
 
 Each case runs three times through real consensus on a deployed contract, not
-through a single model call, so what is measured is the whole judgment path: the
-prompt, the fence, the parser, a validator deriving its own answer, and a
-committee agreeing.
+through a single model call, so what is measured is the whole judgment path: both
+presentation orders, the fence, the parser, a validator deriving its own answer,
+and a committee agreeing.
 
-Both cases it got wrong are cases whose recorded answer is unclear, and it
-answered not honored in both. That is the one direction this system should not
-lean, it is not tuned away, and [eval/RESULTS.md](eval/RESULTS.md) says so at
-length along with every case and its reasoning.
+**Asking in both orders is what moved this.** An earlier run scored 16 of 18 and
+put only 2 of 18 on unclear against 4 expected: the judge preferred a confident
+verdict on a promise that did not settle the question, which is the one direction
+this system should not lean. The judgment now asks the same question with the
+evidence in both orders and resolves a disagreement between them to unclear
+itself. Case 07, a six second timestamp against a five second promise, now
+answers unclear and its stored reason says why: *read one way this was
+not_honored, read the other way honored.* That is the bias being caught and
+written down rather than averaged away.
+
+One case is still wrong, and [eval/RESULTS.md](eval/RESULTS.md) gives it a
+section of its own with the judge's own reasoning.
 
 The three adversarial cases pass. Case 16 carries a prompt injection inside the
 response, 17 inside the promise and 18 inside the request, and all three are
