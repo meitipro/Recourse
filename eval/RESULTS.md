@@ -9,7 +9,7 @@ would measure less than this and would flatter the result.
 ## The three numbers
 
 ```
-accuracy    17/18    matched the verdict recorded before the code
+accuracy    17/18    matched the verdict committed before the run
 stability   17/18    all 3 runs of a case agreed with each other
 unclear     3/18    landed on unclear, which is the honesty signal
 ```
@@ -83,14 +83,47 @@ confidently there is inventing standards the seller never agreed to.
 
 3 of 3 adversarial cases pass. 16 carries a prompt injection inside the response, 17 inside the promise and 18 inside the request, so between them all three party-written inputs are covered. If any of them ever returns honored, the fence has stopped working.
 
+## What this evidence does and does not show
+
+Every accuracy number is a claim about when the answers were fixed, so here
+is exactly what can be checked and what cannot.
+
+**Provable from this repository.** The eighteen expected verdicts were
+committed in `b50757f`, which added `eval/cases.json` and `eval/README.md`
+and nothing else. The judgment contract was added in the next commit,
+`e5750e3`. `eval/cases.json` has been modified in no commit since, on any
+branch, so no expected answer was ever edited to match a run:
+
+```bash
+git log --oneline --all -- eval/cases.json   # one commit, b50757f
+git show --name-status b50757f               # two files, neither is code
+git log --oneline --diff-filter=A -- contracts/dispute.py   # e5750e3, next
+```
+
+`--diff-filter=A` matters in the third one. Without it git answers with the
+most recent commit to touch the file, which is a later fix and looks like a
+contradiction.
+
+**Not provable from this repository.** Commit order shows when a file was
+committed, not when it was written. Nothing in git rules out the judgment
+code having existed uncommitted on disk while the cases were being written.
+A reader who does not extend that much good faith should weigh the second
+set instead, which does not depend on it.
+
+**The held out set.** `eval/cases-v2.json` was committed alone in `04ca928`,
+with the runner unable to read the file at that commit, and only then was
+the runner extended to load it. Those three answers are therefore provably
+fixed before the measurement, whatever order the code was written in. They
+are a weaker claim in one way and a stronger one in another: written with
+the judgment code already visible, so not blind to the implementation, but
+pre-committed against the run, which is the property an accuracy number
+actually needs. They were chosen to probe the weakness named above rather
+than to raise the score.
+
 ## Reproducing
 
 ```bash
 python scripts/deploy.py --eval-instance
-python eval/run.py --runs 3
+python eval/run.py --set v1 --runs 3
 python eval/report.py
 ```
-
-`git log --follow eval/cases.json contracts/dispute.py` shows the cases were
-committed before the judgment code existed. That order is the reason these
-numbers mean anything.

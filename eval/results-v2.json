@@ -1,0 +1,87 @@
+{
+  "accuracy": 1,
+  "distribution": {
+    "honored": 1,
+    "not_honored": 1,
+    "unclear": 1
+  },
+  "instance": "0x7711F22d507ED3C15cF42BA6Ead2A5BD72EFcb71",
+  "measured_at": 1788635504,
+  "n": 3,
+  "network": "studionet",
+  "rows": [
+    {
+      "correct": false,
+      "expected": "unclear",
+      "id": "19",
+      "note": "Both clauses are measurable and they cannot both be satisfied: only two filings exist inside 24 hours, so returning 3 means breaking the age bound and honouring the age bound means returning 2. The promise does not say which clause gives way. Ruling either way invents a precedence the seller never agreed to.",
+      "observed": [
+        "not_honored",
+        "not_honored",
+        "unclear"
+      ],
+      "reasons": [
+        "One filing (2026-09-01) is older than 24 hours from response time (2026-09-05T18:20:03Z).",
+        "One filing is dated 2026-09-01T13:15:00Z, over 4 days old at response time, violating the 'none older than 24 hours' promise.",
+        "Read one way this was not_honored, read the other way honored. A promise whose answer depends on the order the evidence is read in does not settle the question."
+      ],
+      "seconds": [
+        43.6,
+        70.3,
+        22.1
+      ],
+      "set": "v2",
+      "stable": false
+    },
+    {
+      "correct": true,
+      "expected": "honored",
+      "id": "20",
+      "note": "The price is a decimal number carried as a JSON string. It is the right pair, the right value and four seconds old against a ten second bound. The promise constrains the number, not the JSON type of its container, and reading a quoted decimal as a breach is the kind of technicality that would let any seller be found against on wording nobody agreed to.",
+      "observed": [
+        "honored",
+        "honored",
+        "honored"
+      ],
+      "reasons": [
+        "The price is a decimal and the timestamp 18:19:58Z is within 10 seconds of the response recording time 18:20:02Z.",
+        "The price is a decimal and the timestamp (18:19:58Z) is within 10 seconds of the response recording time (18:20:02Z).",
+        "The response was recorded at 18:20:02Z with a timestamp of 18:19:58Z, which is within the 10-second freshness window. The price is a decimal for the correct pair."
+      ],
+      "seconds": [
+        21.2,
+        31.1,
+        18.8
+      ],
+      "set": "v2",
+      "stable": true
+    },
+    {
+      "correct": false,
+      "expected": "honored",
+      "id": "21",
+      "note": "The buyer asked for a pair the promise never covered, and the endpoint said so immediately and named what it does cover. Nothing promised was withheld. A dispute right that lets a buyer pay for something outside the promise and then recover on the seller's refusal is a way to extract refunds, not a way to enforce promises.",
+      "observed": [
+        "unclear",
+        "unclear",
+        "unclear"
+      ],
+      "reasons": [
+        "The PROMISE covers ETH-USD and BTC-USD; the REQUEST asks for SOL-USD, which the PROMISE never addresses.",
+        "The REQUEST asks for SOL-USD, but the PROMISE only covers ETH-USD and BTC-USD. The PROMISE does not define behavior for unsupported pairs.",
+        "The PROMISE only covers ETH-USD and BTC-USD, while the REQUEST asks for SOL-USD. The PROMISE does not specify behavior for unsupported pairs."
+      ],
+      "seconds": [
+        35.4,
+        21.0,
+        27.6
+      ],
+      "set": "v2",
+      "stable": true
+    }
+  ],
+  "runs": 3,
+  "set": "v2",
+  "stability": 2,
+  "unclear": 1
+}

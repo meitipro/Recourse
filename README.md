@@ -98,15 +98,57 @@ punish a buyer for a seller's vague wording.
 
 ## Verdict quality
 
-We wrote eighteen disputes with their correct verdicts **before** writing any
-judgment code. `git log --follow eval/cases.json contracts/dispute.py` shows the
-order, and that order is what makes the number mean anything.
+Eighteen disputes with their correct verdicts, committed in `b50757f`, which
+added the case file and one README and nothing else. The judgment contract
+arrived in the next commit, `e5750e3`, and the case file has been modified in no
+commit since, on any branch, so no expected answer was ever edited to match a
+run. Check it in three commands:
+
+```bash
+git log --oneline --all -- eval/cases.json   # one commit, b50757f
+git show --name-status b50757f               # two files, neither is code
+git log --oneline --diff-filter=A -- contracts/dispute.py   # e5750e3, next
+```
+
+`--diff-filter=A` is doing work in the third command: without it git answers
+with the most recent commit to touch the file, which is a later fix and reads
+like a contradiction.
 
 ```
-accuracy    17/18    matched the verdict recorded before the code
+accuracy    17/18    matched the verdict committed before the run
 stability   17/18    all three runs of a case agreed with each other
 unclear      3/18    landed on unclear, which is the honesty signal
 ```
+
+Commit order shows when a file was committed, not when it was written, and
+[eval/RESULTS.md](eval/RESULTS.md) says so under "What this evidence does and
+does not show".
+
+### The held out set scores 1 of 3
+
+A second set, `eval/cases-v2.json`, was committed alone in `04ca928` at a point
+where the runner could not read it, so its answers are provably fixed before
+the measurement without needing that good faith. Three cases, aimed at the
+weakness the first set had already exposed:
+
+```
+accuracy    1/3    19 and 21 missed, 20 stable and correct
+stability   2/3
+```
+
+**That number is published beside the other one on purpose.** `17/18` is what
+the judge does on the distribution the question was narrowed against, twice.
+`1/3` is what it does on three cases it had never seen, chosen to be hard in
+the direction it is known to be weak. Neither number alone is the truth about
+this judge; the pattern both agree on is, and it is that a promise which does
+not settle the question gets answered on its plain words anyway.
+
+On one of the two misses the judge has the better argument and the recorded
+answer is the weaker one. It is still counted as a miss, because editing a case
+after seeing the run is what would make every other number here worthless.
+[eval/HELD-OUT.md](eval/HELD-OUT.md) works through all three, and the question
+was not narrowed against them: a held out set spends itself the moment it is
+used for tuning.
 
 Each case runs three times through real consensus on a deployed contract, not
 through a single model call, so what is measured is the whole judgment path: both
@@ -202,6 +244,49 @@ in the pinned SDK it was verified. `docs/SECURITY.md` is the adversarial review:
 four attackers, what each tries, and the test that would fail if the defence
 stopped working.
 
+## Three things we got wrong first
+
+Each of these was specified one way, built that way, and found to be broken by
+running it. They are the parts of the design worth reading, and all three were
+corrections rather than plans.
+
+**A dispute that never resolves held the money forever.** The contract had a
+route in and no route out. Judgment is a model call inside consensus, so it can
+fail to land: a rotation exhausts, a committee never agrees, a transaction is
+dropped. The payment and the bond both sat in escrow with no method that could
+touch them, because every settlement path required a verdict that was never
+coming. `reclaim` is the way out, and it is deliberately dumb: after the dispute
+window has passed with no verdict, either party can unwind the payment to the
+split neither of them chose, the seller paid and the bond returned. A refused
+seller had the mirror of this problem, unable to trade and unable to appeal, and
+`request_review` is the way back. **Then that fix had the same bug**: recording
+the promise digest when a review was requested meant a gate transaction that
+failed burned the promise permanently. It records when the ruling arrives.
+
+**A freshness promise is unjudgeable without a clock, and there is no clock.**
+Six of the eighteen cases turn on staleness, and the three frozen strings
+contain no reference time. Worse, `gl.message` has no timestamp at all, so the
+contract has nothing to compare against either. Judgment gets a fourth string:
+a timing block the chain writes, naming when the request and the response were
+recorded, and the prompt names which of them freshness is measured against. The
+first version measured against the clock at checking time, which is after two
+consensus rounds, so a response delivered in two seconds was reported stale
+against a five second promise purely because the transactions took longer than
+the promise did.
+
+**Consensus cannot see a bias every validator shares.** A committee catches a
+leader that answers differently from everyone else. It cannot catch a leader
+that answers the same way as everyone else for the same bad reason. Every node
+built the same prompt, read the evidence in the same order, and leaned the same
+way, and five nodes agreeing looked exactly like five nodes being right.
+Judgment now asks the same question twice inside one block, with the evidence in
+both presentation orders, and resolves a disagreement between the two to
+`unclear` in the value rather than at comparison time. That took accuracy from
+16 of 18 to 17 and raised unclear from 2 to 3 of 18, which was the published
+weakness, and it doubled the model calls. Case 07's stored reason is now the
+mechanism speaking: *read one way this was not_honored, read the other way
+honored.*
+
 ## Rails
 
 Recourse judges three strings and a timing block. It does not judge a
@@ -227,11 +312,22 @@ curl -s localhost:4502/quote?pair=ETH-USD                       # 402, scheme ex
 curl -s -H "x-settlement-id: set_3PxQrLbGk29fVn" localhost:4502/quote?pair=ETH-USD
 ```
 
-A full contested cycle runs against it in `scripts/rail.py`, and the finding is
-the point: **neither contract changed, and neither contract could tell.** The
-evidence written on chain by the external-settlement seller is byte for byte
-the shape written by the x402 one, because the settlement reference never
-reaches the chain in the first place.
+`python scripts/rail.py` runs a full contested cycle against it, and the
+finding is the point: **neither contract changed, and neither contract could
+tell.** Payment `p-000003` was bought against the settlement id
+`set_3PxQrLbGk29fVn`, contested, and ruled `not_honored` on chain:
+
+| step | transaction |
+| --- | --- |
+| pay | [0x5e85f1dc...](https://explorer-studio.genlayer.com/tx/0x5e85f1dce10e147f2ae5a6fc65ae6a0f39260a2b86125c9808cdf934ed7d9b86) |
+| record response | [0x3dbbc678...](https://explorer-studio.genlayer.com/tx/0x3dbbc678ca1552cfa0787aa8d00d6e424e4b04398898132e940533675e06cf07) |
+| contest and judge | [0x8f0b5881...](https://explorer-studio.genlayer.com/tx/0x8f0b58814c449eb07397f99d4b36bd34f73528b8d5a63d4dd893efaf220597be) |
+
+The stored evidence has fifteen fields and the settlement id is in none of
+them, which the script asserts rather than assumes: it exits non-zero if that
+id turns up anywhere in what the chain kept. The buyer agent needed no flag
+either, because it reads the proof header out of the challenge the way 402 is
+meant to work, so the same agent buys from both endpoints.
 
 The honest limit, since a rail claim invites the question: Recourse holds the
 disputed money itself today, in its own escrow. Judgment is rail-free now, and

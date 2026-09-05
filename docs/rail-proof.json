@@ -1,0 +1,13 @@
+{
+  "contracts_changed": false,
+  "hashes": {
+    "dispute_hash": "0x8f0b58814c449eb07397f99d4b36bd34f73528b8d5a63d4dd893efaf220597be",
+    "pay_hash": "0x5e85f1dce10e147f2ae5a6fc65ae6a0f39260a2b86125c9808cdf934ed7d9b86",
+    "record_hash": "0x3dbbc678ca1552cfa0787aa8d00d6e424e4b04398898132e940533675e06cf07"
+  },
+  "pid": "p-000003",
+  "rail": "external-settlement",
+  "seconds": 181,
+  "settlement_id": "set_3PxQrLbGk29fVn",
+  "verdict": "not_honored"
+}

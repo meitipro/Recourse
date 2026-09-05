@@ -197,7 +197,7 @@ export default async function Page() {
 
         <section className="shell">
           <div className="eyebrow">Verdict quality</div>
-          <h2>We wrote the disputes and their answers before writing the judge.</h2>
+          <h2>The answers were committed one commit before the judge.</h2>
           {results ? (
             <>
               <div className="eval-grid">
@@ -206,7 +206,7 @@ export default async function Page() {
                     {results.accuracy}
                     <small>/{results.n}</small>
                   </div>
-                  <div className="stat-label">accuracy against verdicts recorded first</div>
+                  <div className="stat-label">accuracy against verdicts committed first</div>
                 </div>
                 <div>
                   <div className="headline-number">

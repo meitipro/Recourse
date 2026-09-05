@@ -40,7 +40,9 @@ from shared.chain import Chain, load_accounts, load_deployment
 HERE = pathlib.Path(__file__).resolve().parent
 CASES = HERE / "cases.json"
 NAMES = {0: "pending", 1: "honored", 2: "not_honored", 3: "unclear"}
-TARGET = 14
+#: A rate rather than a count, because the same number printed against a three
+#: case run said "below the target of 14 of 3", which is not a sentence.
+TARGET_RATE = 14 / 18
 
 #: Two sets, measured and reported separately because they prove different
 #: things. v1 is the original eighteen, committed before the judgment contract
@@ -205,10 +207,18 @@ def main() -> int:
     print(f"\nwrote {args.out}")
     if args.only:
         print("\nA subset run. The published number comes from the whole set.")
-    elif accuracy < TARGET:
+    elif args.set != "v1":
+        # The held out set exists to be measured once against answers fixed
+        # before the run. Tuning the question against it turns it into a second
+        # training set and there is then nothing left that was held out.
         print(
-            f"\nBelow the target of {TARGET} of {total}. Narrow the adjudication "
-            "question and rerun. Never widen it, and never edit a case."
+            "\nThis is the held out set. Publish this number whatever it is."
+            "\nDo not narrow the question against it: that is what v1 is for."
+        )
+    elif accuracy < round(TARGET_RATE * total):
+        print(
+            f"\nBelow the target of {round(TARGET_RATE * total)} of {total}. Narrow the "
+            "adjudication question and rerun. Never widen it, and never edit a case."
         )
     return 0
 

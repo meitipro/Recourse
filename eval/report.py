@@ -11,6 +11,7 @@ describe, and the drift is invisible.
 
 from __future__ import annotations
 
+import argparse
 import json
 import pathlib
 import sys
@@ -28,9 +29,16 @@ if hasattr(sys.stdout, "reconfigure"):
 
 
 def main() -> int:
-    if not RESULTS.exists():
-        raise SystemExit("no results.json. Run eval/run.py first.")
-    data = json.loads(RESULTS.read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results", default=str(RESULTS))
+    parser.add_argument("--out", default=str(OUT))
+    args = parser.parse_args()
+
+    results = pathlib.Path(args.results)
+    out = pathlib.Path(args.out)
+    if not results.exists():
+        raise SystemExit(f"no {results.name}. Run eval/run.py first.")
+    data = json.loads(results.read_text(encoding="utf-8"))
     # Both sets, because a results file may hold either or both and a row whose
     # case cannot be found would silently lose its note.
     cases = {}
@@ -195,10 +203,14 @@ def main() -> int:
     add("branch, so no expected answer was ever edited to match a run:")
     add("")
     add("```bash")
-    add("git log --oneline --all -- eval/cases.json      # one commit, b50757f")
-    add("git show --name-status b50757f                  # two files, neither is code")
-    add("git log --oneline -1 --format=%H -- contracts/dispute.py")
+    add("git log --oneline --all -- eval/cases.json   # one commit, b50757f")
+    add("git show --name-status b50757f               # two files, neither is code")
+    add("git log --oneline --diff-filter=A -- contracts/dispute.py   # e5750e3, next")
     add("```")
+    add("")
+    add("`--diff-filter=A` matters in the third one. Without it git answers with the")
+    add("most recent commit to touch the file, which is a later fix and looks like a")
+    add("contradiction.")
     add("")
     add("**Not provable from this repository.** Commit order shows when a file was")
     add("committed, not when it was written. Nothing in git rules out the judgment")
@@ -225,8 +237,8 @@ def main() -> int:
     add("```")
     add("")
 
-    OUT.write_text("\n".join(lines), encoding="utf-8")
-    print(f"wrote {OUT}")
+    out.write_text("\n".join(lines), encoding="utf-8")
+    print(f"wrote {out}")
     print(f"  accuracy {data['accuracy']}/{total}, stability {data['stability']}/{total}")
     if wrong:
         print(f"  wrong: {', '.join(row['id'] for row in wrong)}")
