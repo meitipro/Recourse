@@ -16,3 +16,16 @@ session   11326
 
   03 run 1  ok   expected not_honored  got not_honored   20.2s
   03 run 2  ok   expected not_honored  got not_honored   25.3s
+  03 run 3  ok   expected not_honored  got not_honored   53.9s
+  03 -> stable, correct
+
+  04 run 1  ok   expected not_honored  got not_honored   38.8s
+  04 run 2  ok   expected not_honored  got not_honored   25.0s
+  04 run 3  ok   expected not_honored  got not_honored   23.4s
+  04 -> stable, correct
+
+  05 run 1  ok   expected not_honored  got not_honored   24.9s
+  05 run 2  ok   expected not_honored  got not_honored   18.1s
+  05 run 3  ok   expected not_honored  got not_honored   24.4s
+  05 -> stable, correct
+

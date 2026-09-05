@@ -2,6 +2,22 @@
 
 Co-builder rules. Read alongside the build document.
 
+## The twenty rules
+
+`docs/RULES.md` maps every rule from the rejection-notice compilation to what
+this project does about it, and names the four that found something broken here.
+Read it before changing a contract. The four worth holding in your head:
+
+    A refusal must leave the refused party somewhere to go, and the way out
+      must not be asking the same question until the answer suits.
+    Ask the same question in both presentation orders, inside one block, and
+      resolve the disagreement in the VALUE, never in the comparison.
+    A nondet block returns a flat dict of strings. A bool fails in the calldata
+      encoder outside the contract, with no traceback to read.
+    A mutation runner that scores a kill from an exit code alone will report a
+      perfect run while testing nothing. It happened here. Every kill names the
+      test that produced it, and the table is not written if anything escapes.
+
 ## Fixed decisions, do not reopen
 
     Two contracts. The escrow is deterministic and was finished before the
@@ -72,6 +88,9 @@ The demo sentence:
 ## Commands
 
     python scripts/test.py                  everything: style, lint, tests
+    python scripts/mutate.py --table docs/MUTATIONS.md   30 defences, verified
+    python scripts/verify.py                deployed bytes diffed AND linted
+    python scripts/evidence.py              refusals on chain, hashes recorded
     python scripts/deploy.py                redeploy and rewire, one command
     python scripts/demo.py                  the whole demo, both paths
     python eval/run.py --runs 3             the published accuracy number
