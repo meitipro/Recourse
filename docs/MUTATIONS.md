@@ -6,7 +6,7 @@ Each row is a defence deleted on purpose and the test that noticed. The
 generator refuses to write this file if anything escapes, so its existence
 is the claim and the rows are the evidence.
 
-**31 of 31 defences verified.**
+**32 of 32 defences verified.**
 
 | contract | defence removed | caught by |
 | --- | --- | --- |
@@ -16,6 +16,7 @@ is the claim and the rows are the evidence.
 | escrow | settle pays the buyer twice | `test_a_contested_payment_settles_end_to_end` |
 | escrow | the bond is never added to held | `test_a_contested_payment_settles_end_to_end` |
 | escrow | a response can be overwritten | `test_a_response_cannot_be_recorded_twice` |
+| escrow | a signature of any length can be stored | `test_a_signature_over_the_cap_is_rejected` |
 | escrow | paying does not count as a live payment | `test_a_contested_payment_settles_end_to_end` |
 | escrow | the bond need not be exact | `test_dispute_is_rejected_with_the_wrong_bond` |
 | escrow | anyone may open a dispute | `test_dispute_is_rejected_by_a_non_buyer` |

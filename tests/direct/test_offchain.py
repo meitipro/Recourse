@@ -229,3 +229,127 @@ if __name__ == "__main__":
     for line in failures:
         print("  FAIL", line)
     sys.exit(1 if failures else 0)
+
+
+# --- refusing a request the promise never covered -------------------------
+#
+# Every test below exists because of a bug that was in the endpoint, not
+# because of one that was imagined. `BOOK.get(pair, 0.0)` answered a fabricated
+# {"price": 0.0, "sources": 3} for any pair it had never carried, the seller
+# signed it, and the buyer picks the pair. That is a way to manufacture a
+# breach out of an honest endpoint, and the agent then contested it
+# automatically.
+
+
+def test_an_unsupported_pair_is_refused_rather_than_priced_at_zero():
+    body = build_body("DOGE-USD", "correct")
+    assert body["error"] == "unsupported pair"
+    assert "price" not in body
+    assert "sources" not in body
+    assert body["supported"] == ["BTC-USD", "ETH-USD", "SOL-USD"]
+
+
+def test_every_failure_mode_still_refuses_an_unsupported_pair():
+    # The switch must not become a way to get a fabricated quote back.
+    for mode in ("correct", "stale", "hollow", "substituted"):
+        body = build_body("NOPE-USD", mode)
+        assert body.get("error") == "unsupported pair", mode
+        assert "price" not in body, mode
+
+
+def test_the_seller_never_signs_an_unbounded_pair():
+    from seller.main import MAX_PAIR
+
+    body = build_body("X" * 500, "correct")
+    assert len(body["requested"]) <= MAX_PAIR
+    text, signature = sign_body(KEY, body)
+    assert verify(text, signature, recover(text, signature))
+
+
+def test_a_refusal_is_not_contestable():
+    body = build_body("DOGE-USD", "correct")
+    verdict = check(body, "DOGE-USD", 5, 3, now=NOW)
+    assert verdict.mode == "declined"
+    # Not ok, because nothing was delivered. Not contestable either, because
+    # there is nothing for a committee to rule on.
+    assert verdict.ok is False
+    assert verdict.contestable is False
+
+
+def test_a_real_failure_is_still_contestable():
+    # build_body stamps against the real clock, so the check has to read the
+    # same one. Pinning NOW here put the stale body in the future and made it
+    # look fresh, which is the freshness bug this project already fixed once.
+    moment = datetime.datetime.now(datetime.timezone.utc)
+    for mode in ("stale", "hollow", "substituted"):
+        body = build_body("ETH-USD", mode)
+        verdict = check(body, "ETH-USD", 5, 3, now=moment)
+        assert verdict.contestable is True, mode
+
+
+def test_an_error_body_carrying_a_price_is_not_treated_as_a_refusal():
+    # A seller could otherwise dodge every dispute by attaching an error string
+    # to a response that did arrive.
+    body = {"error": "degraded", "pair": "ETH-USD", "price": 0, "sources": 3, "ts": at(0)}
+    verdict = check(body, "ETH-USD", 5, 3, now=NOW)
+    assert verdict.mode != "declined"
+    assert verdict.contestable is True
+
+
+# --- the rail is negotiated, not assumed ----------------------------------
+
+
+def test_both_rails_advertise_a_different_scheme_and_header():
+    from seller.main import RAILS
+
+    assert RAILS["x402"]["header"] != RAILS["external"]["header"]
+    assert RAILS["x402"]["scheme"] != RAILS["external"]["scheme"]
+
+
+def test_the_agent_reads_the_proof_header_out_of_the_challenge(monkeypatch):
+    from agent import run as agent_run
+
+    challenge = json.dumps(
+        {"accepts": [{"scheme": "external-settlement", "header": "x-settlement-id"}]}
+    )
+    monkeypatch.setattr(agent_run, "http", lambda *a, **k: (402, challenge, {}))
+    rail = agent_run.discover_rail("http://endpoint", "ETH-USD")
+    assert rail == {
+        "scheme": "external-settlement",
+        "header": "x-settlement-id",
+        "challenged": True,
+    }
+
+
+def test_a_malformed_challenge_falls_back_to_x402_rather_than_raising(monkeypatch):
+    from agent import run as agent_run
+
+    for body in ("not json", "{}", '{"accepts": []}', '{"accepts": [{}]}'):
+        monkeypatch.setattr(agent_run, "http", lambda *a, **k: (402, body, {}))
+        rail = agent_run.discover_rail("http://endpoint", "ETH-USD")
+        assert rail["header"] == "x-payment-proof", body
+        assert rail["challenged"] is True
+
+
+def test_an_endpoint_that_does_not_ask_for_payment_is_reported_as_such(monkeypatch):
+    from agent import run as agent_run
+
+    monkeypatch.setattr(agent_run, "http", lambda *a, **k: (200, "{}", {}))
+    assert agent_run.discover_rail("http://endpoint", "ETH-USD")["challenged"] is False
+
+
+# --- the evaluation sets stay separable -----------------------------------
+
+
+def test_the_two_case_sets_share_no_ids():
+    first = json.loads((ROOT / "eval" / "cases.json").read_text(encoding="utf-8"))
+    second = json.loads((ROOT / "eval" / "cases-v2.json").read_text(encoding="utf-8"))
+    assert not {case["id"] for case in first} & {case["id"] for case in second}
+
+
+def test_every_case_carries_an_expected_verdict_from_the_closed_set():
+    for name in ("cases.json", "cases-v2.json"):
+        rows = json.loads((ROOT / "eval" / name).read_text(encoding="utf-8"))
+        for case in rows:
+            assert case["expected"] in {"honored", "not_honored", "unclear"}, case["id"]
+            assert case["note"].strip(), case["id"]

@@ -235,16 +235,28 @@ def main() -> int:
     except ValueError:
         parsed = {}
     verdict = check(parsed, args.pair, max_age, min_sources, now=received_at)
-    report["check"] = {"ok": verdict.ok, "reason": verdict.reason, "mode": verdict.mode}
-    out(report, args.json, f"check            {'pass' if verdict.ok else 'FAIL'}: {verdict.reason}")
+    report["check"] = {
+        "ok": verdict.ok,
+        "reason": verdict.reason,
+        "mode": verdict.mode,
+        "contestable": verdict.contestable,
+    }
+    label = "pass" if verdict.ok else ("declined" if verdict.mode == "declined" else "FAIL")
+    out(report, args.json, f"check            {label}: {verdict.reason}")
 
-    if verdict.ok or args.no_dispute:
+    # A refusal is not contested. Posting a bond against an endpoint that said
+    # it does not carry what was asked for is a false dispute, and the buyer
+    # chose the request.
+    if verdict.ok or not verdict.contestable or args.no_dispute:
         # 6a - quiet close. The window expires and the seller withdraws. Nobody
         # paid anything extra and no consensus ran.
         row = buyer.read_json(escrow, "get_payment", [pid])
-        report["outcome"] = "accepted"
+        report["outcome"] = "declined" if verdict.mode == "declined" else "accepted"
         report["window_ends"] = row["window_ends"]
-        out(report, args.json, "outcome          accepted, letting the window expire")
+        out(
+            report, args.json,
+            f"outcome          {report['outcome']}, letting the window expire",
+        )
         out(report, args.json, f"                 seller may withdraw after {row['window_ends']}")
         if args.json:
             print(json.dumps(report, indent=2, sort_keys=True))

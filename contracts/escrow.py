@@ -48,6 +48,13 @@ MAX_PROMISE = 500
 MAX_REQUEST = 2000
 MAX_RESPONSE = 4000
 MAX_RECENT = 100
+#: A secp256k1 signature is 130 hex characters, 132 with a prefix. This is the
+#: one party written field that had no bound, which made it the one way to put
+#: an arbitrary amount of data in a payment row. It degrades only the seller's
+#: own evidence, since recent_rows returns whether a signature exists rather
+#: than the signature, but every other string a party writes here is bounded
+#: and an unbounded one is a gap whatever its blast radius.
+MAX_SIG = 200
 
 ZERO = Address("0x" + "0" * 40)
 
@@ -363,6 +370,8 @@ class RecourseEscrow(gl.Contract):
             raise gl.vm.UserError(E + "window closed")
         if len(response) > MAX_RESPONSE:
             raise gl.vm.UserError(E + "response too long")
+        if len(sig) > MAX_SIG:
+            raise gl.vm.UserError(E + "signature too long")
 
         self.payments[pid].response = response
         self.payments[pid].response_sig = sig if who == payment.seller else ""

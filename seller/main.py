@@ -107,11 +107,38 @@ def stamp(moment: datetime.datetime) -> str:
     return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+#: The longest pair string this endpoint will look at. Anything the seller signs
+#: becomes frozen evidence a validator reads, so the length is bounded before the
+#: key touches it rather than after.
+MAX_PAIR = 32
+
+#: The admin body is one short JSON object. Content-Length is whatever the
+#: caller says it is, so it is checked before it is used to size a read.
+MAX_BODY = 4096
+
+
 def build_body(pair: str, mode: str) -> dict:
     """
     One shape per failure mode. Each returns 200, each settles payment, and each
     passes every deterministic check that exists today.
+
+    A pair this endpoint does not carry is refused, and that is a correctness
+    fix rather than tidying. `BOOK.get(pair, 0.0)` used to answer a fabricated
+    `{"price": 0.0, "sources": 3}` for anything it had never heard of, signed by
+    the seller, against a promise reading "aggregated from at least three
+    venues". Two things were wrong with that. The seller signed a claim it had
+    not earned, and the BUYER picks the pair: paying, asking for a pair the
+    seller never carried, and disputing the zero that came back is a way to
+    manufacture a breach out of an honest endpoint. Refusing makes the frozen
+    evidence an honest refusal, which is a thing a judge can rule on.
     """
+    if pair not in BOOK:
+        return {
+            "error": "unsupported pair",
+            "requested": pair[:MAX_PAIR],
+            "supported": sorted(BOOK),
+            "ts": stamp(now()),
+        }
     if mode == "hollow":
         # Well formed, carrying nothing.
         return {"pair": pair, "results": [], "count": 0}
@@ -166,7 +193,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/quote":
-            pair = (query.get("pair") or ["ETH-USD"])[0]
+            pair = (query.get("pair") or ["ETH-USD"])[0][:MAX_PAIR]
             rail = RAILS[STATE.rail]
             proof = self.headers.get(rail["header"]) or (query.get("pid") or [""])[0]
             if not proof:
@@ -214,7 +241,15 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path != "/admin/mode":
             self._send(404, {"error": "not found"})
             return
-        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            self._send(400, {"error": "bad content length"})
+            return
+        if length < 0 or length > MAX_BODY:
+            # Read what the header claims and a caller can name any number.
+            self._send(413, {"error": "body too large"})
+            return
         try:
             payload = json.loads(self.rfile.read(length) or b"{}")
         except ValueError:
@@ -233,6 +268,10 @@ def main() -> int:
     global KEY
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=4501)
+    parser.add_argument(
+        "--host", default="127.0.0.1",
+        help="interface to bind. Loopback by default: /admin/mode has no auth",
+    )
     parser.add_argument("--mode", default="correct", choices=MODES)
     parser.add_argument(
         "--rail", default="x402", choices=sorted(RAILS),
@@ -251,9 +290,15 @@ def main() -> int:
     except Exception as error:  # noqa: BLE001
         print(f"  no seller key ({str(error)[:70]}), responses will be unsigned")
 
-    server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
+    # Loopback by default. This process holds the seller's signing key and
+    # exposes /admin/mode with no authentication, which is deliberate for a
+    # demo and would be somebody else's switch on a conference network. Binding
+    # every interface has to be asked for.
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    if args.host not in ("127.0.0.1", "localhost"):
+        print(f"  WARNING: reachable on {args.host}, and /admin/mode has no auth")
     print(
-        f"seller endpoint on http://localhost:{args.port}  "
+        f"seller endpoint on http://{args.host}:{args.port}  "
         f"mode={STATE.get()}  rail={STATE.rail} ({RAILS[STATE.rail]['header']})"
     )
     print(f"  GET  /quote?pair=ETH-USD   POST /admin/mode   GET /promise")

@@ -61,6 +61,19 @@ record's job is to hold what a party actually wrote.
 Evaluation case 17 is this attack. Tests: `test_every_untrusted_string_is_fenced`,
 `test_the_real_case_files_survive_the_fence`, `test_fencing_replaces_and_never_deletes`.
 
+**Stores an arbitrary amount of data in a payment row.**
+Found by asking which party written field had no length bound, and one did. The
+promise, the request and the response are all capped; `sig` was not, and the
+seller is the only party whose signature is kept, so the seller was the only
+party who could use it. The blast radius was small, because `recent_rows`
+returns whether a signature exists rather than the signature, so the damage
+stopped at the seller's own evidence drawer. It is capped at `MAX_SIG`, 200
+characters against a real signature's 130, and the refusal is
+[on chain](https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db).
+Tests: `test_a_signature_over_the_cap_is_rejected`,
+`test_a_real_length_signature_is_accepted`. Mutant: "a signature of any length
+can be stored".
+
 ## The malicious buyer
 
 **Disputes every payment to extract refunds.**
@@ -88,6 +101,25 @@ Test: `test_the_timing_block_is_written_by_the_chain`.
 Evaluation case 14, and the correct answer is unclear, which returns the bond and
 leaves the payment. Neither party is punished for a mismatch that is nobody's
 fault.
+
+**Asks for something the seller does not carry, to manufacture a breach.**
+This one was real, and it was in the endpoint rather than the contract. The
+buyer picks the request. `build_body` answered `BOOK.get(pair, 0.0)`, so a pair
+the seller had never carried came back as
+`{"price": 0.0, "sources": 3}` **signed by the seller**, against a promise
+reading "aggregated from at least three venues". A buyer could pay, ask for
+`DOGE-USD`, and dispute a fabricated zero the seller never meant to publish.
+
+Two things were wrong and both are fixed. The endpoint refuses a pair it does
+not carry, naming what it does carry, so the frozen evidence is an honest
+refusal. And the buyer agent no longer contests a refusal: `check` returns mode
+`declined`, which is not `ok` and is not contestable either, because there is
+nothing for a committee to rule on. That second half is the one that matters at
+volume, since a client that auto-disputes refusals produces a false dispute rate
+above zero without anybody choosing to attack.
+Tests: `test_an_unsupported_pair_is_refused_rather_than_priced_at_zero`,
+`test_a_refusal_is_not_contestable`,
+`test_an_error_body_carrying_a_price_is_not_treated_as_a_refusal`.
 
 ## The protocol level attacker
 
@@ -131,6 +163,30 @@ Tests: `test_settle_refuses_a_verdict_outside_the_three`,
 After it is set, the owner has no privilege left in the contract at all.
 Tests: `test_the_dispute_contract_can_only_be_set_once`,
 `test_only_the_owner_may_wire_the_dispute_contract`.
+
+## The demo surfaces, which are not the contracts
+
+Two off chain pieces are part of the demo rather than the protocol, and both had
+weaknesses worth naming rather than quietly fixing.
+
+**The seller endpoint holds a signing key and has an unauthenticated switch.**
+`POST /admin/mode` flips the endpoint into `stale`, `hollow` or `substituted`
+with no credential, which is deliberate: the switch is what makes the demo
+reproducible on camera. It used to bind `0.0.0.0`, which on a conference network
+is somebody else's switch, and the process holds the seller's key. It binds
+`127.0.0.1` now and exposing it takes `--host`, which prints a warning. The
+`Content-Length` header is checked before it is used to size a read, since a
+caller can name any number.
+
+**The feed's evidence route fronts a rate limited chain.**
+Studio allows about thirty requests a minute for the whole node and this route
+spends one or two per call, so anything automated could exhaust the budget and
+leave every visitor looking at the page's own "chain could not be read" notice.
+The route now refuses past twenty in a rolling minute with a 429 the drawer
+renders as a reason. The limit is global rather than per IP on purpose: the
+budget is a single shared resource, and keying it on an address would key it on
+a header the caller sets. Measured: thirty concurrent requests, nine served and
+twenty one refused.
 
 ## The honest mistake
 

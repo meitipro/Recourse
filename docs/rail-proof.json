@@ -1,13 +1,13 @@
 {
   "contracts_changed": false,
   "hashes": {
-    "dispute_hash": "0x8f0b58814c449eb07397f99d4b36bd34f73528b8d5a63d4dd893efaf220597be",
-    "pay_hash": "0x5e85f1dce10e147f2ae5a6fc65ae6a0f39260a2b86125c9808cdf934ed7d9b86",
-    "record_hash": "0x3dbbc678ca1552cfa0787aa8d00d6e424e4b04398898132e940533675e06cf07"
+    "dispute_hash": "0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+    "pay_hash": "0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271",
+    "record_hash": "0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216"
   },
   "pid": "p-000003",
   "rail": "external-settlement",
-  "seconds": 181,
+  "seconds": 117,
   "settlement_id": "set_3PxQrLbGk29fVn",
   "verdict": "not_honored"
 }

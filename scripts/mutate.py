@@ -66,6 +66,9 @@ MUTANTS = [
      'if payment.response != "":\n'
      '            raise gl.vm.UserError(E + "response already recorded")',
      'if False:\n            raise gl.vm.UserError(E + "response already recorded")'),
+    ("escrow", "a signature of any length can be stored",
+     'if len(sig) > MAX_SIG:\n            raise gl.vm.UserError(E + "signature too long")',
+     'if False:\n            raise gl.vm.UserError(E + "signature too long")'),
     ("escrow", "paying does not count as a live payment",
      "self.sellers[addr].live = u32(entry.live + u32(1))",
      "self.sellers[addr].live = u32(entry.live + u32(0))"),

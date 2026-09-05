@@ -102,6 +102,28 @@ def main() -> int:
     if found:
         records.append(found)
 
+    # A length bound on the one party written field that used to have none. The
+    # seller is the only party whose signature is stored, so the seller is the
+    # only party who could have used it to put arbitrary data in a payment row.
+    #
+    # This one needs a payment with no response recorded against it yet, because
+    # "response already recorded" is checked first and refusing there proves
+    # nothing about the length bound. So it buys one. A pound of GEN on a free
+    # network is cheaper than evidence that quietly tests the wrong guard.
+    try:
+        fresh = stranger.send(
+            escrow, "pay", [deployment["seller"], "GET /quote?pair=ETH-USD"], value=GEN
+        )["result"]
+        print(f"  bought {fresh} to test the signature bound against")
+        found = refusal(
+            seller, escrow, "record_response",
+            [fresh, '{"pair":"ETH-USD"}', "0x" + "1" * 400], "signature too long",
+        )
+        if found:
+            records.append(found)
+    except Exception as error:  # noqa: BLE001
+        print(f"  could not test the signature bound: {str(error)[:120]}")
+
     print("\nverdicts that have landed on chain")
     verdicts: dict = {}
     try:

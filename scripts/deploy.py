@@ -31,6 +31,32 @@ PROMISE = (
 )
 
 
+def write_feed_env(record: dict) -> None:
+    """
+    Point the feed at what was just deployed.
+
+    Without this a redeploy leaves web/.env.local naming the previous contracts,
+    and nothing looks wrong: the old contracts are still on chain and still
+    answer, so the page renders a healthy feed of a deployment that is no longer
+    the one this repository describes. A stale address that still works is worse
+    than one that errors.
+    """
+    path = ROOT / "web" / ".env.local"
+    path.write_text(
+        "\n".join(
+            [
+                "# Written by scripts/deploy.py. Edit the deployment, not this file.",
+                f"NEXT_PUBLIC_RECOURSE_NETWORK={record['network']}",
+                f"NEXT_PUBLIC_RECOURSE_ESCROW={record['escrow']}",
+                f"NEXT_PUBLIC_RECOURSE_DISPUTE={record['dispute']}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    print(f"  feed env -> {path.relative_to(ROOT)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--window", type=int, default=300, help="settlement window in seconds")
@@ -100,6 +126,7 @@ def main() -> int:
         record["eval_dispute"] = eval_dispute
 
     save_deployment(record)
+    write_feed_env(record)
     print(f"\nwrote deployed.json in {time.time() - started:.0f}s")
     print(f"  escrow   {escrow}")
     print(f"  dispute  {dispute}")

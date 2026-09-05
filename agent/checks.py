@@ -21,7 +21,19 @@ class Verdict(typing.NamedTuple):
     ok: bool
     reason: str
     #: Which failure mode this is, when it is one: stale, hollow or substituted.
+    #: Also "declined", which is not a failure mode and must never be contested.
     mode: str
+
+    @property
+    def contestable(self) -> bool:
+        """
+        Whether this is worth a bond.
+
+        Not the same question as `ok`. An endpoint that refused a request the
+        promise never covered has not honoured anything and has not broken
+        anything either, so there is nothing for a committee to rule on.
+        """
+        return not self.ok and self.mode != "declined"
 
 
 def _parse_ts(value: typing.Any) -> datetime.datetime | None:
@@ -63,6 +75,20 @@ def check(
 
     if not isinstance(body, dict) or not body:
         return Verdict(False, "empty body", "hollow")
+
+    # An endpoint saying plainly that it cannot serve this request is not a
+    # breach, and contesting it is how a client manufactures a false dispute.
+    # Without this branch a refusal falls through to the price check, comes back
+    # "hollow: no price", and the agent contests an endpoint that did nothing
+    # wrong. The promise governs what was promised; a request outside it was
+    # never covered, so there is nothing here to rule on and the buyer picked
+    # the pair.
+    if isinstance(body.get("error"), str) and body.get("price") is None:
+        return Verdict(
+            False,
+            f"declined: {body['error']}, which the promise never covered",
+            "declined",
+        )
 
     if "results" in body and len(body.get("results") or []) == 0:
         return Verdict(False, "hollow: empty result set", "hollow")

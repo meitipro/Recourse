@@ -355,6 +355,25 @@ def test_a_response_over_the_cap_is_rejected():
     raises("response too long", w.escrow.record_response, pid, "x" * 4001, "sig")
 
 
+def test_a_signature_over_the_cap_is_rejected():
+    # The one party written field that had no bound. A real secp256k1 signature
+    # is 130 hex characters, so anything approaching this is not a signature.
+    w = World()
+    w.register()
+    pid = w.pay()
+    w.sender(w.SELLER)
+    raises("signature too long", w.escrow.record_response, pid, "body", "0x" + "1" * 400)
+
+
+def test_a_real_length_signature_is_accepted():
+    w = World()
+    w.register()
+    pid = w.pay()
+    w.sender(w.SELLER)
+    w.escrow.record_response(pid, "body", "0x" + "ab" * 65)
+    assert w.payment(pid)["response_sig"] == "0x" + "ab" * 65
+
+
 def test_the_stored_response_matches_byte_for_byte():
     w = World()
     w.register()

@@ -23,8 +23,8 @@ latency and costs nobody anything, and the contested one.
 Measured on studionet, printed by the demo on every run:
 
 ```
-dispute to verdict      54 to 61 seconds
-dispute to money back   about 86 seconds
+dispute to verdict      about 60 seconds
+dispute to money back   about 89 seconds
 ```
 
 The verdict lands inside a minute. The money follows once the judgment
@@ -175,8 +175,8 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 149 direct tests
-python scripts/mutate.py --table docs/MUTATIONS.md   # 31 defences, each verified
+python scripts/test.py         # house style, both contracts linted, 163 direct tests
+python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
 RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # 26 live checks
@@ -185,7 +185,7 @@ python eval/run.py --runs 3    # the published accuracy number, on chain
 
 A green suite says the tests agree with the code, not that they would notice if
 the code were wrong. `scripts/mutate.py` deletes one defence at a time across
-both contracts and records which test noticed. **31 of 31 are caught**, and
+both contracts and records which test noticed. **32 of 32 are caught**, and
 every row is in [docs/MUTATIONS.md](docs/MUTATIONS.md) with its catching test.
 The generator refuses to write that file if anything escapes, so the file
 existing is itself the claim.
@@ -213,8 +213,8 @@ Two of the tests are structural rather than behavioural:
 
 ## Contracts
 
-    escrow    0xbeA09Dbfb845220f0Dd55f4197097b50AEb32d4d
-    dispute   0x7b216144a349347A3050dC7D85C37b56683d062D
+    escrow    0x5125De939F7373eAE741B133FB32B7E9915C8F78
+    dispute   0x80A98929EcA334804dbB04d31F6050bca42C0Cc4
     network   studionet, chain id 61999
 
 Verify with `python scripts/verify.py`, which reads the source back off the
@@ -230,9 +230,10 @@ contract is for, so the refusals are on chain deliberately and
 
 | what was attempted | what the chain says | transaction |
 | --- | --- | --- |
-| `settle` | `[EXPECTED] not authorised` | [0x8c286952...](https://explorer-studio.genlayer.com/tx/0x8c286952d728e55dc55b6c8527c08d9cc51cd85da931f8ef0123f3009bc03f71) |
-| `set_judgeable` | `[EXPECTED] not authorised` | [0x2ae60a8e...](https://explorer-studio.genlayer.com/tx/0x2ae60a8e69335634eb96f710c831e0d37d13f975a3fb9600a09a7f256b40dbd3) |
-| `reclaim` | `[EXPECTED] not disputed` | [0xd539d405...](https://explorer-studio.genlayer.com/tx/0xd539d405adb3749ef7987c9e44e48021664ac995b32423b1f5030dabb1909fdf) |
+| `settle` | `[EXPECTED] not authorised` | [0x3ec68f45...](https://explorer-studio.genlayer.com/tx/0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2) |
+| `set_judgeable` | `[EXPECTED] not authorised` | [0x6d87b3b0...](https://explorer-studio.genlayer.com/tx/0x6d87b3b08870a872efa36ba7b0a492a7960f8c2bec9042e1c168fb0938739473) |
+| `reclaim` | `[EXPECTED] not disputed` | [0x2dd95fdf...](https://explorer-studio.genlayer.com/tx/0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd) |
+| `record_response` with a 402 character signature | `[EXPECTED] signature too long` | [0xd1bbbb95...](https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db) |
 
 Every one is ACCEPTED with an execution result of ERROR. That is not a
 contradiction and it is the thing worth understanding about this protocol: a
@@ -319,9 +320,9 @@ tell.** Payment `p-000003` was bought against the settlement id
 
 | step | transaction |
 | --- | --- |
-| pay | [0x5e85f1dc...](https://explorer-studio.genlayer.com/tx/0x5e85f1dce10e147f2ae5a6fc65ae6a0f39260a2b86125c9808cdf934ed7d9b86) |
-| record response | [0x3dbbc678...](https://explorer-studio.genlayer.com/tx/0x3dbbc678ca1552cfa0787aa8d00d6e424e4b04398898132e940533675e06cf07) |
-| contest and judge | [0x8f0b5881...](https://explorer-studio.genlayer.com/tx/0x8f0b58814c449eb07397f99d4b36bd34f73528b8d5a63d4dd893efaf220597be) |
+| pay | [0xec418924...](https://explorer-studio.genlayer.com/tx/0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271) |
+| record response | [0x24795e35...](https://explorer-studio.genlayer.com/tx/0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216) |
+| contest and judge | [0x0107b1fc...](https://explorer-studio.genlayer.com/tx/0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393) |
 
 The stored evidence has fifteen fields and the settlement id is in none of
 them, which the script asserts rather than assumes: it exits non-zero if that
