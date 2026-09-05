@@ -9,3 +9,6 @@ out/
 eval/results.json
 deployed.json
 .accounts.json
+
+# Next writes this on every typecheck; it is a build artifact, not source.
+web/tsconfig.tsbuildinfo
