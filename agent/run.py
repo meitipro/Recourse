@@ -57,6 +57,33 @@ def http(url: str, payload: dict | None = None, headers: dict | None = None):
         return error.code, error.read().decode("utf-8"), dict(error.headers)
 
 
+def discover_rail(endpoint: str, pair: str) -> dict:
+    """
+    Ask without paying and read the challenge, the way 402 is meant to work.
+
+    The endpoint names the scheme it accepts and the header to present proof in.
+    Taking the header from the challenge rather than hardcoding one is what lets
+    the same agent buy from an x402 endpoint and from an endpoint settling on
+    somebody else's rail, with no flag and no branch.
+    """
+    fallback = {"scheme": "recourse-escrow", "header": "x-payment-proof"}
+    code, body, _ = http(f"{endpoint}/quote?pair={pair}")
+    if code != 402:
+        # A 200 here means the endpoint is not asking to be paid at all. Say so
+        # rather than carrying on as if payment had been demanded.
+        return {**fallback, "challenged": False}
+    try:
+        accepts = json.loads(body).get("accepts") or []
+        offer = accepts[0]
+        return {
+            "scheme": str(offer.get("scheme") or fallback["scheme"]),
+            "header": str(offer.get("header") or fallback["header"]),
+            "challenged": True,
+        }
+    except (ValueError, IndexError, AttributeError):
+        return {**fallback, "challenged": True}
+
+
 def read_promise_bounds(promise: str) -> tuple[int, int]:
     """
     Turn the promise into the two numbers the deterministic checks need.
@@ -110,6 +137,10 @@ def main() -> int:
     parser.add_argument("--pair", default="ETH-USD")
     parser.add_argument("--amount", type=int, default=4, help="payment in whole GEN")
     parser.add_argument("--timeout", type=int, default=240, help="seconds to wait for a verdict")
+    parser.add_argument(
+        "--settlement-id", default="",
+        help="an outside rail's own payment reference, presented instead of the escrow id",
+    )
     args = parser.parse_args()
 
     report: dict = {"steps": [], "mode": args.mode or "unchanged"}
@@ -142,6 +173,13 @@ def main() -> int:
             out(report, args.json, "  warning: the endpoint's promise differs from the chain's")
         report["promise_matches_endpoint"] = endpoint_promise == promise
 
+    # The 402 challenge names the scheme and the header. Read it rather than
+    # assuming x402, so the same agent works against an endpoint that settles
+    # somewhere else entirely.
+    rail = discover_rail(args.endpoint, args.pair)
+    report["rail"] = rail
+    out(report, args.json, f"rail             {rail['scheme']}, proof in {rail['header']}")
+
     balance_before = buyer.balance(accounts["buyer"].address)
 
     # 2 - pay into escrow. Funds do not reach the seller balance.
@@ -160,8 +198,13 @@ def main() -> int:
 
     # 3 - call the endpoint and receive the response immediately. No consensus
     # in this path, so nothing here adds latency to an honest sale.
+    # The proof is whatever the rail identifies the settlement by. On x402 that
+    # is the escrow payment id; on an outside rail it is that rail's own
+    # reference, which the chain never sees and never needs to.
+    proof = args.settlement_id or pid
+    report["settlement_reference"] = proof
     code, body, headers = http(
-        f"{args.endpoint}/quote?pair={args.pair}", headers={"x-payment-proof": pid}
+        f"{args.endpoint}/quote?pair={args.pair}", headers={rail["header"]: proof}
     )
     # The moment the response arrived. Freshness has to be judged against this
     # and not against the clock at checking time: recording the response on

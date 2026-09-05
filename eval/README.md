@@ -1,10 +1,18 @@
 # The evaluation set
 
-Eighteen disputes with their correct verdicts, written down before any judgment
-code existed. `git log --follow eval/cases.json contracts/dispute.py` shows the
-order, and that order is a piece of evidence in this submission rather than
+Two sets, measured and reported separately because they prove different things.
+
+`cases.json` holds eighteen disputes with their correct verdicts, committed in
+`b50757f`, one commit before the judgment contract was added in `e5750e3`, and
+never modified since on any branch. `cases-v2.json` holds three more, committed
+alone in `04ca928` at a point where the runner could not yet read the file, so
+their answers are provably fixed before the measurement rather than after it.
+
+That distinction is a piece of evidence in this submission rather than
 bookkeeping: a set written afterwards, against outputs already seen, proves
-nothing about the judge.
+nothing about the judge. What each set does and does not establish is set out
+under "What this evidence does and does not show" in `RESULTS.md`, including
+the part that git cannot prove.
 
 ## What is measured
 

@@ -31,7 +31,13 @@ def main() -> int:
     if not RESULTS.exists():
         raise SystemExit("no results.json. Run eval/run.py first.")
     data = json.loads(RESULTS.read_text(encoding="utf-8"))
-    cases = {case["id"]: case for case in json.loads(CASES.read_text(encoding="utf-8"))}
+    # Both sets, because a results file may hold either or both and a row whose
+    # case cannot be found would silently lose its note.
+    cases = {}
+    for path in (CASES, HERE / "cases-v2.json"):
+        if path.exists():
+            for case in json.loads(path.read_text(encoding="utf-8")):
+                cases[case["id"]] = case
     rows = data["rows"]
     total = data["n"]
 
@@ -65,7 +71,7 @@ def main() -> int:
     add("## The three numbers")
     add("")
     add("```")
-    add(f"accuracy    {data['accuracy']}/{total}    matched the verdict recorded before the code")
+    add(f"accuracy    {data['accuracy']}/{total}    matched the verdict committed before the run")
     add(f"stability   {data['stability']}/{total}    all {data['runs']} runs of a case agreed with each other")
     add(f"unclear     {data['unclear']}/{total}    landed on unclear, which is the honesty signal")
     add("```")
@@ -177,17 +183,46 @@ def main() -> int:
             "returns honored, the fence has stopped working."
         )
     add("")
+    add("## What this evidence does and does not show")
+    add("")
+    add("Every accuracy number is a claim about when the answers were fixed, so here")
+    add("is exactly what can be checked and what cannot.")
+    add("")
+    add("**Provable from this repository.** The eighteen expected verdicts were")
+    add("committed in `b50757f`, which added `eval/cases.json` and `eval/README.md`")
+    add("and nothing else. The judgment contract was added in the next commit,")
+    add("`e5750e3`. `eval/cases.json` has been modified in no commit since, on any")
+    add("branch, so no expected answer was ever edited to match a run:")
+    add("")
+    add("```bash")
+    add("git log --oneline --all -- eval/cases.json      # one commit, b50757f")
+    add("git show --name-status b50757f                  # two files, neither is code")
+    add("git log --oneline -1 --format=%H -- contracts/dispute.py")
+    add("```")
+    add("")
+    add("**Not provable from this repository.** Commit order shows when a file was")
+    add("committed, not when it was written. Nothing in git rules out the judgment")
+    add("code having existed uncommitted on disk while the cases were being written.")
+    add("A reader who does not extend that much good faith should weigh the second")
+    add("set instead, which does not depend on it.")
+    add("")
+    add("**The held out set.** `eval/cases-v2.json` was committed alone in `04ca928`,")
+    add("with the runner unable to read the file at that commit, and only then was")
+    add("the runner extended to load it. Those three answers are therefore provably")
+    add("fixed before the measurement, whatever order the code was written in. They")
+    add("are a weaker claim in one way and a stronger one in another: written with")
+    add("the judgment code already visible, so not blind to the implementation, but")
+    add("pre-committed against the run, which is the property an accuracy number")
+    add("actually needs. They were chosen to probe the weakness named above rather")
+    add("than to raise the score.")
+    add("")
     add("## Reproducing")
     add("")
     add("```bash")
     add("python scripts/deploy.py --eval-instance")
-    add(f"python eval/run.py --runs {data['runs']}")
+    add(f"python eval/run.py --set {data.get('set', 'v1')} --runs {data['runs']}")
     add("python eval/report.py")
     add("```")
-    add("")
-    add("`git log --follow eval/cases.json contracts/dispute.py` shows the cases were")
-    add("committed before the judgment code existed. That order is the reason these")
-    add("numbers mean anything.")
     add("")
 
     OUT.write_text("\n".join(lines), encoding="utf-8")

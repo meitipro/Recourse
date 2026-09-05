@@ -255,8 +255,9 @@ export default async function Page() {
           <div className="eyebrow">Scope</div>
           <h2>What this is.</h2>
           <p>
-            Judgment costs about a dollar a case, so the first version targets payments above
-            that line. Session batching is the route below it.
+            One adjudication is ten model calls: a committee of five, each asking the same
+            question in both presentation orders. Studionet charges nothing for them, so this
+            page states the work rather than a price it cannot read off a receipt.
           </p>
           <p>
             A vague promise produces a vague verdict, and the system says so through the unclear

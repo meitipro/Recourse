@@ -202,6 +202,43 @@ in the pinned SDK it was verified. `docs/SECURITY.md` is the adversarial review:
 four attackers, what each tries, and the test that would fail if the defence
 stopped working.
 
+## Rails
+
+Recourse judges three strings and a timing block. It does not judge a
+settlement method, and neither contract has ever seen one:
+
+```bash
+grep -rn "x402" contracts/     # nothing
+```
+
+The promise, the request and the response are the same evidence whether the
+payment settled over x402, over a session rail like Stripe's MPP, or on a card.
+x402 is the first implementation because it is the rail with no dispute path at
+all, not because the design depends on it.
+
+That is cheap to say, so it is tested rather than asserted. `seller/main.py`
+takes `--rail external`, which stops advertising the x402 challenge and accepts
+an opaque settlement id from another system instead, in the shape a card
+processor or a session rail hands out:
+
+```bash
+python seller/main.py --rail external --port 4502
+curl -s localhost:4502/quote?pair=ETH-USD                       # 402, scheme external-settlement
+curl -s -H "x-settlement-id: set_3PxQrLbGk29fVn" localhost:4502/quote?pair=ETH-USD
+```
+
+A full contested cycle runs against it in `scripts/rail.py`, and the finding is
+the point: **neither contract changed, and neither contract could tell.** The
+evidence written on chain by the external-settlement seller is byte for byte
+the shape written by the x402 one, because the settlement reference never
+reaches the chain in the first place.
+
+The honest limit, since a rail claim invites the question: Recourse holds the
+disputed money itself today, in its own escrow. Judgment is rail-free now, and
+what a second rail changes is how buyer and seller reached the escrow, not who
+holds the funds. Sitting as the arbiter inside somebody else's escrow slot is
+the next step and it is in Later, not here.
+
 ## Why GenLayer
 
 A judge has to be cheap, fast and neutral at once. Arbitration fails the first
@@ -211,15 +248,60 @@ API fails neutrality, because whoever pays for inference owns the verdict.
 **A refund system where the merchant picks the judge is a refund policy. It is
 not a dispute right.**
 
+## What judgment costs
+
+An earlier version of this file said judgment costs about a dollar a case. That
+number was inherited from published examples of a differently shaped contract
+and was never measured here, so it is gone. What replaces it is what can be read
+off a receipt and counted in the source.
+
+**On studionet the fee is zero, and that is not a discount.** `eth_gasPrice`
+returns `0x0`, every receipt reports `effectiveGasPrice` of `0`, and `gasUsed`
+comes back as exactly `8000000` on every transaction whether it ran a model or
+refused in three lines. It is the limit echoed back, not work measured. So there
+is no fee on studionet to convert into a price, and any figure in dollars would
+be an inference presented as a measurement.
+
+What is countable is the work:
+
+```
+committee                    5 nodes per round   receipt, last_round.round_validators
+model calls per node         2                   judge() asks in both orders
+model calls per adjudication 10                  at round zero, before any rotation
+prompt size                  1771 to 1961 chars  measured across all 18 cases
+                             about 470 tokens
+input tokens per dispute     about 4700
+```
+
+Each validator re-runs `judge()` in full, so the committee multiplies the calls
+rather than sharing them, and a rotation adds another round of ten. The
+judgeability gate is a separate transaction asking one question, so five more.
+
+**Half of those ten calls buy the position-bias defence**, and that was a
+deliberate trade. One presentation order would cost five. Asking in both and
+resolving a disagreement to unclear is what took accuracy from 16 of 18 to 17
+and raised unclear from 2 to 3, which was the exact published weakness, and it
+is rule 04 in [docs/RULES.md](docs/RULES.md). Doubling the model calls to stop a
+judge leaning the same way on every node is worth it.
+
+The dollar figure therefore depends on what a validator network charges for
+that work, which studionet does not set. It also has no single answer per call:
+the receipt shows each node selecting a model by policy, `policy:prd-qwen`
+choosing between the `qwen3-coder`, `qwen3.6-27b` and `gpt-5.4` families by
+success rate, so two nodes in one committee need not have run the same model.
+
+The floor on what is worth disputing is set here by the bond instead, which is
+what a losing dispute costs the buyer and is a number this repository actually
+controls.
+
 ## Later
 
 Session batching for sub cent payments. Seller bonds scaled to volume.
 Deployment as an arbiter inside an existing x402 escrow slot. A reputation index
 built from verdict history.
 
-Judgment costs about a dollar a case, so the first version targets payments above
-that line. A vague promise produces a vague verdict, and the system says so
-through the unclear outcome rather than performing confidence it has not earned.
+A vague promise produces a vague verdict, and the system says so through the
+unclear outcome rather than performing confidence it has not earned.
 
 ---
 

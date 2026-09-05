@@ -42,6 +42,33 @@ CASES = HERE / "cases.json"
 NAMES = {0: "pending", 1: "honored", 2: "not_honored", 3: "unclear"}
 TARGET = 14
 
+#: Two sets, measured and reported separately because they prove different
+#: things. v1 is the original eighteen, committed before the judgment contract
+#: existed. v2 is three cases whose answers were committed on their own, before
+#: this runner could read the file, so their ordering is provable against a
+#: measurement rather than against the code. Mixing them into one number would
+#: throw away the distinction that makes either of them worth anything.
+SETS = {"v1": CASES, "v2": HERE / "cases-v2.json"}
+
+
+def load_cases(which: str) -> list[dict]:
+    """Cases from one set, or from both with each row carrying the set it came from."""
+    names = list(SETS) if which == "all" else [which]
+    rows: list[dict] = []
+    for name in names:
+        path = SETS[name]
+        if not path.exists():
+            raise SystemExit(f"{path.name} is missing")
+        for case in json.loads(path.read_text(encoding="utf-8")):
+            rows.append({**case, "set": name})
+    seen = collections.Counter(case["id"] for case in rows)
+    duplicates = sorted(item for item, count in seen.items() if count > 1)
+    if duplicates:
+        # Two cases sharing an id would overwrite each other in the report and
+        # collide on chain, where a case id can only be opened once.
+        raise SystemExit(f"duplicate case ids across sets: {', '.join(duplicates)}")
+    return rows
+
 
 def run_once(chain: Chain, address: str, case: dict, run_index: int, session: str) -> dict:
     """
@@ -82,9 +109,13 @@ def main() -> int:
     parser.add_argument("--out", default=str(HERE / "results.json"))
     parser.add_argument("--only", default="", help="comma separated case ids")
     parser.add_argument("--address", default="", help="override the dispute instance")
+    parser.add_argument(
+        "--set", default="v1", choices=["v1", "v2", "all"],
+        help="v1 is the original eighteen, v2 the three held out cases",
+    )
     args = parser.parse_args()
 
-    cases = json.loads(CASES.read_text(encoding="utf-8"))
+    cases = load_cases(args.set)
     if args.only:
         wanted = {piece.strip() for piece in args.only.split(",") if piece.strip()}
         cases = [case for case in cases if case["id"] in wanted]
@@ -98,6 +129,7 @@ def main() -> int:
 
     print(f"network   {deployment['network']}")
     print(f"instance  {address}")
+    print(f"set       {args.set}")
     print(f"cases     {len(cases)}   runs {args.runs}\n")
 
     session = format(int(time.time()) % 100000, "05d")
@@ -129,6 +161,7 @@ def main() -> int:
                 "stable": agree,
                 "correct": correct,
                 "note": case["note"],
+                "set": case.get("set", "v1"),
             }
         )
         print(f"  {case['id']} -> {'stable' if agree else 'UNSTABLE'}, "
@@ -163,6 +196,7 @@ def main() -> int:
         "network": deployment["network"],
         "instance": address,
         "measured_at": int(time.time()),
+        "set": args.set,
         "rows": rows,
     }
     pathlib.Path(args.out).write_text(

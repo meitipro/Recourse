@@ -2,7 +2,8 @@
 """
 The seller endpoint. A price API that can be told to misbehave.
 
-    python seller/main.py                 # port 4501
+    python seller/main.py                 # port 4501, x402 challenge
+    python seller/main.py --rail external --port 4502
 
     GET  /quote?pair=ETH-USD              402 without payment proof, 200 with
     POST /admin/mode {"mode": "..."}      correct | stale | hollow | substituted
@@ -41,6 +42,30 @@ PROMISE = (
 
 MODES = ("correct", "stale", "hollow", "substituted")
 
+#: How this endpoint expects payment to be proved. The chain never sees either
+#: of these: `pay` takes a seller and a request and nothing else, so the rail is
+#: a property of the conversation in front of the escrow, not of the escrow.
+#:
+#:   x402      the challenge names the escrow scheme, proof is x-payment-proof
+#:   external  the challenge names an outside settlement system, proof is an
+#:             opaque id in x-settlement-id, in the shape a card processor or a
+#:             session rail hands out
+#:
+#: `external` exists to test the rail-agnostic claim rather than to assert it.
+#: Nothing downstream of this dictionary changes with it, which is the finding.
+RAILS = {
+    "x402": {
+        "scheme": "recourse-escrow",
+        "header": "x-payment-proof",
+        "description": "pay into the escrow, then present the payment id",
+    },
+    "external": {
+        "scheme": "external-settlement",
+        "header": "x-settlement-id",
+        "description": "settle on your own rail, then present the settlement id",
+    },
+}
+
 #: A fixed book, because the demo must produce the same thing every time it runs
 #: and a live price feed would make the recording differ from the rehearsal. The
 #: failure being demonstrated is about freshness and completeness, not about the
@@ -57,6 +82,9 @@ class State:
         self.mode = "correct"
         self.lock = threading.Lock()
         self.served = 0
+        # Fixed at startup rather than switchable, because a rail is what the
+        # endpoint is, not a state it passes through.
+        self.rail = "x402"
 
     def set(self, mode: str) -> None:
         with self.lock:
@@ -125,7 +153,10 @@ class Handler(BaseHTTPRequestHandler):
         query = urllib.parse.parse_qs(parsed.query)
 
         if parsed.path == "/health":
-            self._send(200, {"ok": True, "mode": STATE.get(), "served": STATE.served})
+            self._send(
+                200,
+                {"ok": True, "mode": STATE.get(), "served": STATE.served, "rail": STATE.rail},
+            )
             return
 
         if parsed.path == "/promise":
@@ -136,19 +167,22 @@ class Handler(BaseHTTPRequestHandler):
 
         if parsed.path == "/quote":
             pair = (query.get("pair") or ["ETH-USD"])[0]
-            proof = self.headers.get("x-payment-proof") or (query.get("pid") or [""])[0]
+            rail = RAILS[STATE.rail]
+            proof = self.headers.get(rail["header"]) or (query.get("pid") or [""])[0]
             if not proof:
-                # x402 shaped: say what payment is required and how.
+                # 402 shaped: say what payment is required and how. Which rail
+                # is named here is the only thing that differs between the two,
+                # and nothing on chain reads it.
                 self._send(
                     402,
                     {
                         "error": "payment required",
                         "accepts": [
                             {
-                                "scheme": "recourse-escrow",
+                                "scheme": rail["scheme"],
                                 "network": "genlayer-studionet",
-                                "description": "pay into the escrow, then present the payment id",
-                                "header": "x-payment-proof",
+                                "description": rail["description"],
+                                "header": rail["header"],
                             }
                         ],
                         "promise": PROMISE,
@@ -200,9 +234,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=4501)
     parser.add_argument("--mode", default="correct", choices=MODES)
+    parser.add_argument(
+        "--rail", default="x402", choices=sorted(RAILS),
+        help="which settlement scheme the 402 challenge names",
+    )
     args = parser.parse_args()
 
     STATE.set(args.mode)
+    STATE.rail = args.rail
 
     try:
         from shared.chain import load_accounts
@@ -213,7 +252,10 @@ def main() -> int:
         print(f"  no seller key ({str(error)[:70]}), responses will be unsigned")
 
     server = ThreadingHTTPServer(("0.0.0.0", args.port), Handler)
-    print(f"seller endpoint on http://localhost:{args.port}  mode={STATE.get()}")
+    print(
+        f"seller endpoint on http://localhost:{args.port}  "
+        f"mode={STATE.get()}  rail={STATE.rail} ({RAILS[STATE.rail]['header']})"
+    )
     print(f"  GET  /quote?pair=ETH-USD   POST /admin/mode   GET /promise")
     try:
         server.serve_forever()
