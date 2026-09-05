@@ -133,8 +133,8 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 146 direct tests
-python scripts/mutate.py --table docs/MUTATIONS.md   # 30 defences, each verified
+python scripts/test.py         # house style, both contracts linted, 149 direct tests
+python scripts/mutate.py --table docs/MUTATIONS.md   # 31 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
 RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # 26 live checks
@@ -143,7 +143,7 @@ python eval/run.py --runs 3    # the published accuracy number, on chain
 
 A green suite says the tests agree with the code, not that they would notice if
 the code were wrong. `scripts/mutate.py` deletes one defence at a time across
-both contracts and records which test noticed. **30 of 30 are caught**, and
+both contracts and records which test noticed. **31 of 31 are caught**, and
 every row is in [docs/MUTATIONS.md](docs/MUTATIONS.md) with its catching test.
 The generator refuses to write that file if anything escapes, so the file
 existing is itself the claim.
@@ -171,8 +171,8 @@ Two of the tests are structural rather than behavioural:
 
 ## Contracts
 
-    escrow    0x6a226d9B0E813C5D95277bf92fdB341A7bA1b342
-    dispute   0x48E6088B871E76b1bD59c4BAd3d5b074799C60F7
+    escrow    0xbeA09Dbfb845220f0Dd55f4197097b50AEb32d4d
+    dispute   0x7b216144a349347A3050dC7D85C37b56683d062D
     network   studionet, chain id 61999
 
 Verify with `python scripts/verify.py`, which reads the source back off the
@@ -186,11 +186,11 @@ A page showing only successes proves the file compiles. Refusing is what this
 contract is for, so the refusals are on chain deliberately and
 `python scripts/evidence.py` records them into `deployed.json`:
 
-| what was attempted | what the chain says |
-| --- | --- |
-| `settle` from an ordinary account | `[EXPECTED] not authorised` |
-| a seller clearing its own judgeability flag | `[EXPECTED] not authorised` |
-| unwinding a dispute that is not stuck | refused |
+| what was attempted | what the chain says | transaction |
+| --- | --- | --- |
+| `settle` | `[EXPECTED] not authorised` | [0x8c286952...](https://explorer-studio.genlayer.com/tx/0x8c286952d728e55dc55b6c8527c08d9cc51cd85da931f8ef0123f3009bc03f71) |
+| `set_judgeable` | `[EXPECTED] not authorised` | [0x2ae60a8e...](https://explorer-studio.genlayer.com/tx/0x2ae60a8e69335634eb96f710c831e0d37d13f975a3fb9600a09a7f256b40dbd3) |
+| `reclaim` | `[EXPECTED] not disputed` | [0xd539d405...](https://explorer-studio.genlayer.com/tx/0xd539d405adb3749ef7987c9e44e48021664ac995b32423b1f5030dabb1909fdf) |
 
 Every one is ACCEPTED with an execution result of ERROR. That is not a
 contradiction and it is the thing worth understanding about this protocol: a
