@@ -51,3 +51,8 @@ session   11326
 
   10 run 1  ok   expected not_honored  got not_honored   13.2s
   10 run 2  ok   expected not_honored  got not_honored   28.4s
+  10 run 3  ok   expected not_honored  got not_honored   39.5s
+  10 -> stable, correct
+
+  11 run 1  ok   expected not_honored  got not_honored   20.2s
+  11 run 2  ok   expected not_honored  got not_honored   21.2s

@@ -114,3 +114,61 @@ if __name__ == "__main__":
     for line in failures:
         print("  FAIL", line)
     sys.exit(1 if failures else 0)
+
+
+# --- the simulator has to model the runtime it stands in for --------------
+
+
+def test_the_double_compares_addresses_the_way_a_node_does():
+    """
+    A node compares twenty raw bytes. A simulator that compares hex strings
+    case-sensitively passes a test the chain would fail, and the contract keys
+    a TreeMap by Address, so a case difference would silently miss every lookup.
+    """
+    import genvm_double as D
+
+    lower = D.Address("0x" + "ab" * 20)
+    upper = D.Address("0x" + "AB" * 20)
+    assert lower == upper
+    assert hash(lower) == hash(upper)
+    assert {lower: 1}[upper] == 1
+
+    w = World()
+    w.register(who="0x" + "ab" * 20)
+    assert w.seller("0x" + "AB" * 20)["promise"] == w.PROMISE, (
+        "a seller registered in one casing must be found in the other"
+    )
+
+
+def test_the_leader_and_the_validator_can_see_different_answers():
+    """
+    Every mocking framework feeds both nodes the same data by default, which is
+    exactly why a contract that quietly assumes both see identical bytes passes
+    its suite and fails on a real network. Here they draw from a queue
+    separately, so they can and do differ, and the disagreement tests depend on
+    it working that way.
+    """
+    import json as _json
+
+    import genvm_double as D
+
+    w = World().with_dispute()
+    w.register()
+    pid = w.pay()
+    w.record(pid)
+    w.dispute_it(pid)
+
+    w.gl.nondet.answers = [
+        _json.dumps({"verdict": "honored", "reason": "leader, both orders"}),
+        _json.dumps({"verdict": "honored", "reason": "leader, both orders"}),
+        _json.dumps({"verdict": "not_honored", "reason": "validator, both orders"}),
+        _json.dumps({"verdict": "not_honored", "reason": "validator, both orders"}),
+    ]
+    try:
+        w.gl.bus.deliver(w.gl)
+    except D.VMError:
+        pass
+    else:
+        raise AssertionError("two nodes reaching different verdicts must not agree")
+    assert w.gl.bus.validator_votes == [False]
+    assert len(w.gl.nondet.prompts) == 4
