@@ -154,6 +154,26 @@ That is the mechanism working. `run_nondet_unsafe` treats an unhandled validator
 exception as a disagreement, and the error classification is written inside the
 validator rather than delegated to a sandbox.
 
+## Whether these tests would notice
+
+Every claim above names a test. A test that exists and passes is weaker evidence
+than it looks, because it says the suite agrees with the code rather than that
+the suite would catch the code being wrong.
+
+`scripts/mutate.py` settles that. It copies the contract to a scratch directory,
+deletes one guard at a time, and runs the suite against each broken version:
+
+    settle accepts any caller                    KILLED
+    withdraw before the window closes            KILLED
+    dispute without a recorded response          KILLED
+    settle pays the buyer twice                  KILLED
+    the bond is never added to held              KILLED
+    a response can be overwritten                KILLED
+    paying does not count as a live payment      KILLED
+
+Seven of seven. If a mutant ever survives, the guard it removed has no test and
+the fix is to write one, not to remove the mutant.
+
 ## Three limits, stated rather than apologised for
 
 **A dispute that never returns a verdict holds the money.** If the judgment

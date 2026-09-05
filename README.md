@@ -125,9 +125,20 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py     # house style, both contracts linted, 125 direct tests
+python scripts/test.py         # house style, both contracts linted, 125 direct tests
+python scripts/mutate.py       # break the escrow seven ways, check the suite notices
+python scripts/verify.py       # the deployed bytes still match this repository
+python tests/integration/test_cycle.py    # 26 checks against the live pair
 python eval/run.py --runs 3    # the published accuracy number, on chain
 ```
+
+A green suite says the tests agree with the code, not that they would notice if
+the code were wrong. `scripts/mutate.py` deletes one guard at a time and checks
+the suite goes red: settle accepting any caller, withdrawing before the window
+closes, disputing with no recorded response, paying the buyer twice, the bond
+never reaching `held`, a response being overwritten, a payment not counting as
+live. **All seven are caught.** A guard is worth exactly as much as the test
+that fails when you remove it.
 
 The direct tests run the real contract files against a thin test double, because
 `genlayer-test` downloads a GenVM binary and there is no Windows build. They
