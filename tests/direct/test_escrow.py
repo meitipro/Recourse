@@ -731,7 +731,7 @@ def test_a_seller_the_gate_refused_can_change_the_promise_and_ask_again():
     assert emitted.args[1] == fresh, "the escrow sends its own stored promise"
 
 
-def test_a_review_cannot_be_asked_for_twice_on_the_same_promise():
+def test_a_review_cannot_be_asked_for_twice_on_a_promise_already_ruled_on():
     """
     Somewhere to go must not mean asking the same question until the answer
     suits. The way back is to change the thing that was judged.
@@ -740,6 +740,12 @@ def test_a_review_cannot_be_asked_for_twice_on_the_same_promise():
     w.register()
     w.sender(w.SELLER)
     w.escrow.request_review()
+
+    # The ruling comes back. Only now is this promise recorded as reviewed.
+    w.gl.message.sender_address = D.Address(w.DISPUTE)
+    w.gl.bus.current = D.Address(w.ESCROW)
+    w.escrow.set_judgeable(w.SELLER, False)
+
     w.sender(w.SELLER)
     raises("promise unchanged", w.escrow.request_review)
 
@@ -747,6 +753,25 @@ def test_a_review_cannot_be_asked_for_twice_on_the_same_promise():
     w.escrow.update_promise("A different promise, stated with a number: at least three venues.")
     w.sender(w.SELLER)
     w.escrow.request_review()
+
+
+def test_a_gate_ruling_that_never_arrives_does_not_burn_the_promise():
+    """
+    The dead end this method exists to remove, reintroduced by recording the
+    review on the request rather than on the ruling. A gate transaction that
+    fails for any reason would otherwise leave the seller unable to have that
+    promise reviewed ever again, and changing it back would hash the same.
+    """
+    w = World().wired()
+    w.register()
+    w.sender(w.SELLER)
+    w.escrow.request_review()
+    w.gl.bus.emissions.clear()  # the ruling never lands
+
+    w.sender(w.SELLER)
+    w.escrow.request_review()
+    assert w.gl.bus.emissions[-1].method == "check_promise"
+    assert w.seller()["reviewed"] == "", "nothing was ruled, so nothing is recorded"
 
 
 def test_request_review_needs_a_registration_a_wiring_and_no_live_payments():

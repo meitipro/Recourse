@@ -6,7 +6,7 @@ Each row is a defence deleted on purpose and the test that noticed. The
 generator refuses to write this file if anything escapes, so its existence
 is the claim and the rows are the evidence.
 
-**30 of 30 defences verified.**
+**31 of 31 defences verified.**
 
 | contract | defence removed | caught by |
 | --- | --- | --- |
@@ -27,7 +27,8 @@ is the claim and the rows are the evidence.
 | escrow | a dispute can be unwound while judgment still runs | `test_reclaim_is_refused_while_the_judgment_could_still_land` |
 | escrow | a stranger may unwind a dispute | `test_reclaim_is_refused_by_a_stranger_and_on_an_undisputed_payment` |
 | escrow | unwinding pays the buyer the whole payment | `test_a_dispute_that_never_decides_can_be_unwound_by_either_party` |
-| escrow | a review can be asked for repeatedly on one promise | `test_a_review_cannot_be_asked_for_twice_on_the_same_promise` |
+| escrow | a review can be asked for repeatedly on one promise | `test_a_review_cannot_be_asked_for_twice_on_a_promise_already_ruled_on` |
+| escrow | a gate ruling that never lands still burns the promise | `test_a_review_cannot_be_asked_for_twice_on_a_promise_already_ruled_on` |
 | dispute | the promise reaches the model unfenced | `test_every_untrusted_string_is_fenced` |
 | dispute | the request reaches the model unfenced | `test_every_untrusted_string_is_fenced` |
 | dispute | the response reaches the model unfenced | `test_every_untrusted_string_is_fenced` |

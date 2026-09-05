@@ -30,3 +30,24 @@ session   11326
   05 -> stable, correct
 
   06 run 1  ok   expected honored      got honored       22.7s
+  06 run 2  ok   expected honored      got honored       21.6s
+  06 run 3  ok   expected honored      got honored       24.4s
+  06 -> stable, correct
+
+  07 run 1  ok   expected unclear      got unclear       34.3s
+  07 run 2  ok   expected unclear      got unclear       54.1s
+  07 run 3  MISS expected unclear      got error         81.3s
+  07 -> UNSTABLE, correct
+
+  08 run 1  ok   expected unclear      got unclear       20.4s
+  08 run 2  ok   expected unclear      got unclear       16.5s
+  08 run 3  ok   expected unclear      got unclear       21.0s
+  08 -> stable, correct
+
+  09 run 1  ok   expected honored      got honored       18.0s
+  09 run 2  ok   expected honored      got honored       14.3s
+  09 run 3  ok   expected honored      got honored       22.9s
+  09 -> stable, correct
+
+  10 run 1  ok   expected not_honored  got not_honored   13.2s
+  10 run 2  ok   expected not_honored  got not_honored   28.4s

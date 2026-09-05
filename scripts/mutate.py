@@ -115,9 +115,10 @@ MUTANTS = [
      "self._send(payment.buyer, payment.amount)\n"
      "        self._send(payment.buyer, payment.bond)"),
     ("escrow", "a review can be asked for repeatedly on one promise",
-     "if entry.reviewed == digest:\n"
-     '            raise gl.vm.UserError(E + "promise unchanged since the last review")',
-     'if False:\n            raise gl.vm.UserError(E + "promise unchanged since the last review")'),
+     "if entry.reviewed == _digest(entry.promise):", "if False:"),
+    ("escrow", "a gate ruling that never lands still burns the promise",
+     "self.sellers[key].reviewed = _digest(self.sellers[key].promise)",
+     "self.sellers[key].reviewed = self.sellers[key].reviewed"),
     # -- the judgment ------------------------------------------------------
     ("dispute", "the promise reaches the model unfenced",
      "promise=_fence(promise),", "promise=promise,"),

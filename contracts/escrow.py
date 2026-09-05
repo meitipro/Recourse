@@ -284,6 +284,10 @@ class RecourseEscrow(gl.Contract):
         if key not in self.sellers:
             raise gl.vm.UserError(E + "unknown seller")
         self.sellers[key].judgeable = ok
+        # The ruling has landed, so this promise has now been reviewed. Recorded
+        # here rather than when the review was requested, so a gate transaction
+        # that never arrives leaves the seller able to ask again.
+        self.sellers[key].reviewed = _digest(self.sellers[key].promise)
 
     @gl.public.write
     def set_active(self, active: bool) -> None:
@@ -488,11 +492,15 @@ class RecourseEscrow(gl.Contract):
             raise gl.vm.UserError(E + "dispute contract not set")
         if entry.live != u32(0):
             raise gl.vm.UserError(E + "open payments")
-        digest = _digest(entry.promise)
-        if entry.reviewed == digest:
+        if entry.reviewed == _digest(entry.promise):
             raise gl.vm.UserError(E + "promise unchanged since the last review")
 
-        self.sellers[who].reviewed = digest
+        # The digest is recorded by set_judgeable when a ruling actually comes
+        # back, not here. Recording it on the request would mean a gate
+        # transaction that failed for any reason burned that promise for good:
+        # the seller could never have it reviewed again, and changing it back
+        # would hash to the same value. That is a dead end, which is the thing
+        # this method exists to remove.
         gl.get_contract_at(self.dispute_contract).emit(on="finalized").check_promise(
             who.as_hex, entry.promise
         )
