@@ -29,3 +29,4 @@ session   11326
   05 run 3  ok   expected not_honored  got not_honored   24.4s
   05 -> stable, correct
 
+  06 run 1  ok   expected honored      got honored       22.7s
