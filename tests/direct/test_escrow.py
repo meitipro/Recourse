@@ -236,7 +236,8 @@ def test_recent_rows_carries_no_evidence_bodies():
     row = json.loads(blob)[0]
     assert set(row) == {
         "pid", "buyer", "seller", "amount", "bond", "created_at", "responded_at",
-        "window_ends", "has_response", "signed", "recorded_by", "status", "verdict",
+        "window_ends", "dispute_ends", "has_response", "signed", "recorded_by",
+        "status", "verdict",
     }
 
 
@@ -629,6 +630,153 @@ def test_settle_cannot_be_replayed():
     assert w.paid_to(w.BUYER) == 5 * ONE_GEN, "the second call must move nothing"
 
 
+# --- routes out -----------------------------------------------------------
+# A refusal, or a judgment that never arrives, has to leave the refused party
+# somewhere to go. Each of these is tested as a journey to the end, not as a
+# single call, and the other half is tested too: somewhere to go must not mean
+# asking the same question until the answer suits.
+
+
+def test_a_dispute_that_never_decides_can_be_unwound_by_either_party():
+    for who in ("BUYER", "SELLER"):
+        w = World(dispute=3600).wired()
+        w.register()
+        pid = w.pay(amount=4 * ONE_GEN)
+        w.record(pid)
+        w.dispute_it(pid)
+        assert w.payment(pid)["dispute_ends"] == w.t + 3600
+
+        w.advance(3601)
+        w.sender(getattr(w, who))
+        w.escrow.reclaim(pid)
+
+        row = w.payment(pid)
+        assert row["status"] == ST_RESOLVED
+        assert row["verdict"] == V_UNCLEAR, "a failed judgment is not a finding against anyone"
+        assert w.paid_to(w.SELLER) == 4 * ONE_GEN
+        assert w.paid_to(w.BUYER) == ONE_GEN
+        assert w.seller()["upheld"] == 0
+        assert w.seller()["live"] == 0
+        w.check_invariants()
+
+
+def test_reclaim_is_refused_while_the_judgment_could_still_land():
+    w = World(dispute=3600).wired()
+    w.register()
+    pid = w.pay()
+    w.record(pid)
+    w.dispute_it(pid)
+    for offset in (0, 1, 3600):
+        w.at(w.payment(pid)["dispute_ends"] - 3600 + offset)
+        w.sender(w.BUYER)
+        raises("judgment still running", w.escrow.reclaim, pid)
+    assert w.transfers() == []
+
+
+def test_reclaim_is_refused_by_a_stranger_and_on_an_undisputed_payment():
+    w = World(dispute=10).wired()
+    w.register()
+    pid = w.pay()
+    w.record(pid)
+    w.sender(w.BUYER)
+    raises("not disputed", w.escrow.reclaim, pid)
+    w.dispute_it(pid)
+    w.advance(11)
+    for who in (w.STRANGER, w.OWNER):
+        w.sender(who)
+        raises("not a party", w.escrow.reclaim, pid)
+
+
+def test_a_late_verdict_cannot_pay_a_reclaimed_payment_twice():
+    """
+    The whole point of the guard. A judgment that arrives after the unwind finds
+    the payment RESOLVED and is refused by settle's own status check.
+    """
+    w = World(dispute=10).wired()
+    w.register()
+    pid = w.pay(amount=4 * ONE_GEN)
+    w.record(pid)
+    w.dispute_it(pid)
+    w.advance(11)
+    w.sender(w.BUYER)
+    w.escrow.reclaim(pid)
+    paid_once = sum(t.value for t in w.transfers())
+
+    w.gl.message.sender_address = D.Address(w.DISPUTE)
+    w.gl.bus.current = D.Address(w.ESCROW)
+    raises("not disputed", w.escrow.settle, pid, D.u8(V_NOT_HONORED), "late")
+    assert sum(t.value for t in w.transfers()) == paid_once
+    w.check_invariants()
+
+
+def test_a_seller_the_gate_refused_can_change_the_promise_and_ask_again():
+    w = World().wired()
+    w.register()
+    w.gl.message.sender_address = D.Address(w.DISPUTE)
+    w.gl.bus.current = D.Address(w.ESCROW)
+    w.escrow.set_judgeable(w.SELLER, False)
+
+    w.sender(w.BUYER, ONE_GEN)
+    raises("promise not judgeable", w.escrow.pay, w.SELLER, "GET /quote")
+
+    fresh = "Returns at least ten items, each with a title and a url, refreshed within ten seconds."
+    w.sender(w.SELLER)
+    w.escrow.update_promise(fresh)
+    w.sender(w.SELLER)
+    w.escrow.request_review()
+
+    emitted = w.gl.bus.emissions[-1]
+    assert emitted.method == "check_promise"
+    assert emitted.to.lower() == w.DISPUTE.lower()
+    assert emitted.args[1] == fresh, "the escrow sends its own stored promise"
+
+
+def test_a_review_cannot_be_asked_for_twice_on_the_same_promise():
+    """
+    Somewhere to go must not mean asking the same question until the answer
+    suits. The way back is to change the thing that was judged.
+    """
+    w = World().wired()
+    w.register()
+    w.sender(w.SELLER)
+    w.escrow.request_review()
+    w.sender(w.SELLER)
+    raises("promise unchanged", w.escrow.request_review)
+
+    w.sender(w.SELLER)
+    w.escrow.update_promise("A different promise, stated with a number: at least three venues.")
+    w.sender(w.SELLER)
+    w.escrow.request_review()
+
+
+def test_request_review_needs_a_registration_a_wiring_and_no_live_payments():
+    w = World()
+    w.sender(w.STRANGER)
+    raises("not registered", w.escrow.request_review)
+
+    w.register()
+    w.sender(w.SELLER)
+    raises("dispute contract not set", w.escrow.request_review)
+
+    w2 = World().wired()
+    w2.register()
+    w2.pay()
+    w2.sender(w2.SELLER)
+    raises("open payments", w2.escrow.request_review)
+
+
+def test_the_seller_cannot_submit_a_promise_it_does_not_serve_under():
+    """
+    request_review takes no argument. The promise reviewed is the one in storage,
+    so a seller cannot have a good promise judged and serve against another.
+    """
+    import inspect
+
+    source = inspect.getsource(World().escrow_mod.RecourseEscrow.request_review)
+    assert "def request_review(self) -> None:" in source
+    assert "entry.promise" in source
+
+
 # --- admin ----------------------------------------------------------------
 
 
@@ -767,8 +915,10 @@ def test_the_public_surface_is_exactly_the_specified_one():
     assert sorted(w.gl.public.writes) == [
         "open_dispute",
         "pay",
+        "reclaim",
         "record_response",
         "register_seller",
+        "request_review",
         "set_active",
         "set_dispute_contract",
         "set_judgeable",

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import pathlib
 import sys
 
@@ -58,6 +59,40 @@ def deployed_source(chain: Chain, address: str) -> str:
     return str(value)
 
 
+def _lint_deployed(name: str, source: str) -> int:
+    """
+    Run the linter over the bytes that came back off the chain.
+
+    Linting the repository proves the repository is clean. A reviewer runs the
+    linter on the deployed source, and a submission has been rejected for a lint
+    error that existed only there. The two are the same file here only because
+    the diff above just said so, which is exactly why this runs after it and not
+    instead of it.
+    """
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="recourse-deployed-") as tmp:
+        target = pathlib.Path(tmp) / f"{name}.py"
+        target.write_text(source + "\n", encoding="utf-8")
+        env = dict(os.environ, PYTHONIOENCODING="utf-8")
+        # Never shell=True: this repository lives under a path with a space in
+        # it and the shell splits on it, so the linter reports an unrecognised
+        # argument for every file and it reads as a broken tool.
+        result = subprocess.run(
+            ["genvm-lint", "lint", str(target)], capture_output=True, text=True, env=env
+        )
+        # `check` prints a green validation line underneath a lint failure, so
+        # the first line and the exit code are what count, never the last line.
+        first = (result.stdout.strip().splitlines() or [""])[0]
+        if result.returncode != 0:
+            print(f"  LINT FAILED on the deployed bytes: {first}")
+            print("   " + (result.stdout + result.stderr)[:400])
+            return 1
+        print(f"  deployed bytes lint clean ({first})")
+        return 0
+
+
 def main() -> int:
     deployment = load_deployment()
     chain = Chain(load_accounts()["owner"])
@@ -77,6 +112,7 @@ def main() -> int:
 
         if onchain == local:
             print(f"  source matches {path} ({len(local)} bytes)")
+            failures += _lint_deployed(name, onchain)
         else:
             failures += 1
             print(f"  MISMATCH against {path}")

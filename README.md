@@ -133,12 +133,18 @@ python eval/run.py --runs 3    # the published accuracy number, on chain
 ```
 
 A green suite says the tests agree with the code, not that they would notice if
-the code were wrong. `scripts/mutate.py` deletes one guard at a time and checks
-the suite goes red: settle accepting any caller, withdrawing before the window
-closes, disputing with no recorded response, paying the buyer twice, the bond
-never reaching `held`, a response being overwritten, a payment not counting as
-live. **All seven are caught.** A guard is worth exactly as much as the test
-that fails when you remove it.
+the code were wrong. `scripts/mutate.py` deletes one defence at a time across
+both contracts and records which test noticed. **30 of 30 are caught**, and
+every row is in [docs/MUTATIONS.md](docs/MUTATIONS.md) with its catching test.
+The generator refuses to write that file if anything escapes, so the file
+existing is itself the claim.
+
+It has already earned its keep twice. It found two real coverage gaps, a
+validator that would accept a verdict outside the closed set when both nodes
+produced it and a model failure that could count as agreement. And an earlier
+version of the runner reported a perfect score while testing nothing, because it
+copied too few directories, pytest failed to collect, and any non-zero exit was
+read as a kill. Requiring a named catching test is what exposed that.
 
 The direct tests run the real contract files against a thin test double, because
 `genlayer-test` downloads a GenVM binary and there is no Windows build. They

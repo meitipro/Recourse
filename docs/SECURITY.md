@@ -160,19 +160,24 @@ Every claim above names a test. A test that exists and passes is weaker evidence
 than it looks, because it says the suite agrees with the code rather than that
 the suite would catch the code being wrong.
 
-`scripts/mutate.py` settles that. It copies the contract to a scratch directory,
-deletes one guard at a time, and runs the suite against each broken version:
+`scripts/mutate.py` settles that. It copies both contracts and everything the
+suite imports to a scratch directory, deletes one defence at a time, and records
+which test went red. **30 of 30 are caught**, listed with their catching test in
+[MUTATIONS.md](MUTATIONS.md). The generator will not write that table if anything
+escapes: a document listing defences it could not verify reads as coverage and is
+worse than no document.
 
-    settle accepts any caller                    KILLED
-    withdraw before the window closes            KILLED
-    dispute without a recorded response          KILLED
-    settle pays the buyer twice                  KILLED
-    the bond is never added to held              KILLED
-    a response can be overwritten                KILLED
-    paying does not count as a live payment      KILLED
+Two of the tests above exist only because mutation found the gap:
+`test_an_out_of_set_verdict_is_refused_even_when_both_nodes_produce_it` and
+`test_two_model_failures_disagree_rather_than_agreeing_on_nothing`. Review had
+not found either.
 
-Seven of seven. If a mutant ever survives, the guard it removed has no test and
-the fix is to write one, not to remove the mutant.
+**A caution about the runner itself.** An earlier version copied only three
+directories, so pytest could not collect, exited non-zero, and every mutation was
+scored as killed. It reported seven of seven while testing nothing, and that
+number was published before it was caught. Requiring each kill to name the test
+that produced it is what exposed it, and the runner now also refuses to start
+unless the unmutated suite is green.
 
 ## Three limits, stated rather than apologised for
 

@@ -237,3 +237,24 @@ def report() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# --- the gate a reviewer's machine needs ----------------------------------
+# Anybody who reviews GenLayer contracts has genlayer-test installed, so this
+# file is collected by a plain `pytest tests/`. Everything above needs a funded
+# account and a reachable network, and nothing in a network failure's output
+# distinguishes an unreachable node from a broken contract.
+#
+# The gate is an explicit environment variable, not a probe. A probe was the
+# obvious answer and is the wrong one: the transport failures here are
+# intermittent, so it would answer correctly most of the time, which is worse
+# than no gate at all.
+def test_the_full_cycle_on_a_live_network():
+    """Set RECOURSE_INTEGRATION=1 to run this. It takes minutes and spends GEN."""
+    import os
+
+    import pytest
+
+    if os.environ.get("RECOURSE_INTEGRATION") != "1":
+        pytest.skip("set RECOURSE_INTEGRATION=1 to run against a live deployment")
+    assert main() == 0

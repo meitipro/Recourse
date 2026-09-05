@@ -14,6 +14,7 @@ separate contract and nothing here reads a model, a clock of its own, or the web
 """
 
 import datetime
+import hashlib
 import json
 from dataclasses import dataclass
 
@@ -82,6 +83,14 @@ def _iso(seconds: int) -> str:
     return (_EPOCH + datetime.timedelta(seconds=int(seconds))).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _digest(text: str) -> str:
+    """
+    sha256 of a promise, so the gate can tell a changed promise from a repeat
+    request without a second copy of the string in storage.
+    """
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 # --- payout ---------------------------------------------------------------
 # A buyer and a seller are ordinary accounts, and an ordinary account lives on
 # the chain layer rather than in GenVM. gl.get_contract_at(addr).emit_transfer()
@@ -119,6 +128,10 @@ class Seller:
     #: derived by scanning payment_ids, because that scan grows without bound
     #: and would eventually make update_promise impossible to execute.
     live: u32
+    #: sha256 of the promise the judgeability gate last ruled on, or empty.
+    #: A seller the gate refused may change their promise and ask again; this is
+    #: what stops them asking the same question until the answer suits.
+    reviewed: str
 
 
 @allow_storage
@@ -144,6 +157,11 @@ class Payment:
     #: is what a freshness promise has to be judged against.
     responded_at: u64
     window_ends: u64
+    #: After this, a dispute that never produced a verdict can be unwound by
+    #: either party. Zero until a dispute is opened. Without it a judgment that
+    #: never lands holds both the payment and the bond permanently, and neither
+    #: side has anywhere to go.
+    dispute_ends: u64
     bond: u256
     status: u8
     verdict: u8
@@ -157,6 +175,9 @@ class RecourseEscrow(gl.Contract):
     dispute_contract: Address
     #: Settlement window in seconds. Minutes, not hours.
     window_seconds: u32
+    #: How long a dispute may sit undecided before either party can unwind it.
+    #: Long enough that a slow round is never mistaken for a dead one.
+    dispute_seconds: u32
     #: What a buyer stakes to contest, sized to the cost of one adjudication.
     bond_amount: u256
     #: Monotonic payment counter. Payment ids are derived from it rather than
@@ -170,10 +191,11 @@ class RecourseEscrow(gl.Contract):
     #: Append only, newest last. The feed reads it through recent().
     payment_ids: DynArray[str]
 
-    def __init__(self, window_seconds: u32, bond_amount: u256):
+    def __init__(self, window_seconds: u32, bond_amount: u256, dispute_seconds: u32 = u32(3600)):
         self.owner = gl.message.sender_address
         self.dispute_contract = ZERO
         self.window_seconds = window_seconds
+        self.dispute_seconds = dispute_seconds
         self.bond_amount = bond_amount
         self.seq = u64(0)
         self.held = u256(0)
@@ -233,6 +255,7 @@ class RecourseEscrow(gl.Contract):
             total=u32(0),
             upheld=u32(0),
             live=u32(0),
+            reviewed="",
         )
 
     @gl.public.write
@@ -300,6 +323,7 @@ class RecourseEscrow(gl.Contract):
             created_at=now,
             responded_at=u64(0),
             window_ends=u64(now + u64(self.window_seconds)),
+            dispute_ends=u64(0),
             bond=u256(0),
             status=ST_OPEN,
             verdict=V_NONE,
@@ -377,6 +401,7 @@ class RecourseEscrow(gl.Contract):
 
         self.payments[pid].bond = gl.message.value
         self.payments[pid].status = ST_DISPUTED
+        self.payments[pid].dispute_ends = u64(self._now() + u64(self.dispute_seconds))
         self.held = u256(self.held + gl.message.value)
 
         promise = self.sellers[payment.seller].promise
@@ -403,6 +428,73 @@ class RecourseEscrow(gl.Contract):
         # settle's own status check, because the payment is no longer DISPUTED.
         gl.get_contract_at(self.dispute_contract).emit(on="accepted").adjudicate(
             pid, promise, payment.request, payment.response, timing
+        )
+
+    @gl.public.write
+    def reclaim(self, pid: str) -> None:
+        """
+        Unwind a dispute that never produced a verdict.
+
+        A refusal has to leave the refused party somewhere to go, and so does a
+        judgment that never arrives. Without this a round that cannot reach
+        consensus holds the payment and the bond permanently, with neither side
+        able to do anything about it, and the contract describes a settlement it
+        can no longer perform.
+
+        Either party may call it, because both are stuck and neither can force
+        the other to. It applies the unclear split: the payment stands with the
+        seller, the bond goes back to the buyer. That is the right answer when
+        the judgment failed rather than when a party did, and it is deliberately
+        not attractive to a buyer who might otherwise stall for it: contesting
+        and then waiting out the clock gets the bond back and nothing else, which
+        is exactly what dropping the dispute would have got them.
+
+        A verdict that lands late finds the payment RESOLVED and is refused by
+        settle's own status check, so this can never pay twice.
+        """
+        payment = self._payment(pid)
+        who = gl.message.sender_address
+        if who != payment.buyer and who != payment.seller:
+            raise gl.vm.UserError(E + "not a party")
+        if payment.status != ST_DISPUTED:
+            raise gl.vm.UserError(E + "not disputed")
+        if self._now() <= payment.dispute_ends:
+            raise gl.vm.UserError(E + "judgment still running")
+
+        self.payments[pid].status = ST_RESOLVED
+        self.payments[pid].verdict = V_UNCLEAR
+        self.sellers[payment.seller].live = u32(self.sellers[payment.seller].live - u32(1))
+        self._send(payment.seller, payment.amount)
+        self._send(payment.buyer, payment.bond)
+
+    @gl.public.write
+    def request_review(self) -> None:
+        """
+        Ask the judgeability gate to look again, after changing the promise.
+
+        A seller the gate refused would otherwise have nowhere to go: pay refuses
+        them, and only the dispute contract can clear the flag. This is the route
+        out, and the guard is what stops it being a way to ask the same question
+        until the answer suits. The promise must have changed since the last
+        review, and the escrow sends the promise from its own storage rather than
+        one the caller supplies, so a seller cannot submit one promise for review
+        and serve against another.
+        """
+        who = gl.message.sender_address
+        if who not in self.sellers:
+            raise gl.vm.UserError(E + "not registered")
+        entry = self.sellers[who]
+        if self.dispute_contract == ZERO:
+            raise gl.vm.UserError(E + "dispute contract not set")
+        if entry.live != u32(0):
+            raise gl.vm.UserError(E + "open payments")
+        digest = _digest(entry.promise)
+        if entry.reviewed == digest:
+            raise gl.vm.UserError(E + "promise unchanged since the last review")
+
+        self.sellers[who].reviewed = digest
+        gl.get_contract_at(self.dispute_contract).emit(on="finalized").check_promise(
+            who.as_hex, entry.promise
         )
 
     @gl.public.write
@@ -461,6 +553,7 @@ class RecourseEscrow(gl.Contract):
                 "created_at": int(payment.created_at),
                 "responded_at": int(payment.responded_at),
                 "window_ends": int(payment.window_ends),
+                "dispute_ends": int(payment.dispute_ends),
                 "bond": str(int(payment.bond)),
                 "status": int(payment.status),
                 "verdict": int(payment.verdict),
@@ -484,6 +577,7 @@ class RecourseEscrow(gl.Contract):
                 "total": int(entry.total),
                 "upheld": int(entry.upheld),
                 "live": int(entry.live),
+                "reviewed": entry.reviewed,
             },
             sort_keys=True,
         )
@@ -537,6 +631,7 @@ class RecourseEscrow(gl.Contract):
                     "created_at": int(payment.created_at),
                     "responded_at": int(payment.responded_at),
                     "window_ends": int(payment.window_ends),
+                    "dispute_ends": int(payment.dispute_ends),
                     "has_response": payment.response != "",
                     "signed": payment.response_sig != "",
                     "recorded_by": payment.recorded_by.as_hex,

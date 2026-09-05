@@ -84,7 +84,7 @@ class World:
         "least three venues, with a timestamp no more than five seconds old."
     )
 
-    def __init__(self, window: int = 300, bond: int = ONE_GEN) -> None:
+    def __init__(self, window: int = 300, bond: int = ONE_GEN, dispute: int = 3600) -> None:
         self.gl = D.GL()
         self.t = 1757009000
         self.at(self.t)
@@ -95,7 +95,7 @@ class World:
         self.sender(self.OWNER)
         self.gl.bus.current = D.Address(self.ESCROW)
         self.gl.message.contract_address = D.Address(self.ESCROW)
-        self.escrow = self.escrow_mod.RecourseEscrow(D.u32(window), D.u256(bond))
+        self.escrow = self.escrow_mod.RecourseEscrow(D.u32(window), D.u256(bond), D.u32(dispute))
         self.gl.bus.register(self.ESCROW, self.escrow)
 
     # -- controls ----------------------------------------------------------
