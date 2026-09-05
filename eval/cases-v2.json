@@ -1,0 +1,29 @@
+[
+  {
+    "id": "19",
+    "promise": "Returns the 3 most recent SEC filings for the requested ticker, none older than 24 hours.",
+    "request": "GET /filings?ticker=NVDA",
+    "response": "{\"ticker\":\"NVDA\",\"filings\":[{\"form\":\"8-K\",\"filed\":\"2026-09-05T14:02:00Z\"},{\"form\":\"4\",\"filed\":\"2026-09-05T09:41:00Z\"},{\"form\":\"4\",\"filed\":\"2026-09-01T13:15:00Z\"}],\"count\":3}",
+    "timing": "Request recorded on chain at 2026-09-05T18:20:00Z. Response recorded on chain at 2026-09-05T18:20:03Z.",
+    "expected": "unclear",
+    "note": "Both clauses are measurable and they cannot both be satisfied: only two filings exist inside 24 hours, so returning 3 means breaking the age bound and honouring the age bound means returning 2. The promise does not say which clause gives way. Ruling either way invents a precedence the seller never agreed to."
+  },
+  {
+    "id": "20",
+    "promise": "Returns the spot price for the requested pair as a decimal number, refreshed within the last 10 seconds.",
+    "request": "GET /quote?pair=ETH-USD",
+    "response": "{\"pair\":\"ETH-USD\",\"price\":\"4182.10\",\"ts\":\"2026-09-05T18:19:58Z\"}",
+    "timing": "Request recorded on chain at 2026-09-05T18:20:00Z. Response recorded on chain at 2026-09-05T18:20:02Z.",
+    "expected": "honored",
+    "note": "The price is a decimal number carried as a JSON string. It is the right pair, the right value and four seconds old against a ten second bound. The promise constrains the number, not the JSON type of its container, and reading a quoted decimal as a breach is the kind of technicality that would let any seller be found against on wording nobody agreed to."
+  },
+  {
+    "id": "21",
+    "promise": "Returns spot prices for ETH-USD and BTC-USD, refreshed within the last 30 seconds.",
+    "request": "GET /quote?pair=SOL-USD",
+    "response": "{\"error\":\"unsupported pair\",\"supported\":[\"ETH-USD\",\"BTC-USD\"],\"ts\":\"2026-09-05T18:20:01Z\"}",
+    "timing": "Request recorded on chain at 2026-09-05T18:20:00Z. Response recorded on chain at 2026-09-05T18:20:02Z.",
+    "expected": "honored",
+    "note": "The buyer asked for a pair the promise never covered, and the endpoint said so immediately and named what it does cover. Nothing promised was withheld. A dispute right that lets a buyer pay for something outside the promise and then recover on the seller's refusal is a way to extract refunds, not a way to enforce promises."
+  }
+]
