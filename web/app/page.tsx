@@ -95,7 +95,7 @@ export default async function Page() {
           </a>
           <a
             className="button secondary"
-            href="https://github.com/meitipro/recourse"
+            href="https://github.com/meitipro/Recourse"
             rel="noreferrer"
           >
             Repository
@@ -276,7 +276,7 @@ export default async function Page() {
         <div className="footer-row">
           <span>Recourse</span>
           <div className="footer-links">
-            <a href="https://github.com/meitipro/recourse" rel="noreferrer">
+            <a href="https://github.com/meitipro/Recourse" rel="noreferrer">
               repository
             </a>
             <a href="https://genlayer.com" rel="noreferrer">
