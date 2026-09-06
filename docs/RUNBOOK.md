@@ -37,7 +37,7 @@ Watch the feed row appear, move to judged, then settle.
 
 ## After
 
-- [ ] The feed row shows the verdict and the elapsed seconds.
+- [ ] The feed row shows the verdict and the seconds from payment to dispute. That column is the chain's own clock and is not settlement time; the demo prints settlement by wall clock.
 - [ ] The seller's upheld counter incremented.
 - [ ] The buyer's balance came back.
 - [ ] Nothing in the terminal is red.

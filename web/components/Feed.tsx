@@ -211,7 +211,16 @@ export default function Feed({ data }: { data: FeedData }) {
         </div>
         <div className="stat">
           <div className="stat-value">{value(median ? `${median}s` : "-")}</div>
-          <div className="stat-label">median settlement</div>
+          {/*
+            Payment to the dispute being accepted, by the chain's own clock.
+            This used to say "median settlement", and it is not that: a case's
+            opened_at and decided_at are one message's fixed datetime, so chain
+            timestamps cannot see how long judgment took, and the money moves on
+            a later finalization they cannot see either. Settlement measured by
+            wall clock is about ninety seconds and is printed by the demo. This
+            number is real; it was just labelled as a different one.
+          */}
+          <div className="stat-label">median pay to dispute</div>
         </div>
       </div>
 
@@ -236,7 +245,7 @@ export default function Feed({ data }: { data: FeedData }) {
                 <th className="num">amount</th>
                 <th>state</th>
                 <th>verdict</th>
-                <th className="num">elapsed</th>
+                <th className="num">to dispute</th>
               </tr>
             </thead>
             <tbody>

@@ -24,11 +24,11 @@ type Results = {
   rows: Array<{ id: string; correct: boolean; stable: boolean; expected: string }>;
 };
 
-function readResults(): Results | null {
+function readResults(name = "results.json"): Results | null {
   // Published numbers only. If the evaluation has not been run against this
   // deployment there is no number, and the section says so rather than showing a
   // placeholder that reads as a measurement.
-  for (const candidate of ["../eval/results.json", "../../eval/results.json"]) {
+  for (const candidate of [`../eval/${name}`, `../../eval/${name}`]) {
     try {
       const file = path.join(process.cwd(), candidate);
       if (fs.existsSync(file)) {
@@ -77,6 +77,7 @@ const STACK = [
 export default async function Page() {
   const data = await loadFeed(50);
   const results = readResults();
+  const heldOut = readResults("results-v2.json");
   const explorer = EXPLORER[NETWORK];
 
   return (
@@ -242,6 +243,22 @@ export default async function Page() {
                 Each case ran {results.runs} times through real consensus on {NETWORK}. Full
                 results, including every case the judge got wrong, are in eval/RESULTS.md.
               </p>
+              {heldOut ? (
+                // The number the README refuses to publish alone. The first set
+                // is the one the question was narrowed against; this one was
+                // committed before the runner could read it and never tuned
+                // against. Both are real, and the gap is the informative part.
+                <div className="notice" style={{ marginTop: "1.5rem" }}>
+                  <b>
+                    Held out set: {heldOut.accuracy} of {heldOut.n}.
+                  </b>{" "}
+                  Three further cases with answers committed before the runner could read
+                  them, aimed at the weakness the first set exposed, and never tuned against.
+                  {heldOut.accuracy < heldOut.n
+                    ? " On one miss the judge has the better argument than the answer key, and it is still counted as a miss. The reading is in eval/HELD-OUT.md."
+                    : ""}
+                </div>
+              ) : null}
             </>
           ) : (
             <div className="notice">

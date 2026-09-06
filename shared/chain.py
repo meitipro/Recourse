@@ -99,10 +99,13 @@ def chain():
 
 def retry(what: str, fn, *args, **kwargs):
     """
-    Call fn, retrying only the failures that happened before anything was sent.
+    Call fn again on a transient failure. For READS and WAITS only.
 
-    A timeout after submission is not retried, because the transaction may
-    already exist and a second one would be a second payment.
+    This used to claim that a timeout after submission was not retried. It was
+    not true: nothing here can tell whether a write reached the node, and a
+    write retried after a lost response is a second transaction. Writes and
+    deploys go through Chain._guarded, which reads the nonce before and after
+    and refuses to resend once it has moved.
     """
     last: Exception | None = None
     for attempt in range(RETRIES):
@@ -128,9 +131,11 @@ def retry(what: str, fn, *args, **kwargs):
 
 
 class Chain:
-    def __init__(self, account=None):
+    def __init__(self, account=None, client=None):
         self.account = account
-        self.client = create_client(chain=chain(), account=account)
+        # Injectable so the retry policy can be tested against a client that
+        # fails on purpose, without a network.
+        self.client = client if client is not None else create_client(chain=chain(), account=account)
 
     # -- accounts ----------------------------------------------------------
 
@@ -145,8 +150,12 @@ class Chain:
         reported.
         """
         before = self.balance(address)
+        # One attempt, never a retry. The faucet has been measured crediting the
+        # account and THEN returning an error, so a retry loop on error credits
+        # again on every pass. The balance difference below is the only evidence
+        # that counts, in either direction.
         try:
-            retry("fund_account", self.client.fund_account, address, amount)
+            self.client.fund_account(address, amount)
         except Exception as error:  # noqa: BLE001
             print(f"  fund_account reported {str(error)[:90]}, reading the balance instead")
         after = self.balance(address)
@@ -166,7 +175,9 @@ class Chain:
         print(f"  deploying {path.name} ({size} bytes)")
         if size > 55_000:
             print("  warning: Studio resets request bodies near 60KB, this may need retries")
-        tx = retry("deploy", self.client.deploy_contract, code=code, args=args)
+        # Same guard as write(): a deploy resent after a lost response is a
+        # second contract, and the first one is then the one nobody can find.
+        tx = self._guarded("deploy", lambda: self.client.deploy_contract(code=code, args=args))
         receipt = self.wait(tx, "FINALIZED", retries=80)
         address = _contract_address(receipt)
         if not address:
@@ -185,14 +196,77 @@ class Chain:
         return json.loads(self.read(address, method, args))
 
     def write(self, address: str, method: str, args: list | None = None, value: int = 0) -> str:
-        return retry(
+        """
+        A write, retried only while it is provably unsent.
+
+        The SDK fetches the nonce and signs inside every write_contract call. So
+        a plain retry around it, on a response lost AFTER the node accepted the
+        transaction, fetches nonce N+1 and sends a second transaction, and for
+        `pay` that is a second payment. The docstring on retry() used to claim
+        this could not happen. It could.
+
+        The nonce is the evidence. It is read before the attempt and again after
+        a failure: unchanged means nothing reached the node and a retry is safe;
+        advanced means the transaction exists and is not sent again, whatever
+        the error said. One extra read per write is what that costs.
+        """
+        return self._guarded(
             "write " + method,
-            self.client.write_contract,
-            address=address,
-            function_name=method,
-            args=args or [],
-            value=value,
+            lambda: self.client.write_contract(
+                address=address, function_name=method, args=args or [], value=value
+            ),
         )
+
+    def _guarded(self, what: str, attempt):
+        sender = self.account.address if self.account else None
+        last: Exception | None = None
+        for index in range(RETRIES):
+            before = self._nonce(sender)
+            try:
+                return attempt()
+            except Exception as error:  # noqa: BLE001
+                text = str(error)
+                if (
+                    "reverted" in text
+                    or "UserError" in text
+                    or "[EXPECTED]" in text
+                    or "insufficient" in text
+                ):
+                    raise
+                last = error
+                after = self._nonce(sender)
+                if sender is not None and (before is None or after is None):
+                    # Cannot tell whether it was sent. The only safe default
+                    # when a payment may exist is not to make another one.
+                    raise RuntimeError(
+                        f"{what}: failed and the nonce could not be read before and "
+                        f"after, so it may or may not have been sent: {text[:120]}. "
+                        "Not resending."
+                    ) from error
+                if before is not None and after is not None and after > before:
+                    raise RuntimeError(
+                        f"{what}: the node accepted a transaction (nonce {before} -> {after}) "
+                        f"and then the response was lost: {text[:120]}. Not resending. "
+                        "Find it by nonce rather than paying twice."
+                    ) from error
+                if index == RETRIES - 1:
+                    break
+                wait = BACKOFF**index
+                print(f"  retry {index + 1}/{RETRIES} on {what}: {text[:110]}")
+                time.sleep(wait)
+        raise RuntimeError(f"{what} failed after {RETRIES} attempts: {last}")
+
+    def _nonce(self, sender) -> int | None:
+        """The account's transaction count, or None if it cannot be read right now."""
+        if sender is None:
+            return None
+        try:
+            return int(retry("nonce", self.client.get_current_nonce, address=sender))
+        except Exception:  # noqa: BLE001
+            # Unknown is not the same as unchanged. The caller treats None as
+            # "cannot tell" and does not resend on it either way, because the
+            # only safe default when a payment may exist is not to make another.
+            return None
 
     def wait(self, tx_hash, status: str = "ACCEPTED", retries: int = 40) -> dict:
         return retry(

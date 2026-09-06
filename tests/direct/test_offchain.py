@@ -353,3 +353,90 @@ def test_every_case_carries_an_expected_verdict_from_the_closed_set():
         for case in rows:
             assert case["expected"] in {"honored", "not_honored", "unclear"}, case["id"]
             assert case["note"].strip(), case["id"]
+
+
+# --- a write is retried only while it is provably unsent ------------------
+#
+# The SDK fetches the nonce and signs inside every write_contract call. A plain
+# retry around it, on a response lost after the node accepted the transaction,
+# fetches nonce N+1 and sends a second one, and for pay that is a second
+# payment. The nonce is the evidence: unchanged means nothing reached the node.
+
+
+class _Account:
+    address = "0x" + "ab" * 20
+
+
+class _Client:
+    """Fails a set number of times, and moves the nonce or not, on purpose."""
+
+    def __init__(self, failures: int, nonce_moves_on_failure: bool, nonce_readable: bool = True):
+        self.failures = failures
+        self.moves = nonce_moves_on_failure
+        self.readable = nonce_readable
+        self.nonce = 7
+        self.sent = 0
+
+    def get_current_nonce(self, address):
+        if not self.readable:
+            raise ConnectionError("nonce unreadable")
+        return self.nonce
+
+    def write_contract(self, **kwargs):
+        if self.failures:
+            self.failures -= 1
+            if self.moves:
+                # The node took it and the response was lost.
+                self.nonce += 1
+            raise TimeoutError("read timed out")
+        self.sent += 1
+        self.nonce += 1
+        return "0xhash"
+
+
+def _chain(client):
+    from shared import chain as chain_module
+
+    # No sleeping between attempts in a unit test.
+    chain_module.BACKOFF = 0
+    return chain_module.Chain(account=_Account(), client=client)
+
+
+def test_a_failure_before_the_node_saw_it_is_retried():
+    client = _Client(failures=2, nonce_moves_on_failure=False)
+    assert _chain(client).write("0xescrow", "pay", ["s", "r"], value=1) == "0xhash"
+    assert client.sent == 1
+
+
+def test_a_lost_response_after_the_node_took_it_is_never_resent():
+    import pytest
+
+    client = _Client(failures=1, nonce_moves_on_failure=True)
+    with pytest.raises(RuntimeError, match="Not resending"):
+        _chain(client).write("0xescrow", "pay", ["s", "r"], value=1)
+    # The one attempt that failed is the only transaction the node ever saw.
+    assert client.sent == 0
+    assert client.nonce == 8
+
+
+def test_an_unreadable_nonce_does_not_default_to_resending():
+    import pytest
+
+    client = _Client(failures=1, nonce_moves_on_failure=False, nonce_readable=False)
+    with pytest.raises(RuntimeError, match="Not resending"):
+        _chain(client).write("0xescrow", "pay", ["s", "r"], value=1)
+    assert client.sent == 0
+
+
+def test_a_contract_refusal_is_never_retried():
+    import pytest
+
+    class Refusing(_Client):
+        def write_contract(self, **kwargs):
+            self.sent += 1
+            raise RuntimeError("execution reverted: [EXPECTED] wrong bond")
+
+    client = Refusing(failures=0, nonce_moves_on_failure=False)
+    with pytest.raises(RuntimeError, match="wrong bond"):
+        _chain(client).write("0xescrow", "open_dispute", ["p-000001"], value=1)
+    assert client.sent == 1
