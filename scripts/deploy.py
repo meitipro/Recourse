@@ -68,7 +68,24 @@ def main() -> int:
         help="also deploy a dispute instance whose authorised caller is the owner, "
         "so the evaluation runner can put cases to it directly",
     )
+    parser.add_argument(
+        "--unfreeze",
+        action="store_true",
+        help="deploy a NEW pair even though contracts/FROZEN.json exists. Every "
+        "published number is tied to the frozen pair; see FROZEN.json for what a "
+        "redeploy then has to redo",
+    )
     args = parser.parse_args()
+
+    frozen = ROOT / "contracts" / "FROZEN.json"
+    if frozen.exists() and not args.unfreeze:
+        print("The contracts are frozen at the deployed bytes and addresses in")
+        print("contracts/FROZEN.json, and every published number is tied to that pair.")
+        print("A clone that wants to run the demo needs accounts, not a deployment:")
+        print("\n    python scripts/prepare.py && python scripts/demo.py\n")
+        print("If a new deployment is genuinely required, pass --unfreeze and follow")
+        print("if_a_change_is_genuinely_required in FROZEN.json to the end.")
+        return 1
 
     started = time.time()
     accounts = load_accounts()

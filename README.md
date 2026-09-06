@@ -1,6 +1,10 @@
 # Recourse
 
-A dispute right for machine payments, adjudicated on GenLayer.
+**A promise that costs something to break.**
+
+A dispute right for machine payments, adjudicated on GenLayer. Any endpoint can
+claim to be good; only one that has put a promise in escrow can prove it, and
+pays when it is wrong.
 
 x402 settles machine payments in milliseconds and finally. Once settlement
 confirms there is no chargeback path and no dispute window. Recourse holds the
@@ -13,8 +17,16 @@ back.**
 ## Run the demo
 
 ```bash
-python scripts/deploy.py && python scripts/demo.py
+pip install genlayer_py anthropic        # Python 3.12
+python scripts/prepare.py                # funds three accounts, registers a seller
+python scripts/demo.py                   # both paths, against the frozen contracts
 ```
+
+`prepare.py` deploys nothing. The contracts are frozen at the addresses in
+`contracts/FROZEN.json` and every published number is tied to them, so a clone
+gets accounts of its own, funded from the Studio faucet, and a seller among
+them registered on the frozen escrow. `deploy.py` refuses to run while the
+freeze stands, and says what to do instead.
 
 An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
@@ -118,7 +130,13 @@ like a contradiction.
 accuracy    17/18    matched the verdict committed before the run
 stability   17/18    all three runs of a case agreed with each other
 unclear      3/18    landed on unclear, which is the honesty signal
+
+held out     1/3     three further cases, answers committed before the
+                     runner could read them, never tuned against
 ```
+
+Those two accuracy figures appear together everywhere this project states
+either, and the section after next says why.
 
 Commit order shows when a file was committed, not when it was written, and
 [eval/RESULTS.md](eval/RESULTS.md) says so under "What this evidence does and
@@ -175,13 +193,22 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 208 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 208 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
 RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # 26 live checks
-python eval/run.py --runs 3    # the published accuracy number, on chain
+python eval/run.py --set v1 --runs 3    # the tuned set, on chain
+python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out set
+python -m linter.examples --dry         # the six worked examples, stage 1
 ```
+
+The 208 direct tests cover the contracts through the double, the buyer agent,
+the seller, the linter with a model double that counts its calls, the bot with
+every dependency injected, and the dry run judge. Three of them are checks on
+the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
+the linter's question against the AST of the frozen contract, and the bot's
+source against any chain write.
 
 A green suite says the tests agree with the code, not that they would notice if
 the code were wrong. `scripts/mutate.py` deletes one defence at a time across
@@ -210,6 +237,41 @@ Two of the tests are structural rather than behavioural:
 - `test_every_write_checks_who_is_calling` is a static check over the source
   asserting every write outside a named allowlist references the sender. It
   covers the writes nobody has written yet.
+
+## Install
+
+The installable half lives in a second repository,
+[meitipro/recourse-skill](https://github.com/meitipro/recourse-skill): a skill
+that tells an agent when and how to use a dispute right, six reference files
+that each end in a call that runs as written, and a read only MCP server.
+
+```bash
+# the skill, as a Claude Code plugin
+claude plugin marketplace add meitipro/recourse-skill
+claude plugin install recourse@recourse
+
+# or by hand: copy SKILL.md and reference/ into .claude/skills/recourse/
+
+# the MCP server, five read only tools over Streamable HTTP
+git clone https://github.com/meitipro/recourse-skill && cd recourse-skill/mcp
+npm install && npm test && npm run dev        # http://localhost:4504/api/mcp
+
+# the promise linter, one service behind the site panel, the bot and the MCP
+python linter/serve.py                        # http://127.0.0.1:4503/lint
+python -m linter.examples --dry               # the six worked examples
+
+# the Telegram bot, read only
+TELEGRAM_BOT_TOKEN=... python bot/main.py
+```
+
+The MCP advises; the agent's own wallet acts. Paying, disputing, withdrawing
+and signing are not tools anywhere in this project, and nothing in it ever asks
+for a private key. Stage 2 of the linter, and the bot's `/check`, need a model
+behind the linter: `ANTHROPIC_API_KEY` in the environment, or a signed in
+`claude` CLI on the machine. Without one they say so and offer nothing.
+
+The site is `web/`: `npm install && npm run dev` on port 4500, reading the
+frozen contracts through `web/.env.local`, which `prepare.py` writes.
 
 ## Contracts
 
@@ -339,7 +401,7 @@ The honest limit, since a rail claim invites the question: Recourse holds the
 disputed money itself today, in its own escrow. Judgment is rail-free now, and
 what a second rail changes is how buyer and seller reached the escrow, not who
 holds the funds. Sitting as the arbiter inside somebody else's escrow slot is
-the next step and it is in Later, not here.
+listed under Later.
 
 ## Why GenLayer
 
@@ -398,9 +460,35 @@ controls.
 
 ## Later
 
-Session batching for sub cent payments. Seller bonds scaled to volume.
-Deployment as an arbiter inside an existing x402 escrow slot. A reputation index
-built from verdict history.
+Everything out of scope for this deployment, in one place.
+
+**Hosting.** The site, the linter and the MCP server run locally today and are
+written to deploy to Vercel as three projects from these two repositories
+(`web/`, the repository root for `api/lint.py`, and `recourse-skill/mcp`). The
+team token available to this build can list that team's projects but cannot
+create one, so the three imports are a dashboard step for the account owner.
+`reference/07-addresses.json` already names the URLs they will have.
+
+**The bot's handle.** `bot/` is complete and tested through injected
+dependencies; it goes live the moment a BotFather token is exported as
+`TELEGRAM_BOT_TOKEN`.
+
+**Stage 2 in production.** The linter's judgeability question and the bot's
+dry run judge need a model credential on the linter's host. This build's
+machine had none, so every consumer shows its honest error state for stage 2
+and the three passing worked examples report "could not be run without a
+model" rather than a number.
+
+**The gate at registration.** `register_seller` lists a seller as judgeable
+without asking the on chain gate; the gate is an owner action that can revoke.
+Asking it at registration is a contract change, and the contracts are frozen,
+so it waits for a next deployment. The linter is what stands in front of a
+promise until then.
+
+**The protocol.** Session batching for sub cent payments. Seller bonds scaled
+to volume. Deployment as an arbiter inside an existing x402 escrow slot, which
+is the step the Rails section stops short of. A reputation index built from
+verdict history. A third evaluation set larger than three.
 
 A vague promise produces a vague verdict, and the system says so through the
 unclear outcome rather than performing confidence it has not earned.
