@@ -1,0 +1,3 @@
+{
+  "functions": { "api/lint.py": { "maxDuration": 60 } }
+}

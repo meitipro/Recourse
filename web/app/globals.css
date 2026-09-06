@@ -757,3 +757,245 @@ footer {
   margin: 0 0 2rem;
   max-width: 22ch;
 }
+
+/* --- the linter panel ----------------------------------------------------- */
+
+.linter {
+  margin-top: 1.5rem;
+  max-width: 860px;
+}
+
+.linter-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.linter-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--code);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  resize: vertical;
+}
+
+.linter-input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.linter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.linter-button {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 0.65rem 1.1rem;
+  color: var(--ground);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.linter-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.linter-examples {
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+.linter-example {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  padding: 0;
+}
+
+.linter-result {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--hairline-strong);
+  background: var(--panel);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.linter-result.yes {
+  border-left-color: var(--accent);
+}
+
+.linter-result.no {
+  border-left-color: var(--pending);
+}
+
+.linter-result.error {
+  border-left-color: var(--refused);
+  color: var(--refused);
+}
+
+.linter-verdict {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.linter-result.yes .linter-verdict {
+  color: var(--accent);
+}
+
+.linter-result.no .linter-verdict {
+  color: var(--pending);
+}
+
+.linter-result p {
+  margin: 0.4rem 0;
+}
+
+.linter-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.linter-suggestion {
+  position: relative;
+  margin-top: 0.9rem;
+}
+
+.linter-code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  padding: 0.9rem 4rem 0.9rem 1rem;
+  margin: 0.4rem 0 0;
+  background: var(--code);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+
+.linter-copy {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 0.3rem 0.6rem;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.linter-footnote {
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+
+/* --- citations and the case page ----------------------------------------- */
+
+.cite {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-dim);
+}
+
+.cite:hover {
+  border-bottom-style: solid;
+}
+
+.case-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+}
+
+.case-page .eyebrow a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.case-title {
+  font-family: var(--mono);
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  margin: 0.25rem 0 0.25rem;
+  letter-spacing: 0.02em;
+}
+
+.case-sub {
+  color: var(--muted);
+  margin: 0 0 2rem;
+}
+
+.case-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+  margin: 0 0 2rem;
+  font-size: 0.95rem;
+}
+
+.case-facts dt {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-top: 0.2rem;
+}
+
+.case-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.case-page h2 {
+  font-size: 1.1rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.case-reason {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--accent);
+  background: var(--panel);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+}
+
+@media (max-width: 480px) {
+  .case-facts {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  .case-facts dt {
+    padding-top: 0.75rem;
+  }
+}

@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Feed from "@/components/Feed";
+import Linter from "@/components/Linter";
 import { EXPLORER, NETWORK, loadFeed } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
@@ -154,6 +155,19 @@ export default async function Page() {
           </p>
         </section>
 
+        <section className="shell" id="linter">
+          <div className="eyebrow">The linter</div>
+          <h2>Would a judge be able to rule on your promise?</h2>
+          <p>
+            A promise is the only standard a response is judged against. One that says only that
+            data is accurate leaves a judge two choices, invent a standard the seller never agreed
+            to or answer unclear. Paste one. Stage 1 is deterministic and free and names the check
+            it failed; stage 2 asks the deployed gate&apos;s exact question of one model and offers
+            a rewrite when the answer is no.
+          </p>
+          <Linter />
+        </section>
+
         <section className="shell">
           <div className="eyebrow">How it works</div>
           <h2>An escrow window, a promise, a bond, three verdicts.</h2>
@@ -225,6 +239,18 @@ export default async function Page() {
                   </div>
                   <div className="stat-label">landed on unclear</div>
                 </div>
+                {heldOut ? (
+                  // The worse number at the same size as the better one. A
+                  // project that shows 17 large and 1 small is making a claim
+                  // the numbers alone do not support.
+                  <div>
+                    <div className="headline-number">
+                      {heldOut.accuracy}
+                      <small>/{heldOut.n}</small>
+                    </div>
+                    <div className="stat-label">held out set, never tuned against</div>
+                  </div>
+                ) : null}
               </div>
               <div className="case-grid">
                 {results.rows.map((row) => (
@@ -249,11 +275,10 @@ export default async function Page() {
                 // committed before the runner could read it and never tuned
                 // against. Both are real, and the gap is the informative part.
                 <div className="notice" style={{ marginTop: "1.5rem" }}>
-                  <b>
-                    Held out set: {heldOut.accuracy} of {heldOut.n}.
-                  </b>{" "}
-                  Three further cases with answers committed before the runner could read
-                  them, aimed at the weakness the first set exposed, and never tuned against.
+                  <b>Two sets, always together.</b> {results.accuracy} of {results.n} is the set
+                  the judgment question was narrowed against. {heldOut.accuracy} of {heldOut.n} is
+                  three further cases with answers committed before the runner could read them,
+                  aimed at the weakness the first set exposed, and never tuned against.
                   {heldOut.accuracy < heldOut.n
                     ? " On one miss the judge has the better argument than the answer key, and it is still counted as a miss. The reading is in eval/HELD-OUT.md."
                     : ""}

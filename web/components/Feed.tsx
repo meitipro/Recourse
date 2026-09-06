@@ -11,8 +11,10 @@
  * misreport the protocol.
  */
 
+import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import type { Case, FeedData, Payment, Row } from "@/lib/chain";
+import { toCitation } from "@/lib/cite";
 
 const VERDICT = ["pending", "honored", "not_honored", "unclear"] as const;
 
@@ -262,7 +264,23 @@ export default function Feed({ data }: { data: FeedData }) {
                       onClick={() => setOpen(open === row.pid ? null : row.pid)}
                     >
                       <td className="mono">{clock(row.created_at)}</td>
-                      <td className="mono">{row.pid}</td>
+                      <td className="mono">
+                        {row.case ? (
+                          // The citation is the primary key of a case. The
+                          // payment id stays in the title for anyone matching
+                          // it against a receipt.
+                          <Link
+                            className="cite"
+                            href={`/case/${toCitation(row.pid, row.case.decided_at)}`}
+                            title={row.pid}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {toCitation(row.pid, row.case.decided_at)}
+                          </Link>
+                        ) : (
+                          row.pid
+                        )}
+                      </td>
                       <td>
                         <Address value={row.seller} />
                       </td>

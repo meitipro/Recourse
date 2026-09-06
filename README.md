@@ -175,7 +175,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 186 direct tests
+python scripts/test.py         # house style, both contracts linted, 208 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them

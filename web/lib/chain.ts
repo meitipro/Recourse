@@ -199,6 +199,10 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
   }
 }
 
+// Citations live in lib/cite.ts, which has no chain imports, so the client
+// side feed can format one without pulling this module into the browser.
+export { toCitation, toPid } from "./cite";
+
 /**
  * The three frozen strings for one payment, fetched when a row is expanded.
  *
