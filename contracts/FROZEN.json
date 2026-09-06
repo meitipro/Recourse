@@ -1,0 +1,26 @@
+{
+  "frozen_at_commit": "ccc470a",
+  "frozen_on": "2026-09-06",
+  "network": "studionet",
+  "chain_id": 61999,
+  "hash_of": "sha256 of the file with line endings normalised to LF. That is what was deployed: scripts/deploy.py reads the file with universal newlines, so the bytes on chain are LF whatever a Windows checkout with autocrlf put on disk.",
+  "why": "Every published number is tied to this pair of addresses. verify.py lints the deployed bytes against these files, RESULTS.md and HELD-OUT.md name the instance they were measured on, and the refusal and rail transactions in the README were recorded against these contracts. A redeploy invalidates all of it and costs 63 consensus transactions to restore.",
+  "if_a_change_is_genuinely_required": [
+    "change the contract",
+    "python scripts/deploy.py",
+    "python eval/run.py --set v1 --runs 3 && python eval/report.py",
+    "python eval/run.py --set v2 --runs 3 --out eval/results-v2.json && python eval/report.py --results eval/results-v2.json --out eval/RESULTS-V2.md",
+    "python scripts/evidence.py && python scripts/rail.py",
+    "update contracts/FROZEN.json, README addresses and every published number, in the same commit"
+  ],
+  "escrow": {
+    "address": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+    "sha256": "d500b250355db5b87eb3014392444305e5a9c4e8fc78e58f49ad8312da8355cc",
+    "bytes": 28515
+  },
+  "dispute": {
+    "address": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+    "sha256": "7781e46eddb165156499d47a60b708efeb1978e92f2c3fb977c47cc148fbc008",
+    "bytes": 21353
+  }
+}

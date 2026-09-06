@@ -172,7 +172,7 @@ def main() -> int:
         # reads any non-zero exit as a kill then reports a perfect score while
         # testing nothing. That happened here, and requiring a named test below
         # is what caught it.
-        for name in ("contracts", "tests", "eval", "agent", "seller", "shared"):
+        for name in ("contracts", "tests", "eval", "agent", "seller", "shared", "linter"):
             shutil.copytree(ROOT / name, work / name, dirs_exist_ok=True)
         # The parity tests read the feed's source to check it against the
         # contracts. Its dependencies are irrelevant and enormous.

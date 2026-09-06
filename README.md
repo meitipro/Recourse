@@ -175,7 +175,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # house style, both contracts linted, 167 direct tests
+python scripts/test.py         # house style, both contracts linted, 171 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -216,6 +216,11 @@ Two of the tests are structural rather than behavioural:
     escrow    0x5125De939F7373eAE741B133FB32B7E9915C8F78
     dispute   0x80A98929EcA334804dbB04d31F6050bca42C0Cc4
     network   studionet, chain id 61999
+
+These contracts are frozen at the deployed bytes. `contracts/FROZEN.json`
+records their hashes beside these addresses and `scripts/check.py` fails the
+local gate on any edit to either file, because every number published here was
+measured against this pair and a redeploy would invalidate all of it.
 
 Verify with `python scripts/verify.py`, which reads the source back off the
 chain, diffs it against this repository, and runs the linter over the bytes that
