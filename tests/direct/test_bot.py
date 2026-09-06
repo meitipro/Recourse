@@ -81,12 +81,24 @@ def world():
 # --- the boundary -----------------------------------------------------------
 
 
-def test_the_chain_reader_has_no_account():
+def test_the_chain_reader_is_a_throwaway_that_holds_nothing():
+    # The SDK needs a sender address for a read, so "no account" was a reader
+    # that could not read. What can be asserted instead: the account is not one
+    # of the demo's three, it is different on every start, and nothing in bot/
+    # can hand it to a write (the scan below).
     from bot.main import reader
 
-    chain = reader()
-    assert chain.account is None
-    assert getattr(chain.client, "local_account", None) is None
+    first, second = reader(), reader()
+    assert first.account is not None
+    assert first.account.address != second.account.address
+    keys = ROOT / ".accounts.json"
+    if keys.exists():
+        import json
+
+        from genlayer_py import create_account
+
+        demo = {create_account(k).address.lower() for k in json.loads(keys.read_text(encoding="utf-8")).values()}
+        assert first.account.address.lower() not in demo
 
 
 def test_no_file_in_the_bot_names_a_write():
@@ -96,7 +108,7 @@ def test_no_file_in_the_bot_names_a_write():
     banned = (
         "write_contract", "deploy_contract", "send_transaction", "chain.write(", ".write(contract",
         "open_dispute(", "register_seller(", "record_response(", "reclaim(", "withdraw(",
-        "private_key", "sign_message", "create_account(", "load_accounts(",
+        "private_key", "sign_message", "load_accounts(",
     )
     for path in (ROOT / "bot").glob("*.py"):
         source = path.read_text(encoding="utf-8")
@@ -106,6 +118,10 @@ def test_no_file_in_the_bot_names_a_write():
         code = re.sub(r"^\s*#.*$", "", code, flags=re.M)
         for word in banned:
             assert word not in code, f"{path.name} mentions {word}"
+        # A bare create_account() is a fresh throwaway key and is how the
+        # reader exists at all. create_account(<anything>) imports a key and
+        # is banned.
+        assert not re.search(r"create_account\((?!\))", code), f"{path.name} imports a key"
 
 
 def test_a_private_key_gets_one_reply_and_nothing_else_is_read():

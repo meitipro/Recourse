@@ -56,15 +56,25 @@ def main() -> int:
         chain.fund(account.address, 500 * GEN)
 
     print("\nthe seller on the frozen escrow")
+    # A view that refuses reaches this side as a bare "execution failed", with
+    # the contract's "unknown seller" nowhere in it. So the read is not the
+    # test; the registration is. Attempting it is idempotent: a seller already
+    # on the escrow is refused with "already registered", which is the answer.
     try:
         row = chain.read_json(escrow, "get_seller", [seller.address])
         print(f"  already registered, promise {len(row['promise'])} chars, judgeable {row['judgeable']}")
     except Exception as error:  # noqa: BLE001
-        if "unknown seller" not in str(error):
+        if "execution failed" not in str(error) and "unknown seller" not in str(error):
             raise
-        Chain(seller).send(escrow, "register_seller", [PROMISE])
+        try:
+            Chain(seller).send(escrow, "register_seller", [PROMISE])
+            print("  registered")
+        except RuntimeError as refusal:
+            if "already registered" not in str(refusal):
+                raise
+            print("  already registered (the read failed, the contract said so instead)")
         row = chain.read_json(escrow, "get_seller", [seller.address])
-        print(f"  registered, promise {len(row['promise'])} chars, judgeable {row['judgeable']}")
+        print(f"  promise {len(row['promise'])} chars, judgeable {row['judgeable']}")
 
     stats = chain.read_json(escrow, "stats")
     # Keep whatever an earlier run recorded (evidence, an eval instance) and

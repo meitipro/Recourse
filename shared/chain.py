@@ -118,6 +118,11 @@ def retry(what: str, fn, *args, **kwargs):
                 or "UserError" in text
                 or "[EXPECTED]" in text
                 or "insufficient" in text
+                # A view that refuses comes back through gen_call as a bare
+                # "execution failed", not as the contract's message. It is
+                # deterministic, and a clean clone spent ten attempts on
+                # "unknown seller" before this line existed.
+                or "execution failed" in text
             )
             if fatal:
                 raise

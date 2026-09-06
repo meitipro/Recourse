@@ -31,10 +31,20 @@ from bot.telegram import Telegram  # noqa: E402
 
 
 def reader():
-    """A chain reader with no account. There is nothing here that could sign."""
+    """
+    A chain reader on a throwaway account.
+
+    The Python SDK refuses a read without a sender address, so a reader with no
+    account at all fails on its first call, which is what the first version of
+    this did. The account here is generated at startup from nothing, holds no
+    GEN, is never written to disk and is never handed to a write: bot/ names no
+    write method, and tests/direct/test_bot.py holds it to that.
+    """
+    from genlayer_py import create_account
+
     from shared.chain import Chain
 
-    return Chain(account=None)
+    return Chain(account=create_account())
 
 
 class LiveDeps:

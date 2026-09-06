@@ -10,9 +10,13 @@ Never holds a private key, signs anything, submits a write transaction,
 accepts a seed phrase or key in a message, or stores a message beyond the
 request that produced it.
 
-- The chain client is created without an account (`bot/main.py:reader`), and
-  `tests/direct/test_bot.py` asserts that against the client object and scans
-  `bot/` for any write method name.
+- The chain client runs on a throwaway account generated at startup
+  (`bot/main.py:reader`): the Python SDK refuses a read without a sender
+  address, so a reader with no account cannot read, which the first version
+  of this found the hard way. The account holds no GEN, is never written to
+  disk and is never handed to a write. `tests/direct/test_bot.py` asserts it
+  is not one of the demo's accounts and differs on every start, and scans
+  `bot/` for any chain write or key handling.
 - A message containing what looks like a private key or a seed phrase gets one
   reply: it is now compromised and must be rotated. The rest of the message is
   not read.
