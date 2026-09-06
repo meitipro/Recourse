@@ -18,11 +18,14 @@ back.**
 
 ```bash
 pip install genlayer_py anthropic        # Python 3.12
+# and genvm-lint on PATH: scripts/test.py lints and validates the contracts with it
 python scripts/prepare.py                # funds three accounts, registers a seller
 python scripts/demo.py                   # both paths, against the frozen contracts
 ```
 
-`prepare.py` deploys nothing. The contracts are frozen at the addresses in
+A clean clone was run exactly this way before this README was finished; the only
+thing it assumed already present was `genvm-lint`, which is why that line is
+there. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
 `contracts/FROZEN.json` and every published number is tied to them, so a clone
 gets accounts of its own, funded from the Studio faucet, and a seller among
 them registered on the frozen escrow. `deploy.py` refuses to run while the
