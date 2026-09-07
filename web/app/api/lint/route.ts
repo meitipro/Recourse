@@ -18,7 +18,22 @@ export const dynamic = "force-dynamic";
  *     should not have on day one, and the only safe log is the one that does
  *     not exist. tests/direct/test_linter.py asserts this from the source.
  */
-const LINTER_URL = process.env.LINTER_URL || "http://127.0.0.1:4503/lint";
+/**
+ * Where the linter is. Set LINTER_URL in any real deployment.
+ *
+ * The fallback to this machine's port 4503 exists for development only. In
+ * production it would mean a panel that quietly connects to a localhost that
+ * is not there and reports "could not reach the linter" as if the service
+ * were flaky, so production with no URL answers 503 "linter not configured"
+ * and says so once, here, at boot. This is the one console line in the file
+ * and it carries no request data; the test holds it to that.
+ */
+const configured = process.env.LINTER_URL || "";
+const production = process.env.NODE_ENV === "production";
+const LINTER_URL = configured || (production ? "" : "http://127.0.0.1:4503/lint");
+if (!LINTER_URL) {
+  console.warn("recourse: LINTER_URL is not set, so /api/lint answers 503 until it is");
+}
 const WINDOW_MS = 60_000;
 const PER_ADDRESS = 30;
 const GLOBAL = 120;
@@ -43,6 +58,9 @@ function overBudget(address: string): boolean {
 }
 
 export async function POST(request: Request) {
+  if (!LINTER_URL) {
+    return NextResponse.json({ error: "linter not configured" }, { status: 503 });
+  }
   // The forwarded header is set by the platform in front of this route and
   // is a caller-controlled string anywhere else, which is why the global cap
   // above exists as well.

@@ -1,5 +1,7 @@
 # Recourse
 
+[![test](https://github.com/meitipro/Recourse/actions/workflows/test.yml/badge.svg)](https://github.com/meitipro/Recourse/actions/workflows/test.yml)
+
 **A promise that costs something to break.**
 
 A dispute right for machine payments, adjudicated on GenLayer. Any endpoint can
@@ -196,7 +198,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 208 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 209 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -206,7 +208,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 208 direct tests cover the contracts through the double, the buyer agent,
+The 209 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Three of them are checks on
 the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
@@ -497,5 +499,7 @@ A vague promise produces a vague verdict, and the system says so through the
 unclear outcome rather than performing confidence it has not earned.
 
 ---
+
+MIT, in [LICENSE](LICENSE). The skill repository carries the same licence.
 
 **The rail is finished. The right is missing.**

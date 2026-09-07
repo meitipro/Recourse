@@ -172,17 +172,42 @@ def test_every_path_returns_the_same_five_keys():
 # --- nothing is logged ------------------------------------------------------
 
 
-def test_the_site_route_never_logs_or_writes():
+def _route_source() -> str:
     raw = (ROOT / "web" / "app" / "api" / "lint" / "route.ts").read_text(encoding="utf-8")
     # Comments are not code. A comment saying "nothing calls console" must not
     # fail the test that checks nothing calls console.
     source = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
-    source = re.sub(r"^\s*//.*$", "", source, flags=re.M)
-    assert "console." not in source
+    return re.sub(r"^\s*//.*$", "", source, flags=re.M)
+
+
+def test_the_site_route_never_logs_or_writes():
+    source = _route_source()
+    # Exactly one console line, at module scope, at boot, and it carries no
+    # request data: a fixed string about configuration. Inside the handler,
+    # none at all.
+    handler = source[source.index("export async function POST") :]
+    assert "console." not in handler
+    boot = source[: source.index("export async function POST")]
+    console_lines = [line for line in boot.splitlines() if "console." in line]
+    assert len(console_lines) == 1
+    assert "${" not in console_lines[0] and "promise" not in console_lines[0]
     assert not re.search(r"\bfrom\s+['\"](fs|node:fs|fs/promises)['\"]", source)
     assert "writeFile" not in source and "appendFile" not in source
     # The promise leaves this route to exactly one place.
     assert source.count("fetch(") == 1 and "LINTER_URL" in source
+
+
+def test_the_site_route_refuses_in_production_without_a_linter_url():
+    # Development falls back to this machine's port 4503. Production must not:
+    # a panel quietly connecting to a localhost that is not there reports the
+    # service as flaky when it is unconfigured. The route says so with a 503.
+    source = _route_source()
+    assert 'process.env.NODE_ENV === "production"' in source
+    assert '(production ? "" : "http://127.0.0.1:4503/lint")' in source
+    handler = source[source.index("export async function POST") :]
+    guard = handler[: handler.index("x-forwarded-for")]
+    assert "if (!LINTER_URL)" in guard
+    assert '"linter not configured"' in guard and "status: 503" in guard
 
 
 def test_the_service_never_writes_the_promise_to_its_own_output(monkeypatch):

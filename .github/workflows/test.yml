@@ -1,0 +1,66 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Two jobs on purpose. `direct` is everything that needs nothing but Python and
+# Node: the freeze and house style checks, the 208 direct tests through the
+# test double, and the feed's types. It gates on its own. `lint` puts both
+# frozen contracts through genvm-lint, which on a cold runner has to fetch a
+# 134 MB GenVM runner into its cache, so it is separate: a runner that cannot
+# get the linter fails visibly here and does not take the direct tests with it.
+jobs:
+  direct:
+    name: freeze, house style, direct tests, feed types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install genlayer_py pytest -r requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: feed dependencies
+        run: npm ci --no-audit --no-fund
+        working-directory: web
+
+      - name: freeze, house style, direct tests, feed types
+        run: python scripts/test.py --no-lint
+
+  lint:
+    name: genvm-lint over both frozen contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The runner archive is what makes a cold lint slow. Keyed on the linter
+      # version so a new release refetches once.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/genvm-linter
+          key: genvm-linter-0.11.0-${{ runner.os }}
+
+      - name: the linter
+        run: pip install genvm-linter==0.11.0
+
+      - name: lint and validate the frozen contracts
+        run: python scripts/test.py --only-lint

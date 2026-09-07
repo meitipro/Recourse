@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
-Everything that can fail without touching the network.
+Everything that can fail without the chain.
 
-    python scripts/test.py
+    python scripts/test.py               # all of it
+    python scripts/test.py --no-lint     # without genvm-lint: CI's direct job
+    python scripts/test.py --only-lint   # genvm-lint alone: CI's lint job
 
-House style, then both contracts through the linter, then the direct tests. It
-runs in about ten seconds and it is what should be green before any deploy.
+Freeze and house style, then both contracts through the linter, then the
+direct tests, then the feed's types when web/node_modules exists.
+
+House style and the direct tests need no network. The contract lint step does
+on a cold cache: genvm-lint fetches a 134MB runner the first time. Use --no-lint
+for a genuinely offline run. CI splits the two for the same reason.
 
 The direct tests are run with the gltest plugins disabled. genlayer-test is
 installed globally here and registers two auto loading pytest plugins; one of
@@ -39,6 +45,8 @@ def run(label: str, command: list[str], env: dict | None = None) -> bool:
 
 
 def main() -> int:
+    skip_lint = "--no-lint" in sys.argv
+    only_lint = "--only-lint" in sys.argv
     python = sys.executable
     # The linter prints a tick and dies on it under the ansi codepage Windows
     # gives a child process, reporting a passing contract as failed.
@@ -60,12 +68,19 @@ def main() -> int:
         ),
     ]
 
+    if skip_lint:
+        steps = [step for step in steps if not step[0].startswith(("lint ", "validate "))]
+    if only_lint:
+        steps = [step for step in steps if step[0].startswith(("lint ", "validate "))]
+
     failed = [label for label, command, env in steps if not run(label, command, env)]
 
     # The feed is only checked when it has been installed. A judge cloning this
     # to read the contracts should not be told the repository is broken because
     # they have not run npm install.
-    if (ROOT / "web" / "node_modules").is_dir():
+    if only_lint:
+        pass
+    elif (ROOT / "web" / "node_modules").is_dir():
         npx = "npx.cmd" if os.name == "nt" else "npx"
         result = subprocess.run(
             [npx, "tsc", "--noEmit"], cwd=ROOT / "web", env=dict(os.environ)
