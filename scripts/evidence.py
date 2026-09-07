@@ -26,9 +26,12 @@ sys.path.insert(0, str(ROOT))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import GEN, Chain, load_accounts, load_deployment, save_deployment
+from shared.chain import (
+    EXPLORERS, GEN, Chain, load_accounts, load_deployment, network_name, save_deployment, select_network,
+)
 
-EXPLORER = "https://explorer-studio.genlayer.com"
+#: Set once the network is known, in main(). Every printed link uses it.
+EXPLORER = EXPLORERS["bradbury"]
 
 
 def refusal(chain: Chain, address: str, method: str, args: list, expect: str, value: int = 0):
@@ -68,6 +71,15 @@ def refusal(chain: Chain, address: str, method: str, args: list, expect: str, va
 
 
 def main() -> int:
+    import argparse
+
+    global EXPLORER
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    args = parser.parse_args()
+    select_network(args.network)
+    EXPLORER = EXPLORERS[network_name()]
+
     deployment = load_deployment()
     accounts = load_accounts()
     escrow = deployment["escrow"]

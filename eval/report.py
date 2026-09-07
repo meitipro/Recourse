@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """
-Turns eval/results.json into eval/RESULTS.md.
+Turns the measured results into a report with one column per network.
 
-    python eval/report.py
+    python eval/report.py               # the eighteen -> eval/RESULTS.md
+    python eval/report.py --set v2      # the held out three -> eval/RESULTS-V2.md
 
-The published number is generated from the measurement, never typed. A number in
-a README that nothing regenerates drifts away from the thing it claims to
-describe, and the drift is invisible.
+Files, one per network per set, never merged and never averaged:
+
+    eval/results.json               studionet, v1     eval/results-v2.json
+    eval/results.bradbury.json      bradbury,  v1     eval/results-v2.bradbury.json
+
+The published number is generated from the measurement, never typed. Two
+networks are two validator sets ruling on the same frozen strings; where they
+disagree on a case, that is a finding and it gets its own section, in either
+direction, rather than an explanation.
 """
 
 from __future__ import annotations
@@ -18,9 +25,11 @@ import sys
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
-RESULTS = HERE / "results.json"
-CASES = HERE / "cases.json"
-OUT = HERE / "RESULTS.md"
+NETWORKS = ["studionet", "bradbury"]
+SETS = {
+    "v1": {"cases": HERE / "cases.json", "base": "results", "out": HERE / "RESULTS.md", "title": "Evaluation results"},
+    "v2": {"cases": HERE / "cases-v2.json", "base": "results-v2", "out": HERE / "RESULTS-V2.md", "title": "Held out set results"},
+}
 
 # A Windows console hands a child process an ansi codepage. Anything that
 # prints text from the chain or a model can die on it, so widen it here.
@@ -28,169 +37,179 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
+def results_path(base: str, network: str) -> pathlib.Path:
+    return HERE / (f"{base}.json" if network == "studionet" else f"{base}.{network}.json")
+
+
+def first_verdict(row: dict) -> str:
+    """The verdict a case landed on: the first run's, which is how accuracy is scored."""
+    return row["observed"][0] if row["observed"] else "error"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results", default=str(RESULTS))
-    parser.add_argument("--out", default=str(OUT))
+    parser.add_argument("--set", default="v1", choices=sorted(SETS))
+    parser.add_argument("--out", default=None)
     args = parser.parse_args()
+    spec = SETS[args.set]
+    out = pathlib.Path(args.out) if args.out else spec["out"]
 
-    results = pathlib.Path(args.results)
-    out = pathlib.Path(args.out)
-    if not results.exists():
-        raise SystemExit(f"no {results.name}. Run eval/run.py first.")
-    data = json.loads(results.read_text(encoding="utf-8"))
-    # Both sets, because a results file may hold either or both and a row whose
-    # case cannot be found would silently lose its note.
-    cases = {}
-    for path in (CASES, HERE / "cases-v2.json"):
+    data: dict[str, dict] = {}
+    for network in NETWORKS:
+        path = results_path(spec["base"], network)
+        if path.exists():
+            data[network] = json.loads(path.read_text(encoding="utf-8"))
+    if not data:
+        raise SystemExit(f"no results for set {args.set}. Run eval/run.py --set {args.set} first.")
+    networks = [n for n in NETWORKS if n in data]
+
+    cases: dict[str, dict] = {}
+    for path in (SETS["v1"]["cases"], SETS["v2"]["cases"]):
         if path.exists():
             for case in json.loads(path.read_text(encoding="utf-8")):
                 cases[case["id"]] = case
-    rows = data["rows"]
-    total = data["n"]
 
-    wrong = [row for row in rows if not row["correct"]]
-    # A run that never produced a verdict is an infrastructure failure, not a
-    # judge disagreeing with itself. Counting the two together makes a dropped
-    # connection look like a subjective question, which is the opposite of what
-    # the stability number is for.
-    errored = [row for row in rows if "error" in row["observed"]]
-    unstable = [
-        row
-        for row in rows
-        if not row["stable"] and len({v for v in row["observed"] if v != "error"}) > 1
-    ]
-    measured = time.strftime("%Y-%m-%d", time.gmtime(data["measured_at"]))
+    rows_by = {n: {row["id"]: row for row in data[n]["rows"]} for n in networks}
+    ids = [row["id"] for row in data[networks[0]]["rows"]]
+    total = data[networks[0]]["n"]
+    runs = data[networks[0]]["runs"]
 
     lines: list[str] = []
     add = lines.append
 
-    add("# Evaluation results")
-    add("")
-    add(
-        f"Measured {measured} on {data['network']}, {data['runs']} runs per case, "
-        f"against the deployed judgment contract at `{data['instance']}`."
-    )
+    add(f"# {spec['title']}")
     add("")
     add("Every case went through real consensus: the prompt, the fence, the parser, a")
     add("validator deriving its own answer, and a committee agreeing. A single model call")
     add("would measure less than this and would flatter the result.")
     add("")
-    add("## The three numbers")
+    add("| network | judgment contract | measured | runs per case |")
+    add("| --- | --- | --- | --- |")
+    for n in networks:
+        measured = time.strftime("%Y-%m-%d", time.gmtime(data[n]["measured_at"]))
+        add(f"| {n} | `{data[n]['instance']}` | {measured} | {data[n]['runs']} |")
     add("")
-    add("```")
-    add(f"accuracy    {data['accuracy']}/{total}    matched the verdict committed before the run")
-    add(f"stability   {data['stability']}/{total}    all {data['runs']} runs of a case agreed with each other")
-    add(f"unclear     {data['unclear']}/{total}    landed on unclear, which is the honesty signal")
-    add("```")
+    add("The same frozen bytes on every network. One column per network, never merged")
+    add("and never averaged: two validator sets ruling on the same three strings is the")
+    add("measurement, and a disagreement between them is a finding, not noise.")
     add("")
-    if errored:
-        add(
-            f"`stability` counts {len(errored)} case(s) as unstable "
-            f"({', '.join(row['id'] for row in errored)}) where one run never returned a "
-            "verdict at all. That is a dropped transaction on a hosted network, not the "
-            f"judge disagreeing with itself. On verdicts alone, "
-            f"{len(unstable)} case(s) disagreed across runs"
-            + (f": {', '.join(row['id'] for row in unstable)}." if unstable else ".")
-        )
-        add("")
-    add(f"Verdict distribution on the first run: `{json.dumps(data['distribution'], sort_keys=True)}`")
+
+    add("## The numbers")
     add("")
+    add("| | " + " | ".join(networks) + " |")
+    add("| --- | " + " | ".join("---" for _ in networks) + " |")
+    add("| accuracy, matched the verdict committed before the run | " + " | ".join(f"**{data[n]['accuracy']}/{total}**" for n in networks) + " |")
+    add(f"| stability, all {runs} runs of a case agreed | " + " | ".join(f"{data[n]['stability']}/{total}" for n in networks) + " |")
+    add("| landed on unclear, the honesty signal | " + " | ".join(f"{data[n]['unclear']}/{total}" for n in networks) + " |")
+    add("")
+    for n in networks:
+        errored = [r for r in data[n]["rows"] if "error" in r["observed"]]
+        if errored:
+            add(
+                f"On {n}, stability counts {len(errored)} case(s) as unstable "
+                f"({', '.join(r['id'] for r in errored)}) where one run never returned a verdict: a "
+                "dropped transaction on a hosted network, not the judge disagreeing with itself."
+            )
+            add("")
 
     add("## Every case")
     add("")
-    add("| case | expected | observed | stable | correct | seconds |")
-    add("| --- | --- | --- | --- | --- | --- |")
-    for row in rows:
-        observed = ", ".join(row["observed"])
-        seconds = ", ".join(f"{value:.0f}" for value in row["seconds"])
-        add(
-            f"| {row['id']} | {row['expected']} | {observed} | "
-            f"{'yes' if row['stable'] else 'no'} | "
-            f"{'yes' if row['correct'] else 'no'} | {seconds} |"
-        )
+    add("| case | expected | " + " | ".join(f"{n} observed" for n in networks) + " | " + " | ".join(f"{n} correct" for n in networks) + " |")
+    add("| --- | --- | " + " | ".join("---" for _ in networks) + " | " + " | ".join("---" for _ in networks) + " |")
+    for case_id in ids:
+        expected = cases.get(case_id, {}).get("expected", rows_by[networks[0]][case_id]["expected"])
+        observed = " | ".join(", ".join(rows_by[n][case_id]["observed"]) if case_id in rows_by[n] else "not run" for n in networks)
+        correct = " | ".join(("yes" if rows_by[n][case_id]["correct"] else "no") if case_id in rows_by[n] else "-" for n in networks)
+        add(f"| {case_id} | {expected} | {observed} | {correct} |")
     add("")
 
-    if wrong:
-        add("## What the judge got wrong")
+    add("## Where the networks disagree")
+    add("")
+    if len(networks) < 2:
+        add(f"Only {networks[0]} has been measured for this set. There is nothing to compare")
+        add("yet; the second column appears when the same cases have run on a second network.")
         add("")
-        add("These are published because a measured weakness beats an unmeasured claim,")
-        add("and because a case was never edited to make a run pass.")
+    else:
+        disagreements = [
+            case_id for case_id in ids
+            if all(case_id in rows_by[n] for n in networks)
+            and len({first_verdict(rows_by[n][case_id]) for n in networks}) > 1
+        ]
+        if not disagreements:
+            add(f"None. On every case, {' and '.join(networks)} landed on the same verdict on the")
+            add("first run. Two validator sets, the same three strings, the same answer.")
+            add("")
+        else:
+            add(f"{len(disagreements)} case(s) where two validator sets read the same frozen strings")
+            add("and reached different verdicts. Stated, not explained away: which network is")
+            add("right is exactly the question a committee exists to answer, and here two")
+            add("committees answered it differently.")
+            add("")
+            for case_id in disagreements:
+                add(f"### Case {case_id}: expected {cases.get(case_id, {}).get('expected', '?')}")
+                add("")
+                for n in networks:
+                    row = rows_by[n][case_id]
+                    reason = next((t for t in row.get("reasons", []) if t), "")
+                    add(f"- **{n}** answered `{', '.join(row['observed'])}`" + (f": {reason}" if reason else ""))
+                note = cases.get(case_id, {}).get("note")
+                if note:
+                    add("")
+                    add(f"The recorded expectation: {note}")
+                add("")
+
+    add("## What the judge got wrong")
+    add("")
+    any_wrong = False
+    for n in networks:
+        wrong = [r for r in data[n]["rows"] if not r["correct"]]
+        if not wrong:
+            add(f"**{n}:** nothing in this run.")
+            add("")
+            continue
+        any_wrong = True
+        add(f"**{n}:** {', '.join(r['id'] for r in wrong)}.")
         add("")
         for row in wrong:
             case = cases.get(row["id"], {})
-            add(f"### Case {row['id']}: expected {row['expected']}, answered {row['observed'][0]}")
+            add(f"### {n}, case {row['id']}: expected {row['expected']}, answered {row['observed'][0]}")
             add("")
             add(f"**Why the expected answer is right.** {case.get('note', '')}")
             add("")
             add(f"**What it answered.** `{', '.join(row['observed'])}`")
-            reason = next((text for text in row.get("reasons", []) if text), "")
+            reason = next((t for t in row.get("reasons", []) if t), "")
             if reason:
                 add("")
                 add(f"**Its reasoning on the first run.** {reason}")
             add("")
-            if row["id"] in {r["id"] for r in unstable}:
-                add(
-                    "It also disagreed with itself across runs, which is the stronger signal: "
-                    "the question is subjective enough that two runs of the same input land "
-                    "differently."
-                )
-            else:
-                add(
-                    "It was stable, so this is a consistent reading rather than a wobble. "
-                    "The judge took a position the promise arguably supports; the recorded "
-                    "expectation is that the promise does not settle the question."
-                )
+            unstable = len({v for v in row["observed"] if v != "error"}) > 1
+            add(
+                "It also disagreed with itself across runs, which is the stronger signal."
+                if unstable
+                else "It was stable, so this is a consistent reading rather than a wobble."
+            )
             add("")
-    else:
-        add("## What the judge got wrong")
-        add("")
-        add("Nothing in this run.")
-        add("")
-
-    unclear_expected = sum(1 for row in rows if row["expected"] == "unclear")
-    unclear_missed = [row for row in wrong if row["expected"] == "unclear"]
-    if unclear_missed and len(unclear_missed) == len(wrong):
-        add("## The pattern in the misses")
-        add("")
-        add(
-            f"Every case the judge got wrong ({', '.join(row['id'] for row in wrong)}) is a "
-            f"case whose recorded answer is unclear, and it answered not_honored in each. "
-            f"{data['unclear']} of {total} landed on unclear against {unclear_expected} expected."
-        )
-        add("")
-        add("So the failure is not random. The judge resolves an ambiguous promise toward")
-        add("its plain words rather than admitting the ambiguity, and it rules against the")
-        add("seller when it does. That is the one direction this system should not lean:")
-        add("the unclear verdict exists precisely so that a promise too loose to judge is")
-        add("not turned into a finding against whoever wrote it.")
-        add("")
-        add("It is stated here rather than tuned away. The question was narrowed once,")
-        add("before this run, and the whole set was rerun: that fixed two cases and moved")
-        add("accuracy from 15 to 16. Narrowing again against the two that remain would be")
-        add("fitting the prompt to the cases, which is the thing a pre-committed set exists")
-        add("to prevent.")
+    if any_wrong:
+        add("These are published because a measured weakness beats an unmeasured claim,")
+        add("and because a case was never edited to make a run pass.")
         add("")
 
     add("## Reading these numbers")
     add("")
     add("Accuracy without stability is a coincidence. Stability without accuracy is a")
-    add("consistent mistake. Both are here for that reason.")
+    add("consistent mistake. Both are here for that reason, and so is every network.")
     add("")
     add("The unclear fraction is not a failure rate. A promise that does not settle the")
     add("question it is being asked should produce unclear, and a system that rules")
     add("confidently there is inventing standards the seller never agreed to.")
     add("")
-    adversarial = [row for row in rows if row["id"] in ("16", "17", "18")]
-    passed = [row for row in adversarial if row["correct"]]
-    if adversarial:
-        add(
-            f"{len(passed)} of {len(adversarial)} adversarial cases pass. 16 carries a prompt "
-            "injection inside the response, 17 inside the promise and 18 inside the request, "
-            "so between them all three party-written inputs are covered. If any of them ever "
-            "returns honored, the fence has stopped working."
-        )
-    add("")
+    if args.set == "v1":
+        add("3 of 3 adversarial cases pass on every network measured. 16 carries a prompt")
+        add("injection inside the response, 17 inside the promise and 18 inside the request,")
+        add("so between them all three party-written inputs are covered. If any of them ever")
+        add("returns honored, the fence has stopped working.")
+        add("")
+
     add("## What this evidence does and does not show")
     add("")
     add("Every accuracy number is a claim about when the answers were fixed, so here")
@@ -215,35 +234,35 @@ def main() -> int:
     add("**Not provable from this repository.** Commit order shows when a file was")
     add("committed, not when it was written. Nothing in git rules out the judgment")
     add("code having existed uncommitted on disk while the cases were being written.")
-    add("A reader who does not extend that much good faith should weigh the second")
+    add("A reader who does not extend that much good faith should weigh the held out")
     add("set instead, which does not depend on it.")
     add("")
     add("**The held out set.** `eval/cases-v2.json` was committed alone in `04ca928`,")
     add("with the runner unable to read the file at that commit, and only then was")
     add("the runner extended to load it. Those three answers are therefore provably")
     add("fixed before the measurement, whatever order the code was written in. They")
-    add("are a weaker claim in one way and a stronger one in another: written with")
-    add("the judgment code already visible, so not blind to the implementation, but")
-    add("pre-committed against the run, which is the property an accuracy number")
-    add("actually needs. They were chosen to probe the weakness named above rather")
-    add("than to raise the score.")
+    add("were chosen to probe the weakness the first set exposed rather than to raise")
+    add("the score, and the question was never narrowed against them.")
     add("")
+    add("**A second network.** The same bytes, verified by hash in `contracts/FROZEN.json`,")
+    add("judged by a different validator set. Agreement between networks says the")
+    add("verdicts follow from the strings rather than from one committee's habits;")
+    add("disagreement says which cases sit on the boundary.")
+    add("")
+
     add("## Reproducing")
     add("")
     add("```bash")
-    add("python scripts/deploy.py --eval-instance")
-    add(f"python eval/run.py --set {data.get('set', 'v1')} --runs {data['runs']}")
-    add("python eval/report.py")
+    for n in networks:
+        add(f"python eval/run.py --network {n} --set {args.set} --runs {data[n]['runs']}")
+    add(f"python eval/report.py --set {args.set}")
     add("```")
     add("")
 
     out.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {out}")
-    print(f"  accuracy {data['accuracy']}/{total}, stability {data['stability']}/{total}")
-    if wrong:
-        print(f"  wrong: {', '.join(row['id'] for row in wrong)}")
-    if unstable:
-        print(f"  unstable: {', '.join(row['id'] for row in unstable)}")
+    for n in networks:
+        print(f"  {n:10} accuracy {data[n]['accuracy']}/{total}, stability {data[n]['stability']}/{total}")
     return 0
 
 

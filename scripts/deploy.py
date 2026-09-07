@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-Deploy both contracts, wire them, fund the three accounts, register the seller.
+Deploy the frozen contracts to a network that does not have them yet.
 
-    python scripts/deploy.py
+    python scripts/deploy.py --network bradbury
+    python scripts/deploy.py --network studionet
 
-Studio persistence is temporary, so this recreates the whole state in one
-command and is meant to be run every morning. It writes deployed.json, which the
-agent, the evaluation runner and the feed all read.
+The freeze is over the contract bytes, not over a network: the same two files
+go to every network, once each, and FROZEN.json gains one entry per network
+under `deployments`. A network that already has an entry is refused unless
+--unfreeze is passed, so neither network can be redeployed by accident.
+
+Studio funds accounts over the RPC and this does it. Bradbury's faucet is a
+browser page, so on bradbury this stops when the accounts are short and names
+the page and the addresses. It writes deployed.json for the chosen network,
+which the agent, the evaluation runner and the feed all read.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import sys
 import time
@@ -23,12 +31,48 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import GEN, ROOT, Chain, load_accounts, network_name, save_deployment
+from shared.chain import (
+    CHAINS, EXPLORERS, FROZEN, GEN, KNOWN_CHAIN_IDS, ROOT, Chain, frozen_record, load_accounts,
+    network_name, require_funds, save_deployment, select_network,
+)
 
 PROMISE = (
     "Returns the spot price for the requested pair, aggregated from at least "
     "three venues, with a timestamp no more than five seconds old."
 )
+
+
+def record_frozen_deployment(network: str, escrow: str, dispute: str) -> None:
+    """
+    Extend the freeze record with where these bytes now live.
+
+    The freeze is over the bytes, and the two hashes are not touched here. What
+    gets added is one entry under `deployments` for this network: chain id, RPC,
+    both addresses, when, and the commit the bytes came from. The gate checks
+    the chain id against the name, so a wrong chain object fails there rather
+    than publishing addresses that are not where they say.
+    """
+    if not FROZEN.exists():
+        return
+    import subprocess
+
+    record = frozen_record()
+    commit = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True
+    ).stdout.strip() or "unknown"
+    rpc = CHAINS[network].rpc_urls["default"]["http"][0]
+    record.setdefault("deployments", {})[network] = {
+        "chain_id": KNOWN_CHAIN_IDS[network],
+        "rpc": rpc,
+        "explorer": EXPLORERS.get(network, ""),
+        "escrow": escrow,
+        "dispute": dispute,
+        "deployed_at": int(time.time()),
+        "frozen_at_commit": record["frozen_at_commit"],
+        "deployed_from_commit": commit,
+    }
+    FROZEN.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    print(f"  FROZEN.json -> deployments.{network}")
 
 
 def write_feed_env(record: dict) -> None:
@@ -69,21 +113,34 @@ def main() -> int:
         "so the evaluation runner can put cases to it directly",
     )
     parser.add_argument(
+        "--network", default=None,
+        help="studionet or bradbury; default bradbury. The same frozen bytes go to "
+        "every network, one deployment each",
+    )
+    parser.add_argument(
         "--unfreeze",
         action="store_true",
-        help="deploy a NEW pair even though contracts/FROZEN.json exists. Every "
-        "published number is tied to the frozen pair; see FROZEN.json for what a "
-        "redeploy then has to redo",
+        help="deploy a NEW pair on a network that already has one in FROZEN.json. "
+        "Every published number for that network is tied to its frozen pair; see "
+        "FROZEN.json for what a redeploy then has to redo",
+    )
+    parser.add_argument(
+        "--min-balance", type=int, default=10,
+        help="whole GEN each account needs on a network with a browser faucet",
     )
     args = parser.parse_args()
+    network = select_network(args.network)
 
-    frozen = ROOT / "contracts" / "FROZEN.json"
-    if frozen.exists() and not args.unfreeze:
-        print("The contracts are frozen at the deployed bytes and addresses in")
-        print("contracts/FROZEN.json, and every published number is tied to that pair.")
-        print("A clone that wants to run the demo needs accounts, not a deployment:")
-        print("\n    python scripts/prepare.py && python scripts/demo.py\n")
-        print("If a new deployment is genuinely required, pass --unfreeze and follow")
+    deployments = frozen_record().get("deployments", {}) if FROZEN.exists() else {}
+    if network in deployments and not args.unfreeze:
+        entry = deployments[network]
+        print(f"The contracts are already deployed on {network} and that deployment is frozen:")
+        print(f"    escrow   {entry['escrow']}")
+        print(f"    dispute  {entry['dispute']}")
+        print(f"Every published number for {network} is tied to that pair. A clone that")
+        print("wants to run the demo needs accounts, not a deployment:")
+        print(f"\n    python scripts/prepare.py --network {network} && python scripts/demo.py --network {network}\n")
+        print("If a new deployment there is genuinely required, pass --unfreeze and follow")
         print("if_a_change_is_genuinely_required in FROZEN.json to the end.")
         return 1
 
@@ -98,8 +155,15 @@ def main() -> int:
     chain = Chain(owner)
 
     print("\nfunding")
-    for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
-        chain.fund(account.address, args.fund * GEN)
+    if network == "studionet":
+        for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
+            chain.fund(account.address, args.fund * GEN)
+    else:
+        # A browser faucet cannot be called from here, and the raw RPC faucet
+        # answers 403. This stops and names the page and the addresses.
+        require_funds(chain, {"owner": owner, "seller": seller, "buyer": buyer}, args.min_balance * GEN)
+        for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
+            print(f"  {name:6} {account.address[:10]} {chain.balance(account.address) / GEN:.2f} GEN")
 
     print("\ndeploying")
     escrow = chain.deploy(ROOT / "contracts" / "escrow.py", [args.window, args.bond * GEN])
@@ -144,6 +208,7 @@ def main() -> int:
 
     save_deployment(record)
     write_feed_env(record)
+    record_frozen_deployment(network, escrow, dispute)
     print(f"\nwrote deployed.json in {time.time() - started:.0f}s")
     print(f"  escrow   {escrow}")
     print(f"  dispute  {dispute}")

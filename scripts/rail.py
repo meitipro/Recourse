@@ -38,7 +38,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import Chain, load_accounts, load_deployment  # noqa: E402
+from shared.chain import Chain, load_accounts, load_deployment, select_network  # noqa: E402
 
 PORT = 4502
 ENDPOINT = f"http://localhost:{PORT}"
@@ -92,7 +92,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", default="stale", help="the failure to inject")
     parser.add_argument("--keep", action="store_true", help="leave the endpoint running")
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
     args = parser.parse_args()
+    select_network(args.network)
 
     deployment = load_deployment()
     accounts = load_accounts()

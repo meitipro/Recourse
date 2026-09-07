@@ -69,6 +69,73 @@ def files():
         yield relative, path
 
 
+#: The chain id each network name stands for, as the SDK reports it. A freeze
+#: entry that names a network with a different id is a typo or a wrong chain
+#: object, and either would publish addresses that are not where they say.
+#: shared/chain.py carries the same table; tests/direct/test_freeze.py holds
+#: the two equal.
+KNOWN_CHAIN_IDS = {"studionet": 61999, "bradbury": 4221}
+
+ADDRESS = re.compile(r"^0x[0-9a-fA-F]{40}$")
+
+
+def freeze_problems(record: dict, hashes: dict, deployed: dict | None) -> list[str]:
+    """
+    Everything wrong with a freeze record, as a list. Pure, so a test can hand
+    it a record and a deployed.json without touching the disk.
+
+    The freeze is over the contract BYTES. `deployments` is where those bytes
+    live, keyed by network, and adding a network extends the record: the hash
+    check does not care how many entries there are, only that every entry names
+    a known network with the right chain id and two well formed addresses, and
+    that a deployed.json on disk points at one of them.
+    """
+    problems: list[str] = []
+    deployments = record.get("deployments") or {}
+    where = ", ".join(f"{n}: {e.get('escrow', '?')}" for n, e in deployments.items()) or "no deployments"
+    for name in ("escrow", "dispute"):
+        if hashes[name] != record[name]["sha256"]:
+            problems.append(
+                f"contracts/{name}.py is FROZEN at the deployed bytes and has been edited.\n"
+                f"    now     {hashes[name]}\n"
+                f"    frozen  {record[name]['sha256']}  ({where})"
+            )
+    if not deployments:
+        problems.append("FROZEN.json has no deployments; the bytes are frozen but live nowhere")
+    for network, entry in deployments.items():
+        known = KNOWN_CHAIN_IDS.get(network)
+        if known is None:
+            problems.append(
+                f"deployments.{network} names a network this repository does not know; "
+                f"known: {', '.join(sorted(KNOWN_CHAIN_IDS))}"
+            )
+        elif int(entry.get("chain_id", -1)) != known:
+            problems.append(
+                f"deployments.{network}.chain_id is {entry.get('chain_id')}, but {network} is chain {known}"
+            )
+        for name in ("escrow", "dispute"):
+            if not ADDRESS.match(str(entry.get(name, ""))):
+                problems.append(f"deployments.{network}.{name} is not an address: {entry.get(name)!r}")
+    # A deployment on disk that is not a frozen one means a redeploy happened
+    # without the rest of the repository following it.
+    if deployed is not None:
+        network = deployed.get("network")
+        entry = deployments.get(network)
+        if entry is None:
+            problems.append(
+                f"deployed.json is for {network!r}, which has no frozen deployment; "
+                f"frozen: {', '.join(sorted(deployments)) or 'none'}"
+            )
+        else:
+            for name in ("escrow", "dispute"):
+                if str(deployed.get(name, "")).lower() != str(entry[name]).lower():
+                    problems.append(
+                        f"deployed.json names {name} {deployed.get(name)} on {network} but the frozen "
+                        f"deployment there is {entry[name]}"
+                    )
+    return problems
+
+
 def frozen_contracts() -> list[str]:
     """
     The contracts are frozen at the deployed bytes, and this is the check rather
@@ -89,31 +156,18 @@ def frozen_contracts() -> list[str]:
     if not record_path.exists():
         return ["contracts/FROZEN.json is missing, so the freeze cannot be checked"]
     record = json.loads(record_path.read_text(encoding="utf-8"))
-    problems: list[str] = []
-    for name in ("escrow", "dispute"):
-        path = ROOT / "contracts" / f"{name}.py"
-        normalised = path.read_bytes().replace(b"\r\n", b"\n")
-        actual = hashlib.sha256(normalised).hexdigest()
-        if actual != record[name]["sha256"]:
-            problems.append(
-                f"contracts/{name}.py is FROZEN at the deployed bytes and has been edited.\n"
-                f"    now     {actual}\n"
-                f"    frozen  {record[name]['sha256']}  ({record[name]['address']})"
-            )
-    # A deployment on disk that is not the frozen one means a redeploy happened
-    # without the rest of the repository following it.
+    deployed = None
     deployed_path = ROOT / "deployed.json"
     if deployed_path.exists():
         try:
             deployed = json.loads(deployed_path.read_text(encoding="utf-8"))
-            for name in ("escrow", "dispute"):
-                if deployed.get(name, "").lower() != record[name]["address"].lower():
-                    problems.append(
-                        f"deployed.json names {name} {deployed.get(name)} but the frozen "
-                        f"deployment is {record[name]['address']}"
-                    )
-        except (ValueError, KeyError):
-            problems.append("deployed.json could not be read against the freeze")
+        except ValueError:
+            return ["deployed.json could not be read against the freeze"]
+    hashes = {
+        name: hashlib.sha256((ROOT / "contracts" / f"{name}.py").read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        for name in ("escrow", "dispute")
+    }
+    problems = freeze_problems(record, hashes, deployed)
     if problems:
         problems.append(
             "Every published number is tied to the frozen pair. If a change is genuinely\n"

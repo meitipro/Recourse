@@ -174,7 +174,12 @@ def cmd_seller(argument: str, deps: Deps) -> str:
 
 def cmd_stats(deps: Deps) -> str:
     a = deps.addresses()
-    lines = [f"studionet, frozen contracts", f"escrow  {a['escrow']}", f"dispute {a['dispute']}", ""]
+    lines = [
+        f"{a.get('network', 'studionet')}, frozen contracts (the same bytes on every network)",
+        f"escrow  {a['escrow']}",
+        f"dispute {a['dispute']}",
+        "",
+    ]
     try:
         e = deps.read_json(a["escrow"], "stats", [])
         d = deps.read_json(a["dispute"], "stats", [])

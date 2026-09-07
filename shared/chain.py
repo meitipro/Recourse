@@ -86,8 +86,87 @@ RETRIES = 10
 BACKOFF = 1.6
 
 
+#: The chain ids the SDK reports, pinned here so a freeze entry that names a
+#: network with the wrong id fails the gate. Studio persistence is temporary;
+#: Bradbury persists, which is why it is the default everything reads.
+KNOWN_CHAIN_IDS = {"studionet": 61999, "bradbury": 4221}
+
+#: Where GEN comes from on each network. Studio has a programmatic faucet.
+#: Bradbury's is a browser page and cannot be automated, so a deploy or a
+#: prepare there stops and names it rather than trying.
+FAUCETS = {
+    "studionet": "sim_fundAccount over the RPC (scripts call it for you)",
+    "bradbury": "https://testnet-faucet.genlayer.foundation",
+}
+
+EXPLORERS = {
+    "studionet": "https://explorer-studio.genlayer.com",
+    "bradbury": "https://explorer-bradbury.genlayer.com",
+    "asimov": "https://explorer-asimov.genlayer.com",
+}
+
+FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
+
+
 def network_name() -> str:
-    return os.environ.get("RECOURSE_NETWORK", "studionet")
+    return os.environ.get("RECOURSE_NETWORK", "bradbury")
+
+
+def select_network(name: str | None) -> str:
+    """Set the network for this process from a --network flag, and return it."""
+    if name:
+        if name not in CHAINS:
+            raise SystemExit(f"unknown network {name}, expected one of {sorted(CHAINS)}")
+        os.environ["RECOURSE_NETWORK"] = name
+    return network_name()
+
+
+def frozen_record() -> dict:
+    if not FROZEN.exists():
+        raise SystemExit("contracts/FROZEN.json is missing")
+    return json.loads(FROZEN.read_text(encoding="utf-8"))
+
+
+def frozen_deployment(network: str | None = None) -> dict:
+    """
+    The frozen pair's addresses on one network, from contracts/FROZEN.json.
+
+    The freeze is over the bytes; a network is where those bytes live. A
+    network with no entry has not been deployed to yet, and the message says
+    which script does that.
+    """
+    name = network or network_name()
+    entry = frozen_record().get("deployments", {}).get(name)
+    if not entry:
+        raise SystemExit(
+            f"no frozen deployment on {name} yet. "
+            f"Deploy the same bytes there with: python scripts/deploy.py --network {name}"
+        )
+    return entry
+
+
+def require_funds(chain: "Chain", accounts: dict, minimum_wei: int) -> None:
+    """
+    Stop, clearly, when accounts on a network with a browser faucet hold too
+    little to proceed. Never retries and never calls a faucet: the only one
+    that can be called is Studio's, and studionet is handled by fund().
+    """
+    name = network_name()
+    if name == "studionet":
+        return
+    short = []
+    for label, account in accounts.items():
+        balance = chain.balance(account.address)
+        if balance < minimum_wei:
+            short.append((label, account.address, balance))
+    if not short:
+        return
+    print(f"\nThese accounts need GEN on {name} before this can continue.")
+    print(f"The faucet is a browser page: {FAUCETS.get(name, 'see the network documentation')}")
+    print("Fund each address below, then run this again. Nothing was sent.\n")
+    for label, address, balance in short:
+        print(f"  {label:7} {address}   {balance / GEN:.2f} GEN, needs {minimum_wei / GEN:.0f}")
+    raise SystemExit(2)
 
 
 def chain():
@@ -436,12 +515,25 @@ def _returned(leader_receipt: dict) -> typing.Any:
 
 # --- the deployment record ------------------------------------------------
 def load_deployment() -> dict:
+    """
+    This machine's record for the network it is currently talking to.
+
+    deployed.json is written for one network at a time. Reading it under a
+    different RECOURSE_NETWORK would pay a studionet seller on bradbury, so a
+    mismatch stops here and says which script rewrites it.
+    """
     if not DEPLOYED.exists():
         raise SystemExit(
-            "deployed.json is missing. Run scripts/deploy.py first, or set "
-            "RECOURSE_ESCROW and RECOURSE_DISPUTE."
+            f"deployed.json is missing. Run: python scripts/prepare.py --network {network_name()}"
         )
-    return json.loads(DEPLOYED.read_text(encoding="utf-8"))
+    record = json.loads(DEPLOYED.read_text(encoding="utf-8"))
+    recorded = record.get("network")
+    if recorded and recorded != network_name():
+        raise SystemExit(
+            f"deployed.json is for {recorded} but RECOURSE_NETWORK is {network_name()}. "
+            f"Run: python scripts/prepare.py --network {network_name()}"
+        )
+    return record
 
 
 def save_deployment(record: dict) -> None:

@@ -35,7 +35,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import Chain, load_accounts, load_deployment
+from shared.chain import Chain, load_accounts, load_deployment, select_network
 
 HERE = pathlib.Path(__file__).resolve().parent
 CASES = HERE / "cases.json"
@@ -108,7 +108,12 @@ def run_once(chain: Chain, address: str, case: dict, run_index: int, session: st
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=3)
-    parser.add_argument("--out", default=str(HERE / "results.json"))
+    parser.add_argument(
+        "--out", default=None,
+        help="results file. Default: eval/results[-v2].json on studionet, "
+        "eval/results[-v2].<network>.json elsewhere, so every network keeps its own column",
+    )
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
     parser.add_argument("--only", default="", help="comma separated case ids")
     parser.add_argument("--address", default="", help="override the dispute instance")
     parser.add_argument(
@@ -116,6 +121,14 @@ def main() -> int:
         help="v1 is the original eighteen, v2 the three held out cases",
     )
     args = parser.parse_args()
+    network = select_network(args.network)
+    if args.out is None:
+        # studionet keeps the original file names; every other network gets
+        # its own, so the two columns in RESULTS.md come from two files and
+        # nothing is ever merged or averaged.
+        suffix = "" if network == "studionet" else f".{network}"
+        base = "results-v2" if args.set == "v2" else "results"
+        args.out = str(HERE / f"{base}{suffix}.json")
 
     cases = load_cases(args.set)
     if args.only:

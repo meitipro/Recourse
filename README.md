@@ -4,14 +4,24 @@
 
 **A promise that costs something to break.**
 
-A dispute right for machine payments, adjudicated on GenLayer. Any endpoint can
-claim to be good; only one that has put a promise in escrow can prove it, and
-pays when it is wrong.
+Recourse is a dispute right for the un-negotiated machine payment: an agent
+pays an endpoint it has never dealt with, for one call, with nothing signed and
+no relationship on either side. The whole contract is one sentence the seller
+published on its own. That sentence is a unilateral act, so a buyer that has
+never heard of Recourse is still protected by it, and a seller is bound by
+nothing it did not write.
 
-x402 settles machine payments in milliseconds and finally. Once settlement
-confirms there is no chargeback path and no dispute window. Recourse holds the
-payment for a short window, lets the buying agent contest it, and has GenLayer
-validators rule on three frozen strings.
+That is the scope, stated as a definition rather than a comparison: not the
+call where two parties agreed structured, machine-readable terms before any
+money moved, but the one where nobody agreed anything and the payment happened
+anyway. Any endpoint can claim to be good; only one that has put a promise in
+escrow can prove it, and pays when it is wrong.
+
+x402 settles that payment in milliseconds and finally. Once settlement confirms
+there is no chargeback path and no dispute window. Recourse holds the payment
+for a short window, lets the buying agent contest it, and has GenLayer
+validators rule on three frozen strings and the chain's own record of when they
+arrived.
 
 **Agents can spend money in milliseconds. Nothing in the stack lets them get it
 back.**
@@ -284,14 +294,20 @@ frozen contracts through `web/.env.local`, which `prepare.py` writes.
 
 ## Contracts
 
-    escrow    0x5125De939F7373eAE741B133FB32B7E9915C8F78
-    dispute   0x80A98929EcA334804dbB04d31F6050bca42C0Cc4
-    network   studionet, chain id 61999
+The same two files, frozen at their bytes, deployed once per network. The
+bytes are identical on every network and the two hashes in
+`contracts/FROZEN.json` prove it: one sha256 per contract above one entry per
+network, and `scripts/check.py` fails the local gate on any edit to either file
+or on an entry whose chain id does not match its name.
 
-These contracts are frozen at the deployed bytes. `contracts/FROZEN.json`
-records their hashes beside these addresses and `scripts/check.py` fails the
-local gate on any edit to either file, because every number published here was
-measured against this pair and a redeploy would invalidate all of it.
+| network | chain | escrow | dispute |
+| --- | --- | --- | --- |
+| studionet | 61999 | `0x5125De939F7373eAE741B133FB32B7E9915C8F78` | `0x80A98929EcA334804dbB04d31F6050bca42C0Cc4` |
+
+Bradbury is the default everything reads, because it persists where Studio is
+wiped; its row lands here the moment the three accounts hold GEN there, with
+`python scripts/deploy.py --network bradbury`. Every number published here is
+tied to the pair it was measured on, and each network gets its own column.
 
 Verify with `python scripts/verify.py`, which reads the source back off the
 chain, diffs it against this repository, and runs the linter over the bytes that

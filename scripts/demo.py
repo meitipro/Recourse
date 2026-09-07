@@ -37,7 +37,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import GEN, Chain, load_accounts, load_deployment  # noqa: E402
+from shared.chain import GEN, Chain, load_accounts, load_deployment, select_network  # noqa: E402
 
 ENDPOINT = "http://localhost:4501"
 
@@ -77,7 +77,9 @@ def main() -> int:
     parser.add_argument("--contested", action="store_true", help="skip the honest path")
     parser.add_argument("--honest", action="store_true", help="skip the contested path")
     parser.add_argument("--keep-seller", action="store_true", help="do not start the endpoint")
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
     args = parser.parse_args()
+    select_network(args.network)
 
     deployment = load_deployment()
     accounts = load_accounts()

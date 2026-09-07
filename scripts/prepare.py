@@ -2,13 +2,19 @@
 """
 Get a clean clone ready to run the demo against the FROZEN contracts.
 
-    python scripts/prepare.py
+    python scripts/prepare.py                       # bradbury, the default
+    python scripts/prepare.py --network studionet
 
-Deploys nothing. The contracts are frozen at the addresses in
-contracts/FROZEN.json and every published number is tied to them, so a clone
-must not create a new pair to run a demo. What a clone needs instead is three
-funded accounts of its own, a seller among them registered on the frozen
-escrow, and a deployed.json naming the frozen pair, which is what this writes.
+Deploys nothing. The contracts are frozen at the bytes in contracts/FROZEN.json
+and live at one address pair per network under its `deployments`; every
+published number is tied to those. What a clone needs is three accounts of its
+own with GEN on the chosen network, a seller among them registered on that
+network's escrow, and a deployed.json naming that network's pair, which is
+what this writes.
+
+Studio funds accounts over the RPC and this does it for you. Bradbury's faucet
+is a browser page, so on bradbury this stops and names the page and the
+addresses when they are short, and does nothing else.
 
 Idempotent. Run it twice and it funds nothing twice and registers nobody
 twice.
@@ -16,7 +22,7 @@ twice.
 
 from __future__ import annotations
 
-import json
+import argparse
 import pathlib
 import sys
 import time
@@ -27,35 +33,62 @@ sys.path.insert(0, str(ROOT))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from scripts.deploy import PROMISE, write_feed_env  # noqa: E402
-from shared.chain import GEN, Chain, load_accounts, load_deployment, network_name, save_deployment  # noqa: E402
+from shared.chain import (  # noqa: E402
+    GEN, Chain, frozen_deployment, frozen_record, load_accounts, network_name,
+    require_funds, save_deployment, select_network,
+)
 
-FROZEN = ROOT / "contracts" / "FROZEN.json"
 MIN_BALANCE = 50 * GEN
 
 
+def write_feed_env(record: dict) -> None:
+    """Point the feed at this network. Addresses come from FROZEN.json; the name is what it needs."""
+    path = ROOT / "web" / ".env.local"
+    path.write_text(
+        "\n".join(
+            [
+                "# Written by scripts/prepare.py. Edit FROZEN.json, not this file.",
+                f"NEXT_PUBLIC_RECOURSE_NETWORK={record['network']}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    print(f"  feed env -> {path.relative_to(ROOT)}  (network {record['network']})")
+
+
 def main() -> int:
-    if not FROZEN.exists():
-        raise SystemExit("contracts/FROZEN.json is missing; nothing is frozen to prepare against")
-    frozen = json.loads(FROZEN.read_text(encoding="utf-8"))
-    escrow, dispute = frozen["escrow"]["address"], frozen["dispute"]["address"]
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    args = parser.parse_args()
+    network = select_network(args.network)
+
+    from scripts.deploy import PROMISE  # noqa: PLC0415  the same promise every deployment registers
+
+    entry = frozen_deployment(network)
+    escrow, dispute = entry["escrow"], entry["dispute"]
 
     accounts = load_accounts()
     owner, seller, buyer = accounts["owner"], accounts["seller"], accounts["buyer"]
     chain = Chain(owner)
-    print(f"network  {network_name()}")
+    print(f"network  {network}  (chain {entry['chain_id']})")
     print(f"escrow   {escrow}  (frozen)")
     print(f"dispute  {dispute}  (frozen)")
 
     print("\nfunding, where a balance is below 50 GEN")
-    for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
-        balance = chain.balance(account.address)
-        if balance >= MIN_BALANCE:
-            print(f"  {name:6} {account.address[:10]} {balance / GEN:.0f} GEN, enough")
-            continue
-        chain.fund(account.address, 500 * GEN)
+    if network == "studionet":
+        for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
+            balance = chain.balance(account.address)
+            if balance >= MIN_BALANCE:
+                print(f"  {name:6} {account.address[:10]} {balance / GEN:.0f} GEN, enough")
+                continue
+            chain.fund(account.address, 500 * GEN)
+    else:
+        require_funds(chain, {"owner": owner, "seller": seller, "buyer": buyer}, MIN_BALANCE)
+        for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
+            print(f"  {name:6} {account.address[:10]} {chain.balance(account.address) / GEN:.0f} GEN")
 
-    print("\nthe seller on the frozen escrow")
+    print(f"\nthe seller on the {network} escrow")
     # A view that refuses reaches this side as a bare "execution failed", with
     # the contract's "unknown seller" nowhere in it. So the read is not the
     # test; the registration is. Attempting it is idempotent: a seller already
@@ -77,15 +110,21 @@ def main() -> int:
         print(f"  promise {len(row['promise'])} chars, judgeable {row['judgeable']}")
 
     stats = chain.read_json(escrow, "stats")
-    # Keep whatever an earlier run recorded (evidence, an eval instance) and
-    # only refresh the parts this machine owns.
-    try:
-        record = load_deployment()
-    except SystemExit:
-        record = {}
+    # Keep whatever an earlier run recorded for THIS network (evidence, an eval
+    # instance) and refresh only the parts this machine owns. A record for a
+    # different network is replaced: the file describes one network at a time.
+    record: dict = {}
+    deployed = ROOT / "deployed.json"
+    if deployed.exists():
+        import json
+
+        previous = json.loads(deployed.read_text(encoding="utf-8"))
+        if previous.get("network") == network:
+            record = previous
     record.update(
         {
-            "network": network_name(),
+            "network": network,
+            "chain_id": entry["chain_id"],
             "escrow": escrow,
             "dispute": dispute,
             "owner": owner.address,
@@ -95,12 +134,12 @@ def main() -> int:
             "bond_wei": str(stats["bond_amount"]),
             "promise": row["promise"],
             "prepared_at": int(time.time()),
-            "frozen_at_commit": frozen["frozen_at_commit"],
+            "frozen_at_commit": frozen_record()["frozen_at_commit"],
         }
     )
     save_deployment(record)
     write_feed_env(record)
-    print("\nwrote deployed.json against the frozen pair. Now: python scripts/demo.py")
+    print(f"\nwrote deployed.json for {network}. Now: python scripts/demo.py --network {network}")
     return 0
 
 

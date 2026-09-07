@@ -10,6 +10,9 @@
  * between working and not, so every read here retries.
  */
 
+import fs from "node:fs";
+import path from "node:path";
+
 import { createClient } from "genlayer-js";
 import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 
@@ -21,11 +24,44 @@ const CHAINS = {
 
 export type NetworkName = keyof typeof CHAINS;
 
+/**
+ * Bradbury by default, because it persists; Studio is wiped and a judge who
+ * opens the feed two weeks on would find an empty chain there. Studionet
+ * stays selectable and both deployments stay published.
+ */
 export const NETWORK: NetworkName =
-  (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "studionet";
+  (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "bradbury";
 
-export const ESCROW = process.env.NEXT_PUBLIC_RECOURSE_ESCROW || "";
-export const DISPUTE = process.env.NEXT_PUBLIC_RECOURSE_DISPUTE || "";
+/**
+ * The frozen pair's addresses on this network, from contracts/FROZEN.json,
+ * which next.config.mjs traces into the hosted function. The environment can
+ * still override them, but nothing needs to set them: the freeze record is the
+ * source, so a deployment can never point at addresses the repository does
+ * not publish.
+ */
+type FrozenRecord = {
+  deployments?: Record<string, { chain_id: number; escrow: string; dispute: string; explorer?: string }>;
+};
+
+function readFrozenDeployment(): { escrow: string; dispute: string } {
+  for (const candidate of ["../contracts/FROZEN.json", "../../contracts/FROZEN.json"]) {
+    try {
+      const file = path.join(process.cwd(), candidate);
+      if (fs.existsSync(file)) {
+        const record = JSON.parse(fs.readFileSync(file, "utf8")) as FrozenRecord;
+        const entry = record.deployments?.[NETWORK];
+        if (entry) return { escrow: entry.escrow, dispute: entry.dispute };
+      }
+    } catch {
+      // fall through to the environment
+    }
+  }
+  return { escrow: "", dispute: "" };
+}
+
+const frozen = readFrozenDeployment();
+export const ESCROW = process.env.NEXT_PUBLIC_RECOURSE_ESCROW || frozen.escrow;
+export const DISPUTE = process.env.NEXT_PUBLIC_RECOURSE_DISPUTE || frozen.dispute;
 
 /**
  * The SDK carries genlayer-explorer.vercel.app for studionet, which answers 503
@@ -147,7 +183,12 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
   };
 
   if (!ESCROW || !DISPUTE) {
-    return { ...base, error: "No contract addresses are configured. Run scripts/deploy.py." };
+    return {
+      ...base,
+      error:
+        `The frozen contracts have no deployment on ${NETWORK} in contracts/FROZEN.json yet. ` +
+        "Set NEXT_PUBLIC_RECOURSE_NETWORK to a network that has one, or deploy the same bytes there.",
+    };
   }
 
   try {

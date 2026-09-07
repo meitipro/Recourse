@@ -51,14 +51,19 @@ class LiveDeps:
     """The real dependencies. Each failure becomes Unavailable, never a guess."""
 
     def __init__(self) -> None:
+        from shared.chain import EXPLORERS, frozen_deployment, network_name
+
         self._chain = reader()
-        self._addresses = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
+        self._network = network_name()
+        self._entry = frozen_deployment(self._network)
+        self._explorer = self._entry.get("explorer") or EXPLORERS.get(self._network, "")
 
     def addresses(self) -> dict:
         return {
-            "escrow": self._addresses["escrow"]["address"],
-            "dispute": self._addresses["dispute"]["address"],
-            "explorer": "https://explorer-studio.genlayer.com",
+            "network": self._network,
+            "escrow": self._entry["escrow"],
+            "dispute": self._entry["dispute"],
+            "explorer": self._explorer,
         }
 
     def read_json(self, contract: str, method: str, args: list):
@@ -100,6 +105,15 @@ class LiveDeps:
 
 
 def main() -> int:
+    import argparse
+
+    from shared.chain import select_network
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    args = parser.parse_args()
+    network = select_network(args.network)
+
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     if not token:
         print("TELEGRAM_BOT_TOKEN is not set. Create a bot with @BotFather and export its token.")
@@ -109,7 +123,7 @@ def main() -> int:
     deps = LiveDeps()
     conversations = Conversations()
     bucket = Bucket()
-    print(f"bot @{me.get('username')} polling. Read only, no key, nothing logged but ids.")
+    print(f"bot @{me.get('username')} polling {network}. Read only, no key, nothing logged but ids.")
     while True:
         try:
             for update in telegram.updates():

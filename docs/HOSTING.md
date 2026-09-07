@@ -38,7 +38,7 @@ curl -s -X POST https://recourse-linter.vercel.app/api/lint \
 | Root directory | `web` |
 | Framework | Next.js (detected) |
 | Include source files outside the root directory | **on** (the page reads `../eval/*.json` and `../contracts/FROZEN.json`; `web/next.config.mjs` traces them into the function) |
-| Environment | `LINTER_URL` = `https://recourse-linter.vercel.app/api/lint`, `NEXT_PUBLIC_RECOURSE_NETWORK` = `studionet`, `NEXT_PUBLIC_RECOURSE_ESCROW` = `0x5125De939F7373eAE741B133FB32B7E9915C8F78`, `NEXT_PUBLIC_RECOURSE_DISPUTE` = `0x80A98929EcA334804dbB04d31F6050bca42C0Cc4` |
+| Environment | `LINTER_URL` = `https://recourse-linter.vercel.app/api/lint`, and `NEXT_PUBLIC_RECOURSE_NETWORK` = `bradbury` (or `studionet`). The addresses come from `contracts/FROZEN.json` for that network and need no variable. |
 
 `LINTER_URL` is not optional here. In production the lint route answers 503
 "linter not configured" without it, by design, and the panel is the first

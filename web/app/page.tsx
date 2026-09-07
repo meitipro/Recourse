@@ -109,10 +109,18 @@ export default async function Page() {
       <header className="shell hero">
         <div className="wordmark">
           Recourse<span>.</span>
+          {/* Which chain every number below comes from. Always shown: two
+              networks carry the same frozen bytes, and a reader has to know
+              which one they are looking at. */}
+          <span className="network-badge" title="the network this page reads">
+            reading {NETWORK}
+          </span>
         </div>
-        <h1 style={{ marginTop: "2.5rem" }}>A dispute right for machine payments.</h1>
+        <h1 style={{ marginTop: "2.5rem" }}>A dispute right for the un-negotiated call.</h1>
         <p className="lede" style={{ marginTop: "1.5rem" }}>
-          Agents can spend money in milliseconds. Nothing in the stack lets them get it back.
+          An agent pays an endpoint it has never met, for one call, with nothing signed. The
+          whole contract is one sentence the seller published on its own. Agents can spend
+          money in milliseconds; nothing in the stack lets them get it back.
         </p>
         <div className="actions">
           <a className="button" href="#feed">

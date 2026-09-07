@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import Chain, load_accounts, load_deployment, retry  # noqa: E402
+from shared.chain import Chain, load_accounts, load_deployment, retry, select_network  # noqa: E402
 
 
 def normalise(text: str) -> str:
@@ -94,6 +94,13 @@ def _lint_deployed(name: str, source: str) -> int:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    args = parser.parse_args()
+    select_network(args.network)
+
     deployment = load_deployment()
     chain = Chain(load_accounts()["owner"])
     failures = 0

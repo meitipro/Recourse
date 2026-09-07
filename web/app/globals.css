@@ -999,3 +999,20 @@ footer {
     padding-top: 0.75rem;
   }
 }
+
+/* --- which network the page reads, in the header, always ------------------ */
+
+.network-badge {
+  display: inline-block;
+  margin-left: 0.9rem;
+  padding: 0.2rem 0.6rem;
+  vertical-align: middle;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  background: var(--accent-wash);
+}
