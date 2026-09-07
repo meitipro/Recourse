@@ -476,7 +476,9 @@ written to deploy to Vercel as three projects from these two repositories
 (`web/`, the repository root for `api/lint.py`, and `recourse-skill/mcp`). The
 team token available to this build can list that team's projects but cannot
 create one, so the three imports are a dashboard step for the account owner.
-`reference/07-addresses.json` already names the URLs they will have.
+[docs/HOSTING.md](docs/HOSTING.md) has every setting each import needs and a
+smoke test for each, and `reference/07-addresses.json` already names the URLs
+they will have.
 
 **The bot's handle.** `bot/` is complete and tested through injected
 dependencies; it goes live the moment a BotFather token is exported as
