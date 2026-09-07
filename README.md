@@ -37,6 +37,10 @@ An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
 
+![The live feed on the frozen contracts: twelve payments, six disputes, every verdict a citation that links to its case, read from the chain when the page opened](docs/images/feed.png)
+
+![The linter panel as a visitor first sees it. Stage 1 answers a vague promise instantly and names the check it failed; stage 2 asks the deployed gate's question of a model and offers a rewrite](docs/images/linter.png)
+
 Measured on studionet, printed by the demo on every run:
 
 ```
