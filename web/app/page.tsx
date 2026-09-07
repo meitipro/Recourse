@@ -9,9 +9,11 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import Feed from "@/components/Feed";
+import { Suspense } from "react";
+import FeedLoading from "@/components/FeedLoading";
+import FeedSection from "@/components/FeedSection";
 import Linter from "@/components/Linter";
-import { EXPLORER, NETWORK, loadFeed } from "@/lib/chain";
+import { NETWORK } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,6 +26,25 @@ type Results = {
   unclear: number;
   rows: Array<{ id: string; correct: boolean; stable: boolean; expected: string }>;
 };
+
+type Frozen = { escrow?: { address: string }; dispute?: { address: string }; window_seconds?: number; bond_wei?: string };
+
+function readFrozen(): Frozen | null {
+  // The frozen deployment record, committed. Its window and bond were read
+  // from the escrow when the contracts froze, so a label can use them without
+  // waiting on the chain; the live feed streams in separately.
+  for (const candidate of ["../contracts/FROZEN.json", "../../contracts/FROZEN.json"]) {
+    try {
+      const file = path.join(process.cwd(), candidate);
+      if (fs.existsSync(file)) {
+        return JSON.parse(fs.readFileSync(file, "utf8")) as Frozen;
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return null;
+}
 
 function readResults(name = "results.json"): Results | null {
   // Published numbers only. If the evaluation has not been run against this
@@ -76,10 +97,12 @@ const STACK = [
 ];
 
 export default async function Page() {
-  const data = await loadFeed(50);
+  // Nothing here waits on the chain. The feed streams in below; the one
+  // number the mechanism section needs, the settlement window, comes from the
+  // frozen deployment record, which was read from the escrow when it froze.
+  const frozen = readFrozen();
   const results = readResults();
   const heldOut = readResults("results-v2.json");
-  const explorer = EXPLORER[NETWORK];
 
   return (
     <>
@@ -182,7 +205,7 @@ export default async function Page() {
           </div>
           <div className="flow-facts">
             <span>
-              settlement window {data.windowSeconds ? `${data.windowSeconds}s` : "a few minutes"}
+              settlement window {frozen?.window_seconds ? `${frozen.window_seconds}s` : "a few minutes"}
             </span>
             <span>uncontested releases with no consensus</span>
             <span>the honest path adds no latency</span>
@@ -192,22 +215,14 @@ export default async function Page() {
         <section className="shell" id="feed">
           <div className="eyebrow">Live feed</div>
           <h2>Reading the chain, right now.</h2>
-          <div style={{ marginTop: "2rem" }}>
-            <Feed data={data} />
-          </div>
-          {data.escrow ? (
-            <p className="caption" style={{ marginTop: "1.25rem" }}>
-              escrow{" "}
-              <a href={`${explorer}/address/${data.escrow}`} rel="noreferrer" className="mono">
-                {data.escrow}
-              </a>{" "}
-              &nbsp; dispute{" "}
-              <a href={`${explorer}/address/${data.dispute}`} rel="noreferrer" className="mono">
-                {data.dispute}
-              </a>{" "}
-              &nbsp; network <span className="mono">{NETWORK}</span>
-            </p>
-          ) : null}
+          {/*
+            The only part of the page that waits on the chain, streamed so the
+            rest never does. A slow read shows dashes and a sentence; a failed
+            one shows the feed's own notice. Neither looks like a broken site.
+          */}
+          <Suspense fallback={<FeedLoading />}>
+            <FeedSection />
+          </Suspense>
         </section>
 
         <section className="shell">

@@ -22,5 +22,7 @@
     "address": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
     "sha256": "7781e46eddb165156499d47a60b708efeb1978e92f2c3fb977c47cc148fbc008",
     "bytes": 21353
-  }
+  },
+  "window_seconds": 300,
+  "bond_wei": "1000000000000000000"
 }
