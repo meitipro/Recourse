@@ -164,6 +164,25 @@ Commit order shows when a file was committed, not when it was written, and
 [eval/RESULTS.md](eval/RESULTS.md) says so under "What this evidence does and
 does not show".
 
+### Corrections, and what caught each one
+
+A project that reports no mistakes is a project nobody checked. Every number
+above has been wrong once, or would have flattered if left alone. Each row
+names what caught it, because the catching mechanism is the part worth
+trusting:
+
+| the claim, as it stood | what caught it |
+| --- | --- |
+| **17 of 18**, measured on the set the judgment question had already been narrowed against. | Three held out cases, committed alone before the runner could read them. They score **1 of 3**. The next section is that story, and the two figures appear together everywhere either one appears. |
+| **Case 12 could have been narrowed away.** Its committed answer is `unclear`, the judge answers `not_honored`, and a third pass at the question would have made it pass. | The rule that an evaluation case is never edited to make a run succeed. It is published as a miss instead, because narrowing the question against the cases that remain is fitting the prompt to the set. |
+| **About a dollar an adjudication**, inherited from published examples of a differently shaped contract. | Trying to measure it. studionet charges nothing and `gasUsed` is the limit echoed back rather than work done, so no dollar figure could have come from this deployment. What replaced it is countable: ten model calls a dispute. |
+| **"median settlement" on the feed**, which measured payment to dispute and never measured settlement. | Reading what the two chain timestamps are. A case's `opened_at` and `decided_at` are one message's fixed datetime, so they cannot see how long judgment took. The tile was relabelled rather than removed: the number was real, its name was not. |
+| **Two transaction hashes in this file, typed rather than read off the chain.** | Review caught them before the gate ran, and `tests/direct/test_snapshot.py` is what would have caught them at it: every hash this README cites must exist in `evidence/snapshot.json`. They were replaced with hashes read out of the snapshot, and all ten now verify against recorded chain data. |
+
+Design corrections are a different list and further down, under
+[Three things we got wrong first](#three-things-we-got-wrong-first). Those were
+found by running the thing; these were found by checking what it claimed.
+
 ### The held out set scores 1 of 3
 
 A second set, `eval/cases-v2.json`, was committed alone in `04ca928` at a point
