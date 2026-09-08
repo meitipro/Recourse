@@ -1,8 +1,7 @@
 {
   "frozen_at_commit": "ccc470a",
   "frozen_on": "2026-09-06",
-  "network": "studionet",
-  "chain_id": 61999,
+  "first_deployed_on": "studionet",
   "hash_of": "sha256 of the file with line endings normalised to LF. That is what was deployed: scripts/deploy.py reads the file with universal newlines, so the bytes on chain are LF whatever a Windows checkout with autocrlf put on disk.",
   "why": "Every published number is tied to this pair of addresses. verify.py lints the deployed bytes against these files, RESULTS.md and HELD-OUT.md name the instance they were measured on, and the refusal and rail transactions in the README were recorded against these contracts. A redeploy invalidates all of it and costs 63 consensus transactions to restore.",
   "if_a_change_is_genuinely_required": [

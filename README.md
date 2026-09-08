@@ -37,7 +37,8 @@ python scripts/demo.py                   # both paths, against the frozen contra
 
 A clean clone was run exactly this way before this README was finished; the only
 thing it assumed already present was `genvm-lint`, which is why that line is
-there. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
+there. [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script, shot by
+shot, every spoken number one this repository publishes. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
 `contracts/FROZEN.json` and every published number is tied to them, so a clone
 gets accounts of its own, funded from the Studio faucet, and a seller among
 them registered on the frozen escrow. `deploy.py` refuses to run while the
