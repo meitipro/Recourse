@@ -8,12 +8,13 @@ Turns the measured results into a report with one column per network.
 Files, one per network per set, never merged and never averaged:
 
     eval/results.json               studionet, v1     eval/results-v2.json
-    eval/results.bradbury.json      bradbury,  v1     eval/results-v2.bradbury.json
+    eval/results.<network>.json     any other, v1     eval/results-v2.<network>.json
 
-The published number is generated from the measurement, never typed. Two
-networks are two validator sets ruling on the same frozen strings; where they
-disagree on a case, that is a finding and it gets its own section, in either
-direction, rather than an explanation.
+studionet is the only deployment, so the report has one column today. The
+shape stays because a second validator set ruling on the same frozen strings
+would be a second column, and where it disagreed on a case that would be a
+finding with its own section, in either direction, rather than an explanation.
+The published number is generated from the measurement, never typed.
 """
 
 from __future__ import annotations
@@ -25,7 +26,14 @@ import sys
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
-NETWORKS = ["studionet", "bradbury"]
+FROZEN = HERE.parent / "contracts" / "FROZEN.json"
+#: The networks the frozen contracts are deployed on, studionet first because
+#: its results files carry no suffix. One entry today; a second deployment
+#: would appear here without a code change.
+NETWORKS = sorted(
+    json.loads(FROZEN.read_text(encoding="utf-8")).get("deployments", {"studionet": {}}),
+    key=lambda n: (n != "studionet", n),
+)
 SETS = {
     "v1": {"cases": HERE / "cases.json", "base": "results", "out": HERE / "RESULTS.md", "title": "Evaluation results"},
     "v2": {"cases": HERE / "cases-v2.json", "base": "results-v2", "out": HERE / "RESULTS-V2.md", "title": "Held out set results"},

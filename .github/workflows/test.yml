@@ -6,7 +6,7 @@ on:
   pull_request:
 
 # Two jobs on purpose. `direct` is everything that needs nothing but Python and
-# Node: the freeze and house style checks, the 208 direct tests through the
+# Node: the freeze and house style checks, the 221 direct tests through the
 # test double, and the feed's types. It gates on its own. `lint` puts both
 # frozen contracts through genvm-lint, which on a cold runner has to fetch a
 # 134 MB GenVM runner into its cache, so it is separate: a runner that cannot

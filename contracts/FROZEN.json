@@ -33,5 +33,6 @@
       "frozen_at_commit": "ccc470a"
     }
   },
-  "deployments_note": "The freeze is over the contract BYTES, not over a network. Every entry here is the same two files deployed somewhere, and adding one extends the record rather than breaking it. Each network's evaluation is published in its own column."
+  "deployments_note": "The freeze is over the contract BYTES, not over a network. Every entry here is the same two files deployed somewhere, and adding one extends the record rather than breaking it. Each network's evaluation is published in its own column.",
+  "deployments_status": "studionet is the only deployment, and the only network anything in this repository runs against. The map above supports more entries because the freeze is over the contract bytes rather than over a network: a second entry would extend this record without changing either hash. None is planned, and every script refuses a network that has no entry here, by name."
 }

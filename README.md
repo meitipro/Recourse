@@ -215,7 +215,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 209 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 221 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -225,7 +225,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 209 direct tests cover the contracts through the double, the buyer agent,
+The 221 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Three of them are checks on
 the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
@@ -278,39 +278,35 @@ claude plugin install recourse@recourse
 git clone https://github.com/meitipro/recourse-skill && cd recourse-skill/mcp
 npm install && npm test && npm run dev        # http://localhost:4504/api/mcp
 
-# the promise linter, one service behind the site panel, the bot and the MCP
+# the promise linter, one service behind the site panel and the MCP
 python linter/serve.py                        # http://127.0.0.1:4503/lint
 python -m linter.examples --dry               # the six worked examples
-
-# the Telegram bot, read only
-TELEGRAM_BOT_TOKEN=... python bot/main.py
 ```
 
 The MCP advises; the agent's own wallet acts. Paying, disputing, withdrawing
 and signing are not tools anywhere in this project, and nothing in it ever asks
-for a private key. Stage 2 of the linter, and the bot's `/check`, need a model
-behind the linter: `ANTHROPIC_API_KEY` in the environment, or a signed in
-`claude` CLI on the machine. Without one they say so and offer nothing.
+for a private key. Stage 2 of the linter needs a model behind the service:
+`ANTHROPIC_API_KEY` in the environment, or a signed in `claude` CLI on the
+machine. Without one it says so and offers nothing.
 
 The site is `web/`: `npm install && npm run dev` on port 4500, reading the
 frozen contracts through `web/.env.local`, which `prepare.py` writes.
 
 ## Contracts
 
-The same two files, frozen at their bytes, deployed once per network. The
-bytes are identical on every network and the two hashes in
-`contracts/FROZEN.json` prove it: one sha256 per contract above one entry per
-network, and `scripts/check.py` fails the local gate on any edit to either file
-or on an entry whose chain id does not match its name.
+Two files, frozen at their bytes, deployed once. The two hashes in
+`contracts/FROZEN.json` are a sha256 over each contract, and `scripts/check.py`
+fails the local gate on any edit to either file or on a deployment entry whose
+chain id does not match its name. There is one deployment, on studionet:
 
-| network | chain | escrow | dispute |
+| network | chain id | escrow | dispute |
 | --- | --- | --- | --- |
-| studionet | 61999 | `0x5125De939F7373eAE741B133FB32B7E9915C8F78` | `0x80A98929EcA334804dbB04d31F6050bca42C0Cc4` |
+| [studionet](https://explorer-studio.genlayer.com) | 61999 | [`0x5125De939F7373eAE741B133FB32B7E9915C8F78`](https://explorer-studio.genlayer.com/address/0x5125De939F7373eAE741B133FB32B7E9915C8F78) | [`0x80A98929EcA334804dbB04d31F6050bca42C0Cc4`](https://explorer-studio.genlayer.com/address/0x80A98929EcA334804dbB04d31F6050bca42C0Cc4) |
 
-Bradbury is the default everything reads, because it persists where Studio is
-wiped; its row lands here the moment the three accounts hold GEN there, with
-`python scripts/deploy.py --network bradbury`. Every number published here is
-tied to the pair it was measured on, and each network gets its own column.
+The record is keyed by network because the freeze is over the bytes rather than
+over where they live. studionet is its only key, every script defaults to it,
+and a `--network` naming anything else stops with the sentence that it has never
+been deployed. Every number published here was measured against this pair.
 
 Verify with `python scripts/verify.py`, which reads the source back off the
 chain, diffs it against this repository, and runs the linter over the bytes that
@@ -499,9 +495,15 @@ create one, so the three imports are a dashboard step for the account owner.
 smoke test for each, and `reference/07-addresses.json` already names the URLs
 they will have.
 
-**The bot's handle.** `bot/` is complete and tested through injected
-dependencies; it goes live the moment a BotFather token is exported as
-`TELEGRAM_BOT_TOKEN`.
+**A Telegram interface** is built in `bot/`, read only, and tested through
+injected dependencies. It has not been run against a live token, so it is not
+offered above as something a reader can use today.
+
+**A second network.** The freeze record, every script and the evaluation
+report are keyed by network because the freeze is over the bytes rather than
+over where they live. The same two files could go to Bradbury, which persists
+where Studio resets; that is a possibility the shape allows, not a plan, and
+nothing here reads anything but studionet.
 
 **Stage 2 in production.** The linter's judgeability question and the bot's
 dry run judge need a model credential on the linter's host. This build's

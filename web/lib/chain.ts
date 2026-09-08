@@ -25,12 +25,12 @@ const CHAINS = {
 export type NetworkName = keyof typeof CHAINS;
 
 /**
- * Bradbury by default, because it persists; Studio is wiped and a judge who
- * opens the feed two weeks on would find an empty chain there. Studionet
- * stays selectable and both deployments stay published.
+ * studionet, the only deployment, unless the environment names another network
+ * that contracts/FROZEN.json has an entry for. A network without one gets the
+ * error in loadFeed rather than a guess.
  */
 export const NETWORK: NetworkName =
-  (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "bradbury";
+  (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "studionet";
 
 /**
  * The frozen pair's addresses on this network, from contracts/FROZEN.json,
@@ -186,8 +186,8 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
     return {
       ...base,
       error:
-        `The frozen contracts have no deployment on ${NETWORK} in contracts/FROZEN.json yet. ` +
-        "Set NEXT_PUBLIC_RECOURSE_NETWORK to a network that has one, or deploy the same bytes there.",
+        `The frozen contracts have never been deployed on ${NETWORK}; contracts/FROZEN.json has no entry for it. ` +
+        "The only deployment is studionet: unset NEXT_PUBLIC_RECOURSE_NETWORK, or set it to studionet.",
     };
   }
 

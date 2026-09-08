@@ -30,7 +30,7 @@ from shared.chain import GEN, Chain, load_accounts, load_deployment, select_netw
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pid", help="the payment id, p-000001")
-    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
     args = parser.parse_args()
     select_network(args.network)
 

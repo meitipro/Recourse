@@ -2,18 +2,19 @@
 """
 Deploy the frozen contracts to a network that does not have them yet.
 
-    python scripts/deploy.py --network bradbury
-    python scripts/deploy.py --network studionet
+    python scripts/deploy.py --network <name>
 
-The freeze is over the contract bytes, not over a network: the same two files
-go to every network, once each, and FROZEN.json gains one entry per network
-under `deployments`. A network that already has an entry is refused unless
---unfreeze is passed, so neither network can be redeployed by accident.
+studionet is the only deployment and no other is planned. This exists because
+the freeze is over the contract bytes, not over a network: the same two files
+could go to another network, once, and FROZEN.json would gain one entry under
+`deployments`. A network that already has an entry is refused unless
+--unfreeze is passed, so the frozen pair cannot be redeployed by accident.
 
-Studio funds accounts over the RPC and this does it. Bradbury's faucet is a
-browser page, so on bradbury this stops when the accounts are short and names
-the page and the addresses. It writes deployed.json for the chosen network,
-which the agent, the evaluation runner and the feed all read.
+Studio funds accounts over the RPC and this does it. A network whose faucet is
+a browser page stops here when the accounts are short and names the page and
+the addresses; nothing is retried and no faucet is called. It writes
+deployed.json for the chosen network, which the agent, the evaluation runner
+and the feed all read.
 """
 
 from __future__ import annotations
@@ -114,8 +115,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--network", default=None,
-        help="studionet or bradbury; default bradbury. The same frozen bytes go to "
-        "every network, one deployment each",
+        help="a network from shared/chain.py; default studionet, the only deployment. "
+        "The same frozen bytes, deployed once per network",
     )
     parser.add_argument(
         "--unfreeze",
@@ -129,7 +130,9 @@ def main() -> int:
         help="whole GEN each account needs on a network with a browser faucet",
     )
     args = parser.parse_args()
-    network = select_network(args.network)
+    # The one caller allowed to choose a network with no entry yet: deploying is
+    # how an entry appears.
+    network = select_network(args.network, allow_undeployed=True)
 
     deployments = frozen_record().get("deployments", {}) if FROZEN.exists() else {}
     if network in deployments and not args.unfreeze:

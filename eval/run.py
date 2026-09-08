@@ -113,7 +113,7 @@ def main() -> int:
         help="results file. Default: eval/results[-v2].json on studionet, "
         "eval/results[-v2].<network>.json elsewhere, so every network keeps its own column",
     )
-    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
     parser.add_argument("--only", default="", help="comma separated case ids")
     parser.add_argument("--address", default="", help="override the dispute instance")
     parser.add_argument(

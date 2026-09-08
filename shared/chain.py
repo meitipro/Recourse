@@ -87,13 +87,14 @@ BACKOFF = 1.6
 
 
 #: The chain ids the SDK reports, pinned here so a freeze entry that names a
-#: network with the wrong id fails the gate. Studio persistence is temporary;
-#: Bradbury persists, which is why it is the default everything reads.
+#: network with the wrong id fails the gate. studionet is the only deployment;
+#: bradbury is listed so that an entry for it, if one were ever added, would be
+#: checked against the right id rather than trusted.
 KNOWN_CHAIN_IDS = {"studionet": 61999, "bradbury": 4221}
 
 #: Where GEN comes from on each network. Studio has a programmatic faucet.
-#: Bradbury's is a browser page and cannot be automated, so a deploy or a
-#: prepare there stops and names it rather than trying.
+#: bradbury's is a browser page and cannot be automated, so a deploy there, if
+#: one were ever run, stops and names it rather than trying.
 FAUCETS = {
     "studionet": "sim_fundAccount over the RPC (scripts call it for you)",
     "bradbury": "https://testnet-faucet.genlayer.foundation",
@@ -108,17 +109,56 @@ EXPLORERS = {
 FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
 
 
+#: The one network the frozen contracts are deployed on. Everything defaults to
+#: it. --network exists because the freeze record is keyed by network and could
+#: carry a second deployment; a network without one is refused by name below.
+DEFAULT_NETWORK = "studionet"
+
+
 def network_name() -> str:
-    return os.environ.get("RECOURSE_NETWORK", "bradbury")
+    return os.environ.get("RECOURSE_NETWORK", DEFAULT_NETWORK)
 
 
-def select_network(name: str | None) -> str:
-    """Set the network for this process from a --network flag, and return it."""
+def deployed_networks() -> list[str]:
+    """The networks contracts/FROZEN.json has an entry for. Today: studionet."""
+    return sorted(frozen_record().get("deployments", {}))
+
+
+def require_deployed(name: str) -> None:
+    """
+    Stop, in one sentence, when the chosen network has never had the frozen
+    contracts deployed to it. This is what --network bradbury hits: the fact,
+    at the first line, rather than a missing deployed.json three calls later.
+    """
+    have = deployed_networks()
+    if name in have:
+        return
+    only = ", ".join(have) if have else "none"
+    raise SystemExit(
+        f"the frozen contracts have never been deployed on {name}. "
+        f"The only deployment is {only}, and nothing here runs against {name}. "
+        f"Drop --network, or pass --network {have[0] if have else DEFAULT_NETWORK}. "
+        "scripts/deploy.py --network is the one command that changes this."
+    )
+
+
+def select_network(name: str | None, *, allow_undeployed: bool = False) -> str:
+    """
+    Set the network for this process from a --network flag, and return it.
+
+    A network the frozen contracts are not deployed on is refused here, whether
+    it came from the flag or from RECOURSE_NETWORK, so every script stops at
+    its first line with the reason. deploy.py is the one caller that passes
+    allow_undeployed, because deploying is how a network gets an entry.
+    """
     if name:
         if name not in CHAINS:
             raise SystemExit(f"unknown network {name}, expected one of {sorted(CHAINS)}")
         os.environ["RECOURSE_NETWORK"] = name
-    return network_name()
+    chosen = network_name()
+    if not allow_undeployed:
+        require_deployed(chosen)
+    return chosen
 
 
 def frozen_record() -> dict:
@@ -138,10 +178,8 @@ def frozen_deployment(network: str | None = None) -> dict:
     name = network or network_name()
     entry = frozen_record().get("deployments", {}).get(name)
     if not entry:
-        raise SystemExit(
-            f"no frozen deployment on {name} yet. "
-            f"Deploy the same bytes there with: python scripts/deploy.py --network {name}"
-        )
+        require_deployed(name)
+        raise SystemExit(f"the {name} entry in contracts/FROZEN.json is empty")
     return entry
 
 
@@ -519,8 +557,9 @@ def load_deployment() -> dict:
     This machine's record for the network it is currently talking to.
 
     deployed.json is written for one network at a time. Reading it under a
-    different RECOURSE_NETWORK would pay a studionet seller on bradbury, so a
-    mismatch stops here and says which script rewrites it.
+    different RECOURSE_NETWORK would pay a seller registered on one network
+    from a record written for another, so a mismatch stops here and says which
+    script rewrites it.
     """
     if not DEPLOYED.exists():
         raise SystemExit(

@@ -31,7 +31,7 @@ from shared.chain import (
 )
 
 #: Set once the network is known, in main(). Every printed link uses it.
-EXPLORER = EXPLORERS["bradbury"]
+EXPLORER = EXPLORERS["studionet"]
 
 
 def refusal(chain: Chain, address: str, method: str, args: list, expect: str, value: int = 0):
@@ -75,7 +75,7 @@ def main() -> int:
 
     global EXPLORER
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
     args = parser.parse_args()
     select_network(args.network)
     EXPLORER = EXPLORERS[network_name()]

@@ -109,9 +109,9 @@ export default async function Page() {
       <header className="shell hero">
         <div className="wordmark">
           Recourse<span>.</span>
-          {/* Which chain every number below comes from. Always shown: two
-              networks carry the same frozen bytes, and a reader has to know
-              which one they are looking at. */}
+          {/* Which chain every number below comes from. Always shown, even
+              with one deployment: the record is keyed by network, and a reader
+              should not have to infer which one they are looking at. */}
           <span className="network-badge" title="the network this page reads">
             reading {NETWORK}
           </span>

@@ -1,6 +1,7 @@
 """
-The freeze record: hashes stay put, deployments are keyed by network, and the
-gate's check refuses the mistakes a second network makes possible.
+The freeze record: hashes stay put, deployments are keyed by network, studionet
+is the only one, and the gate's check refuses the mistakes a second network
+would make possible.
 
 The check itself is tested as a pure function so no test ever touches the
 real FROZEN.json or deployed.json.
@@ -13,6 +14,8 @@ import hashlib
 import json
 import pathlib
 import sys
+
+import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -101,9 +104,34 @@ def test_load_deployment_refuses_a_record_for_another_network(monkeypatch, tmp_p
     record.write_text(json.dumps({"network": "studionet", "escrow": "0x0", "dispute": "0x0"}), encoding="utf-8")
     monkeypatch.setattr(chain, "DEPLOYED", record)
     monkeypatch.setenv("RECOURSE_NETWORK", "bradbury")
-    import pytest
-
     with pytest.raises(SystemExit, match="deployed.json is for studionet but RECOURSE_NETWORK is bradbury"):
         chain.load_deployment()
     monkeypatch.setenv("RECOURSE_NETWORK", "studionet")
     assert chain.load_deployment()["network"] == "studionet"
+
+
+def test_everything_defaults_to_studionet_the_only_deployment(monkeypatch):
+    monkeypatch.delenv("RECOURSE_NETWORK", raising=False)
+    assert chain.network_name() == "studionet"
+    assert chain.DEFAULT_NETWORK == "studionet"
+    assert list(RECORD["deployments"]) == ["studionet"]
+    assert chain.deployed_networks() == ["studionet"]
+    # The record says so in words, next to the note that explains the shape.
+    assert "studionet is the only deployment" in RECORD["deployments_status"]
+
+
+def test_a_network_that_was_never_deployed_is_refused_by_name(monkeypatch):
+    monkeypatch.delenv("RECOURSE_NETWORK", raising=False)
+    with pytest.raises(SystemExit, match="never been deployed on bradbury"):
+        chain.select_network("bradbury")
+    # From the environment as well as from the flag.
+    monkeypatch.setenv("RECOURSE_NETWORK", "bradbury")
+    with pytest.raises(SystemExit, match="never been deployed on bradbury"):
+        chain.select_network(None)
+    with pytest.raises(SystemExit, match="never been deployed on bradbury"):
+        chain.frozen_deployment("bradbury")
+    # deploy.py is the one caller let through, because deploying is how an entry appears.
+    assert chain.select_network("bradbury", allow_undeployed=True) == "bradbury"
+    # A name that is not a network at all is an unknown network, not a deployment question.
+    with pytest.raises(SystemExit, match="unknown network mainnet"):
+        chain.select_network("mainnet")

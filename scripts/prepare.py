@@ -2,8 +2,7 @@
 """
 Get a clean clone ready to run the demo against the FROZEN contracts.
 
-    python scripts/prepare.py                       # bradbury, the default
-    python scripts/prepare.py --network studionet
+    python scripts/prepare.py                       # studionet, the only deployment
 
 Deploys nothing. The contracts are frozen at the bytes in contracts/FROZEN.json
 and live at one address pair per network under its `deployments`; every
@@ -12,9 +11,9 @@ own with GEN on the chosen network, a seller among them registered on that
 network's escrow, and a deployed.json naming that network's pair, which is
 what this writes.
 
-Studio funds accounts over the RPC and this does it for you. Bradbury's faucet
-is a browser page, so on bradbury this stops and names the page and the
-addresses when they are short, and does nothing else.
+Studio funds accounts over the RPC and this does it for you. On a network with
+a browser faucet this would stop and name the page and the addresses when they
+are short, and do nothing else.
 
 Idempotent. Run it twice and it funds nothing twice and registers nobody
 twice.
@@ -59,7 +58,7 @@ def write_feed_env(record: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--network", default=None, help="studionet or bradbury; default bradbury")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
     args = parser.parse_args()
     network = select_network(args.network)
 

@@ -26,7 +26,7 @@ Prepare everything in the shot list at the bottom before pressing record.
 | 1:04 to 1:12 | **Jump cut.** Terminal A prints `dispute to money back  88.Ns` and `refund   5 GEN returned, balance is net zero`. Terminal B reads about `01:28`. Stop the stopwatch. Then **Browser, the feed**: the row shows `RC-2026-NNNN`, `settled, finalized`, `NOT HONORED`. | Money moves on finalization, half a minute after the verdict, so a successful appeal could never reverse a payout. Payment and bond are back. The case has a citation, and the citation is a permalink. |
 | 1:12 to 1:18 | OPTIONAL, needs the honest payment's window (300 s) to have closed. **Terminal A:** `python scripts/withdraw.py p-000NNN` for the honest payment. Output: `withdrawn`, seller balance up, `no consensus ran and nobody paid anything extra`. If not recording this, the feed row reading `released, uncollected` covers it. | And the honest payment from the start: its window closed, the seller collects it, and no committee ever heard about it. |
 | 1:18 to 1:28 | **Browser, the evaluation section.** Four numbers at the same size: `17/18`, `17/18`, `3/18`, `1/3`. Hold on both accuracy figures together. | Judged against answers committed before the code: seventeen of eighteen. Against three cases committed before the runner could read them and never tuned against: one of three. Both numbers, the same size, always. That gap is the honest measurement of this judge. |
-| 1:28 to 1:30 | **Browser, the site's foot**: the contract table, both networks if both are deployed, and the badge showing which one this recording used. | Same bytes, frozen, and the hashes prove it. |
+| 1:28 to 1:30 | **Browser, the site's foot**: the contract table, and the badge naming studionet, the network this recording used. | Same bytes, frozen, and the hashes prove it. |
 
 Ninety seconds. About two hundred words.
 
@@ -54,9 +54,6 @@ Ninety seconds. About two hundred words.
   moves, and rewritten.*
 - **The live site URL**: read the hosted site if the Vercel imports are done;
   `http://localhost:4500` otherwise. The script is the same.
-- **Bradbury**: if the same bytes are deployed there by recording day, run the
-  demo with `--network bradbury` and the badge reads bradbury. If not, studionet;
-  the words do not change.
 - **The withdraw shot** at 1:12, as marked.
 
 ## Shot list: before pressing record
@@ -66,11 +63,11 @@ the first frame.
 
 1. **Terminal B, ready but not started.** `cd` into the repository; the command
    `python scripts/stopwatch.py` typed and not yet run. Large font.
-2. **Terminal A, the seller endpoint**: `python scripts/demo.py --network <network>`
-   is what will run, and it starts the endpoint itself; nothing to prepare
-   beyond `python scripts/prepare.py --network <network>` having been run once
-   today and `python scripts/verify.py --network <network>` having said the
-   deployment matches. Large font. Do not start the demo until 0:10.
+2. **Terminal A, the seller endpoint**: `python scripts/demo.py` is what will
+   run, and it starts the endpoint itself; nothing to prepare beyond
+   `python scripts/prepare.py` having been run once today and
+   `python scripts/verify.py` having said the deployment matches. Large font.
+   Do not start the demo until 0:10.
 3. **Browser tab 1, the site**, top of page, network badge visible. Local:
    `npm run dev` in `web/` already running on 4500, page loaded once so the
    feed is warm. Hosted: the live URL.
@@ -81,8 +78,8 @@ the first frame.
    the feed row's citation.
 6. **Browser tab 4, the evaluation section** (`#` the "Verdict quality" section),
    scrolled so all four headline numbers are in frame.
-7. OPTIONAL **Terminal C**: `python scripts/withdraw.py p-000NNN --network <network>`
-   typed, for the honest payment's id, run only after that window has closed.
+7. OPTIONAL **Terminal C**: `python scripts/withdraw.py p-000NNN` typed, for the
+   honest payment's id, run only after that window has closed.
 8. The linter service, if the OPTIONAL linter shot is being recorded:
    `python linter/serve.py` running with `ANTHROPIC_API_KEY` set, and
    `LINTER_URL` set for the site.
