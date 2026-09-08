@@ -50,7 +50,7 @@ latency and costs nobody anything, and the contested one.
 [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
 shot, timed, every spoken number one this repository publishes.
 
-![The live feed on the frozen contracts: twelve payments, six disputes, every verdict a citation that links to its case, read from the chain when the page opened](docs/images/feed.png)
+![The live feed on the frozen contracts: every payment, its state, and every verdict as a citation that links to its case, read from the chain when the page opened](docs/images/feed.png)
 
 ![The linter panel as a visitor first sees it. Stage 1 answers a vague promise instantly and names the check it failed; stage 2 asks the deployed gate's question of a model and offers a rewrite](docs/images/linter.png)
 
@@ -215,7 +215,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 230 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 231 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -225,7 +225,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 230 direct tests cover the contracts through the double, the buyer agent,
+The 231 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Three of them are checks on
 the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
@@ -313,6 +313,53 @@ chain, diffs it against this repository, and runs the linter over the bytes that
 came back rather than over the file on disk. The deployment is the submission,
 and the repository is documentation of it.
 
+### All three verdicts, on chain
+
+The settlement table above is only a claim until the chain has run each row of
+it. The evaluation set exercises all three verdicts against a test double, but
+a reader of the feed sees the chain and nothing else, and for a while the chain
+held six disputes and six `not_honored`. A hundred percent upheld rate reads as
+a buyer-side tool rather than an adjudicator, so the other two verdicts were
+put on the record too, by `python scripts/verdicts.py`:
+
+| verdict | payment | what happened | where the money went | settling transaction |
+| --- | --- | --- | --- | --- |
+| `not_honored` | p-000003 | a nine hour old price against a five second promise | payment and bond to the buyer | [0xd3af20a6...](https://explorer-studio.genlayer.com/tx/0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d) |
+| `honored` | p-000013 | a compliant response contested anyway; the buyer's own check passed and it disputed regardless | payment and bond to the seller, so the bond was forfeit | [0x28d2663a...](https://explorer-studio.genlayer.com/tx/0x28d2663a590d1d9d3a44b7eea1288f9d0383e5ed3a079b285ebc742cb87d327d) |
+| `unclear` | p-000014 | a second seller whose whole promise is "Returns accurate market data." served a stale price | payment to the seller, bond back to the buyer | [0x048e71a0...](https://explorer-studio.genlayer.com/tx/0x048e71a0c83f582012a872df2a824b5ac7ae3dbe6fddc6019ecbac721b3324a5) |
+
+The `unclear` row is the one worth reading. The breach is real: the price was
+nine hours old. The promise cannot support a ruling on it, because it never
+said anything measurable about freshness, and the committee said so rather than
+inventing a standard the seller never wrote:
+
+> The promise only says 'Returns accurate market data,' which gives no
+> measurable standard here beyond accuracy, and accuracy must not be judged
+> against the real world.
+
+That is evaluation case 08 executed on chain rather than against a double, and
+it is what stops the unclear verdict being a claim about a code path nobody has
+watched run. Ruling against a seller on a standard the promise never stated
+would be as wrong as clearing one that broke a standard it did.
+
+**The buyer agent would have filed neither dispute, and the two reasons are
+different.** Against the compliant response its check passed, and it does not
+contest a response that passed, because a client that disputes anything
+produces a false dispute rate with nobody attacking. Against the vague promise
+its check also passed, and that one is worth sitting with: `read_promise_bounds`
+finds no freshness bound in "Returns accurate market data.", falls back to
+bounds that pass everything, and reports `ok` on a nine hour old price. A
+promise too vague for the committee to rule on is also too vague for the
+buyer's own automation to notice it was wronged. That is the argument for the
+promise linter standing in front of registration, stated by the chain rather
+than by this README.
+
+Both disputes were therefore filed deliberately by `scripts/verdicts.py`, which
+says so at the top of its own output. The buyer in both is a scratch account, so
+the demo's three balances stay readable, and neither cycle was retried: each ran
+once and the verdict that landed is the verdict published.
+`tests/direct/test_snapshot.py` fails if any of the three ever leaves the record.
+
 ### Refusals on chain
 
 A page showing only successes proves the file compiles. Refusing is what this
@@ -344,9 +391,11 @@ down in this repository, read back from the chain rather than typed:
   evaluation numbers. `python scripts/snapshot.py` regenerates it from a
   throwaway account, which can read and cannot write.
 - [evidence/receipts/](evidence/receipts/): the raw receipt of every
-  transaction in one contested cycle (`p-000003`, the one the Rails section
-  cites) and one honest cycle (`p-000001`: paid, answered, and withdrawn by
-  the seller after the window), as the RPC returned them.
+  transaction in one cycle of each kind, as the RPC returned them. A dispute
+  ruled `not_honored` (`p-000003`, the one the Rails section cites), one ruled
+  `honored` (`p-000013`), one ruled `unclear` (`p-000014`), and one never
+  disputed at all (`p-000001`: paid, answered, and withdrawn by the seller
+  after the window closed, with no consensus anywhere in it).
 
 The feed and the case pages read the chain first. If it has not answered in
 twenty seconds, or answers with no payments where the snapshot has some, they

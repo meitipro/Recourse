@@ -132,11 +132,26 @@ def test_the_evaluation_numbers_match_the_measurement_files_and_the_reports():
     assert f"{v2['accuracy']}/{v2['n']}" in README
 
 
+#: What each labelled receipt set must be a cycle of: (status, verdict or None).
+#: A label present in the snapshot but not here is a label nobody defined.
+CYCLE_SHAPES = {
+    "contested": ("resolved", "not_honored"),
+    "honest": ("withdrawn", None),
+    "honored": ("resolved", "honored"),
+    "unclear": ("resolved", "unclear"),
+}
+
+
 def test_the_receipts_are_raw_and_belong_to_the_cycles_named():
     by_pid = {p["pid"]: p for p in payments()}
-    for label in ("contested", "honest"):
-        info = SNAPSHOT["receipts"][label]
+    assert SNAPSHOT["receipts"], "the snapshot names no receipt sets"
+    for label, info in SNAPSHOT["receipts"].items():
+        assert label in CYCLE_SHAPES, f"{label} is a receipt set with no defined shape"
+        status, verdict = CYCLE_SHAPES[label]
         payment = by_pid[info["pid"]]
+        assert payment["status_name"] == status, f"{label}: {info['pid']} is {payment['status_name']}"
+        if verdict:
+            assert payment["verdict_name"] == verdict, f"{label}: {info['pid']} ruled {payment['verdict_name']}"
         assert info["files"], f"no {label} receipts"
         folder = ROOT / "evidence" / "receipts" / f"{label}-{info['pid']}"
         on_disk = sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in folder.glob("*.json"))
@@ -148,10 +163,24 @@ def test_the_receipts_are_raw_and_belong_to_the_cycles_named():
             # The RPC's own fields, present because nothing was edited out.
             for key in ("consensus_data", "status", "from_address", "to_address", "created_at"):
                 assert key in receipt, f"{rel} lacks {key}"
-    contested = by_pid[SNAPSHOT["receipts"]["contested"]["pid"]]
-    assert contested["status_name"] == "resolved" and contested["verdict_name"] == "not_honored"
     honest = by_pid[SNAPSHOT["receipts"]["honest"]["pid"]]
-    assert honest["status_name"] == "withdrawn" and not honest["transactions"]["open_dispute"]
+    assert not honest["transactions"]["open_dispute"], "the honest cycle was disputed"
+    assert honest["transactions"]["withdraw"], "the honest cycle was never withdrawn"
+
+
+def test_the_public_record_carries_all_three_verdicts():
+    """
+    A record of nothing but not_honored reads as a buyer-side tool rather than
+    an adjudicator, whatever the evaluation set shows. All three verdicts are on
+    chain, and each one has its raw receipts.
+    """
+    verdicts = SNAPSHOT["totals"]["verdicts"]
+    for name in ("honored", "not_honored", "unclear"):
+        assert verdicts[name] >= 1, f"no dispute on the public record was ruled {name}"
+    assert sum(verdicts.values()) == SNAPSHOT["totals"]["decided"]
+    assert SNAPSHOT["totals"]["upheld_rate"] < 1.0, "every dispute on the record went the buyer's way"
+    for label in ("contested", "honored", "unclear"):
+        assert label in SNAPSHOT["receipts"], f"no raw receipts for the {label} cycle"
 
 
 def test_the_snapshot_carries_no_private_material():

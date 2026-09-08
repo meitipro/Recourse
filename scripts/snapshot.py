@@ -324,19 +324,45 @@ def write_receipts(chain: Chain, label: str, payment: dict) -> list[str]:
     return written
 
 
-def pick_cycles(payments: list[dict], contested: str | None, honest: str | None) -> tuple[dict | None, dict | None]:
+#: The cycles worth keeping raw receipts for: one per outcome the system can
+#: reach. Each is (what the payment must look like, what to say when there is
+#: none yet). A label with no matching payment is skipped, and the snapshot
+#: names only the ones it actually wrote.
+CYCLES = {
+    "contested": (
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "not_honored",
+        "no contested cycle has settled yet",
+    ),
+    "honest": (
+        lambda p: p["status_name"] == "withdrawn",
+        "no honest cycle has been withdrawn yet",
+    ),
+    "honored": (
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "honored",
+        "no dispute has been ruled honored yet",
+    ),
+    "unclear": (
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "unclear",
+        "no dispute has been ruled unclear yet",
+    ),
+}
+
+
+def pick_cycles(payments: list[dict], chosen: dict[str, str | None]) -> dict[str, dict]:
+    """One payment per label: the one named on the command line, else the most recent that fits."""
     by_pid = {p["pid"]: p for p in payments}
-    if contested and contested not in by_pid:
-        raise SystemExit(f"{contested} is not a payment on this deployment")
-    if honest and honest not in by_pid:
-        raise SystemExit(f"{honest} is not a payment on this deployment")
-    contested_row = by_pid.get(contested) if contested else next(
-        (p for p in reversed(payments) if p["status_name"] == "resolved" and p["transactions"].get("settle")), None,
-    )
-    honest_row = by_pid.get(honest) if honest else next(
-        (p for p in reversed(payments) if p["status_name"] == "withdrawn"), None,
-    )
-    return contested_row, honest_row
+    picked: dict[str, dict] = {}
+    for label, (fits, _) in CYCLES.items():
+        named = chosen.get(label)
+        if named:
+            if named not in by_pid:
+                raise SystemExit(f"{named} is not a payment on this deployment")
+            picked[label] = by_pid[named]
+            continue
+        found = next((p for p in reversed(payments) if fits(p)), None)
+        if found:
+            picked[label] = found
+    return picked
 
 
 # --- main --------------------------------------------------------------------
@@ -346,6 +372,8 @@ def main() -> int:
     parser.add_argument("--out", default=str(SNAPSHOT), help="where to write the snapshot")
     parser.add_argument("--contested", default=None, help="payment id of the contested cycle to keep raw receipts for")
     parser.add_argument("--honest", default=None, help="payment id of the honest cycle to keep raw receipts for")
+    parser.add_argument("--honored", default=None, help="payment id of the dispute ruled honored")
+    parser.add_argument("--unclear", default=None, help="payment id of the dispute ruled unclear")
     parser.add_argument("--no-receipts", action="store_true", help="write the snapshot only")
     args = parser.parse_args()
     network = select_network(args.network)
@@ -395,15 +423,18 @@ def main() -> int:
     }
 
     if not args.no_receipts:
-        contested, honest = pick_cycles(body["payments"], args.contested, args.honest)
-        if contested:
-            snapshot["receipts"]["contested"] = {"pid": contested["pid"], "files": write_receipts(chain, "contested", contested)}
-        else:
-            print("no contested cycle has settled yet; no contested receipts written")
-        if honest:
-            snapshot["receipts"]["honest"] = {"pid": honest["pid"], "files": write_receipts(chain, "honest", honest)}
-        else:
-            print("no honest cycle has been withdrawn yet; no honest receipts written")
+        chosen = {"contested": args.contested, "honest": args.honest, "honored": args.honored, "unclear": args.unclear}
+        picked = pick_cycles(body["payments"], chosen)
+        for label in CYCLES:
+            if label in picked:
+                snapshot["receipts"][label] = {
+                    "pid": picked[label]["pid"],
+                    "verdict": picked[label]["verdict_name"],
+                    "status": picked[label]["status_name"],
+                    "files": write_receipts(chain, label, picked[label]),
+                }
+            else:
+                print(f"{CYCLES[label][1]}; no {label} receipts written")
 
     out = pathlib.Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -418,7 +449,7 @@ def main() -> int:
     print(f"median pay->dispute {t['median_pay_to_dispute_seconds']} s")
     print(f"transactions        {t['transactions']}   refusals on chain {t['refusals']}")
     for label, info in snapshot["receipts"].items():
-        print(f"{label:9} receipts  {info['pid']}  {len(info['files'])} files")
+        print(f"{label:9} receipts  {info['pid']}  {info['verdict']:12} {len(info['files'])} files")
     return 0
 
 

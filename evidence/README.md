@@ -32,8 +32,26 @@ re-measuring without re-taking the snapshot fails the gate.
 
 ## receipts/
 
-The raw receipt of every transaction in one contested cycle and one honest
-cycle, as `get_transaction` returned them, with the fields sorted and nothing
-else touched. Each file is named by its position in the cycle, the method, and
-the first twelve hex digits of its hash. `snapshot.json` names which payment
-each folder is and lists the files.
+The raw receipt of every transaction in one cycle of each kind, as
+`get_transaction` returned them, with the fields sorted and nothing else
+touched. Each file is named by its position in the cycle, the method, and the
+first twelve hex digits of its hash. `snapshot.json` names which payment each
+folder is and lists the files.
+
+| folder | what it is |
+| --- | --- |
+| `contested-*` | a dispute ruled **not_honored**: the buyer is made whole and the seller's upheld counter moves |
+| `honored-*` | a compliant response contested anyway, ruled **honored**: payment and bond both to the seller |
+| `unclear-*` | a real breach against a promise too vague to rule on, ruled **unclear**: the payment stands and the bond comes back |
+| `honest-*` | never disputed: paid, answered, and withdrawn by the seller when the window closed. No consensus ran |
+
+Re-running `snapshot.py` rewrites one field in every existing receipt:
+`current_timestamp` is the node's own clock at the moment of the read, not part
+of the transaction. A diff touching only that line means the chain said exactly
+the same thing at a later time. Nothing in these files is edited, which is why
+that noise is left in rather than stripped out.
+
+The three verdicts are on the public record rather than only in the evaluation
+set, which is what `scripts/verdicts.py` exists for. A record of nothing but
+not_honored would read as a buyer-side tool rather than an adjudicator, and
+`tests/direct/test_snapshot.py` fails if any of the three ever leaves it.

@@ -265,9 +265,21 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    global KEY
+    global KEY, PROMISE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=4501)
+    parser.add_argument(
+        "--account", default="seller",
+        help="which key in .accounts.json signs the responses. A second endpoint "
+        "for a second registered seller needs its own, or the signature is over "
+        "a body the seller on chain never stood behind",
+    )
+    parser.add_argument(
+        "--promise", default=PROMISE,
+        help="the promise this endpoint serves at /promise. It must be the one "
+        "registered on chain for this seller: the chain's copy is what the "
+        "validators read, and the agent warns when the two differ",
+    )
     parser.add_argument(
         "--host", default="127.0.0.1",
         help="interface to bind. Loopback by default: /admin/mode has no auth",
@@ -281,12 +293,16 @@ def main() -> int:
 
     STATE.set(args.mode)
     STATE.rail = args.rail
+    PROMISE = args.promise
 
     try:
         from shared.chain import load_accounts
 
-        KEY = load_accounts()["seller"].key.hex()
-        print("  signing with the seller account from .accounts.json")
+        accounts = load_accounts()
+        if args.account not in accounts:
+            raise KeyError(f"{args.account} is not in .accounts.json; have {sorted(accounts)}")
+        KEY = accounts[args.account].key.hex()
+        print(f"  signing as {args.account}, {accounts[args.account].address}")
     except Exception as error:  # noqa: BLE001
         print(f"  no seller key ({str(error)[:70]}), responses will be unsigned")
 

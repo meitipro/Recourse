@@ -10,22 +10,22 @@
   "consensus_data": null,
   "consensus_history": {
     "current_monitoring": {
-      "PENDING": 1788639615.3608932
+      "PENDING": 1788895346.7951066
     },
     "current_status_changes": [
       "PENDING",
       "FINALIZED"
     ]
   },
-  "created_at": "2026-09-05T20:20:14.455523+00:00",
-  "created_timestamp": "1788639614",
-  "current_timestamp": "1788895512",
+  "created_at": "2026-09-08T19:22:26.584790+00:00",
+  "created_timestamp": "1788895346",
+  "current_timestamp": "1788895561",
   "data": {},
   "eq_blocks_outputs": "0xc8c6c28000c0c080c0",
   "execution_mode": "NORMAL",
   "from_address": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
-  "gaslimit": 3,
-  "hash": "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5",
+  "gaslimit": 17,
+  "hash": "0xfdda01f8f7f824cae0482349a9bc3a5eade4709d0cfac7567a91da8b172fc2fc",
   "last_leader": "",
   "last_round": {
     "appeal_bond": "0",
@@ -44,7 +44,7 @@
   "leader_only": false,
   "leader_timeout_validators": null,
   "messages": [],
-  "nonce": 3,
+  "nonce": 17,
   "num_of_initial_validators": null,
   "num_of_rounds": "0",
   "origin_address": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
@@ -57,7 +57,7 @@
     "processing_block": "0",
     "proposal_block": "0"
   },
-  "recipient": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+  "recipient": "0x5c146067aC6f535C165703570F55F1DAc357607c",
   "result": 5,
   "result_name": "NO_MAJORITY",
   "rotation_count": 0,
@@ -71,16 +71,16 @@
   "status_name": "FINALIZED",
   "timestamp_appeal": null,
   "timestamp_awaiting_finalization": null,
-  "to_address": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
-  "triggered_by": "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+  "to_address": "0x5c146067aC6f535C165703570F55F1DAc357607c",
+  "triggered_by": "0x048e71a0c83f582012a872df2a824b5ac7ae3dbe6fddc6019ecbac721b3324a5",
   "triggered_on": "finalized",
   "triggered_transactions": [],
   "tx_data": "",
   "tx_execution_hash": "",
-  "tx_id": "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5",
+  "tx_id": "0xfdda01f8f7f824cae0482349a9bc3a5eade4709d0cfac7567a91da8b172fc2fc",
   "tx_slot": "0",
   "type": 0,
   "v": null,
-  "value": 5000000000000000000,
+  "value": 1000000000000000000,
   "value_credited": true
 }
