@@ -37,8 +37,7 @@ python scripts/demo.py                   # both paths, against the frozen contra
 
 A clean clone was run exactly this way before this README was finished; the only
 thing it assumed already present was `genvm-lint`, which is why that line is
-there. [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script, shot by
-shot, every spoken number one this repository publishes. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
+there. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
 `contracts/FROZEN.json` and every published number is tied to them, so a clone
 gets accounts of its own, funded from the Studio faucet, and a seller among
 them registered on the frozen escrow. `deploy.py` refuses to run while the
@@ -47,6 +46,9 @@ freeze stands, and says what to do instead.
 An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
+
+[docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
+shot, timed, every spoken number one this repository publishes.
 
 ![The live feed on the frozen contracts: twelve payments, six disputes, every verdict a citation that links to its case, read from the chain when the page opened](docs/images/feed.png)
 
