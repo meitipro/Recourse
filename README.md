@@ -52,7 +52,14 @@ shot, timed, every spoken number one this repository publishes.
 
 ![The live feed on the frozen contracts: every payment, its state, and every verdict as a citation that links to its case, read from the chain when the page opened](docs/images/feed.png)
 
-![The linter panel as a visitor first sees it. Stage 1 answers a vague promise instantly and names the check it failed; stage 2 asks the deployed gate's question of a model and offers a rewrite](docs/images/linter.png)
+<!-- Delete the paragraph below in the same commit that recaptures feed.png. -->
+*This capture is from 7 September and its tiles read 12, 6 and 6 of 6, because
+it predates the `honored` and `unclear` cycles further down this file. The chain
+now reads 14 payments, 8 disputes and 6 of 8 upheld, with all three verdicts in
+the column. [evidence/snapshot.json](evidence/snapshot.json) is the current
+record, and the live page is what the tiles are read from.*
+
+![The linter panel as a visitor first sees it, before anything has been checked. The promise in the box is placeholder text, and the two links beside the button load a vague promise and a judgeable one](docs/images/linter.png)
 
 Measured on studionet, printed by the demo on every run:
 
