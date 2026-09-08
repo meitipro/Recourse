@@ -38,12 +38,17 @@ touched. Each file is named by its position in the cycle, the method, and the
 first twelve hex digits of its hash. `snapshot.json` names which payment each
 folder is and lists the files.
 
-| folder | what it is |
-| --- | --- |
-| `contested-*` | a dispute ruled **not_honored**: the buyer is made whole and the seller's upheld counter moves |
-| `honored-*` | a compliant response contested anyway, ruled **honored**: payment and bond both to the seller |
-| `unclear-*` | a real breach against a promise too vague to rule on, ruled **unclear**: the payment stands and the bond comes back |
-| `honest-*` | never disputed: paid, answered, and withdrawn by the seller when the window closed. No consensus ran |
+The four directories, and what each one is:
+
+| directory | files | the cycle, and how it ended |
+| --- | --- | --- |
+| `contested-p-000003/` | 6 | A nine hour old price against a promise allowing five seconds. Ruled **not_honored**: payment and bond both returned to the buyer, and the seller's upheld counter moved. This is the cycle the README's Rails section cites, bought against an opaque settlement id. |
+| `honored-p-000013/` | 6 | A compliant response, contested anyway. Ruled **honored**: payment and bond both to the seller, so the buyer's bond was forfeit. What stops contesting everything being free. |
+| `unclear-p-000014/` | 7 | A real breach, nine hours stale, against a second seller whose whole promise was "Returns accurate market data.". Ruled **unclear**: the payment stood and the bond came back, because a promise nobody can rule on is the seller's fault and not the buyer's. Two payouts, one to each party, which is why this one has seven files. |
+| `honest-p-000001/` | 4 | Never disputed. Paid, answered, the window expired, and the seller withdrew. No consensus ran anywhere in it and nobody paid anything extra. |
+
+The names come from `snapshot.json`, which records the payment id behind each
+directory along with its verdict and the files it holds.
 
 Re-running `snapshot.py` rewrites one field in every existing receipt:
 `current_timestamp` is the node's own clock at the moment of the read, not part

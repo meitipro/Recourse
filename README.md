@@ -342,23 +342,48 @@ it is what stops the unclear verdict being a claim about a code path nobody has
 watched run. Ruling against a seller on a standard the promise never stated
 would be as wrong as clearing one that broke a standard it did.
 
-**The buyer agent would have filed neither dispute, and the two reasons are
-different.** Against the compliant response its check passed, and it does not
-contest a response that passed, because a client that disputes anything
-produces a false dispute rate with nobody attacking. Against the vague promise
-its check also passed, and that one is worth sitting with: `read_promise_bounds`
-finds no freshness bound in "Returns accurate market data.", falls back to
-bounds that pass everything, and reports `ok` on a nine hour old price. A
-promise too vague for the committee to rule on is also too vague for the
-buyer's own automation to notice it was wronged. That is the argument for the
-promise linter standing in front of registration, stated by the chain rather
-than by this README.
-
-Both disputes were therefore filed deliberately by `scripts/verdicts.py`, which
-says so at the top of its own output. The buyer in both is a scratch account, so
-the demo's three balances stay readable, and neither cycle was retried: each ran
-once and the verdict that landed is the verdict published.
+**The buyer agent would have filed neither dispute.** It does not contest a
+response its own check passed, because a client that disputes anything produces
+a false dispute rate with nobody attacking, and its check passed on both. Both
+were therefore filed deliberately by `scripts/verdicts.py`, which says so at the
+top of its own output. Why the check passed on the vague promise is the next
+section. The buyer in both cycles is a scratch account, so the demo's three
+balances stay readable, and neither cycle was retried: each ran once and the
+verdict that landed is the verdict published.
 `tests/direct/test_snapshot.py` fails if any of the three ever leaves the record.
+
+### Why the promise linter exists
+
+**A promise too vague for the committee to rule on is also too vague for the
+buyer's own automation to notice it was wronged.** The chain proved that. This
+README is not asserting it.
+
+Payment p-000014 is the case, and both halves of it failed on the same sentence.
+The seller's whole promise was "Returns accurate market data." and the price it
+served was nine hours old, so the breach was real. The committee ruled `unclear`
+because that promise, in its own words, "gives no measurable standard here
+beyond accuracy, and accuracy must not be judged against the real world". The
+buyer's deterministic check reached the same dead end from the other side:
+`read_promise_bounds` finds no freshness bound in that sentence, falls back to
+bounds that pass everything, and reported `ok` on the nine hour old price.
+Neither the network nor the buyer could act on a breach both could see.
+
+The linter is what closes that gap, and it closes it before any money moves
+rather than after. Stage 1 is deterministic and free, and on this exact promise
+it refuses:
+
+```
+no measurable term
+Nothing here is measurable: no number, unit, time bound, count, named field
+or named source. Say what arrives and how fresh, not how good.
+```
+
+That refusal costs nothing and arrives before the seller is ever paid, where
+the verdict on p-000014 cost a bond, two consensus rounds and a buyer who got
+its money back only because the unclear rule sends it back. `register_seller`
+does not ask the on chain gate today, so the linter is what stands in front of
+a promise; asking the gate at registration is a contract change and the
+contracts are frozen, which puts it under Later.
 
 ### Refusals on chain
 
