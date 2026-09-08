@@ -8,9 +8,10 @@ would measure less than this and would flatter the result.
 | --- | --- | --- | --- |
 | studionet | `0x7711F22d507ED3C15cF42BA6Ead2A5BD72EFcb71` | 2026-09-05 | 3 |
 
-The same frozen bytes on every network. One column per network, never merged
-and never averaged: two validator sets ruling on the same three strings is the
-measurement, and a disagreement between them is a finding, not noise.
+The same frozen bytes wherever they are deployed, one column per network, never
+merged and never averaged. studionet is the only deployment today; a second
+validator set ruling on the same three strings would be a second column, and a
+disagreement between them a finding, not noise.
 
 ## The numbers
 

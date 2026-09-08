@@ -16,6 +16,8 @@ import path from "node:path";
 import { createClient } from "genlayer-js";
 import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 
+import { loadSnapshot, snapshotEvidence, snapshotRows } from "./snapshot";
+
 const CHAINS = {
   studionet,
   bradbury: testnetBradbury,
@@ -146,6 +148,11 @@ export type Row = Payment & { case?: Case };
 export type FeedData = {
   ok: boolean;
   error?: string;
+  /** Where the rows came from. Never left to a reader to infer: the feed prints it. */
+  source: "live" | "snapshot";
+  /** Snapshot only: when scripts/snapshot.py recorded it, in ms, and why the chain is not being shown. */
+  recordedAt?: number;
+  why?: string;
   readAt: number;
   network: NetworkName;
   escrow: string;
@@ -166,12 +173,14 @@ export type FeedData = {
 };
 
 /**
- * Every number on the page comes from here. Nothing is invented, and an empty
- * chain produces an empty feed rather than a placeholder row.
+ * The chain, read now. Nothing is invented, and an empty chain produces an
+ * empty feed rather than a placeholder row; loadFeed decides whether an empty
+ * or failed answer is replaced by the recorded snapshot.
  */
-export async function loadFeed(limit = 50): Promise<FeedData> {
+async function readLive(limit = 50): Promise<FeedData> {
   const base: FeedData = {
     ok: false,
+    source: "live",
     readAt: Date.now(),
     network: NETWORK,
     escrow: ESCROW,
@@ -240,6 +249,81 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
   }
 }
 
+/** How long a page waits on the chain before the snapshot, if there is one, takes over. */
+const LIVE_DEADLINE_MS = 20_000;
+
+function withDeadline<T>(promise: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(onTimeout()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(onTimeout());
+      },
+    );
+  });
+}
+
+function emptyFeed(error: string): FeedData {
+  return {
+    ok: false,
+    source: "live",
+    readAt: Date.now(),
+    network: NETWORK,
+    escrow: ESCROW,
+    dispute: DISPUTE,
+    windowSeconds: 0,
+    bondWei: "0",
+    totalPayments: 0,
+    rows: [],
+    error,
+  };
+}
+
+/**
+ * Every number on the page comes from here: the chain first, the recorded
+ * snapshot second, and the result says which.
+ *
+ * The snapshot takes over in exactly two cases: the chain did not answer
+ * inside the deadline, or it answered with no payments where the snapshot has
+ * some, which is what a reset looks like. Both are named in `why` and printed
+ * above the table. A live answer with rows is always what is shown, and a
+ * repository without a snapshot behaves as it did before there was one.
+ */
+export async function loadFeed(limit = 50): Promise<FeedData> {
+  const live = await withDeadline(readLive(limit), LIVE_DEADLINE_MS, () =>
+    emptyFeed(`the chain did not answer within ${LIVE_DEADLINE_MS / 1000} seconds`),
+  );
+  if (live.ok && live.totalPayments > 0) return live;
+  const snapshot = loadSnapshot();
+  if (!snapshot || snapshot.network !== NETWORK || snapshot.totals.payments === 0) return live;
+  const why = live.ok
+    ? "the chain answered with no payments, which is what a reset looks like"
+    : `the chain could not be read: ${live.error ?? "no answer"}`;
+  const rows = snapshotRows(snapshot, limit);
+  const first = rows[0]?.seller;
+  const seller = first && snapshot.sellers[first] ? { ...snapshot.sellers[first], address: first } : undefined;
+  return {
+    ok: true,
+    source: "snapshot",
+    recordedAt: snapshot.recorded_at * 1000,
+    why,
+    readAt: Date.now(),
+    network: NETWORK,
+    escrow: snapshot.escrow,
+    dispute: snapshot.dispute,
+    windowSeconds: Number(snapshot.stats?.window_seconds ?? 0),
+    bondWei: String(snapshot.stats?.bond_amount ?? "0"),
+    totalPayments: snapshot.totals.payments,
+    rows,
+    seller,
+  };
+}
+
 // Citations live in lib/cite.ts, which has no chain imports, so the client
 // side feed can format one without pulling this module into the browser.
 export { toCitation, toPid } from "./cite";
@@ -251,13 +335,18 @@ export { toCitation, toPid } from "./cite";
  * far, only one row's worth is ever on screen, and putting them in the list
  * would make every page load carry fifty of them to show none.
  */
-export async function loadEvidence(pid: string): Promise<{
+export type Evidence = {
   ok: boolean;
   error?: string;
+  source: "live" | "snapshot";
+  recordedAt?: number;
+  why?: string;
   payment?: Payment;
   case?: Case;
-}> {
-  if (!ESCROW) return { ok: false, error: "no contract configured" };
+};
+
+async function readEvidenceLive(pid: string): Promise<Evidence> {
+  if (!ESCROW) return { ok: false, source: "live", error: "no contract configured" };
   try {
     const payment = JSON.parse(await read<string>(ESCROW, "get_payment", [pid])) as Payment;
     let decided: Case | undefined;
@@ -268,8 +357,29 @@ export async function loadEvidence(pid: string): Promise<{
         decided = undefined;
       }
     }
-    return { ok: true, payment, case: decided };
+    return { ok: true, source: "live", payment, case: decided };
   } catch (error) {
-    return { ok: false, error: String(error).slice(0, 200) };
+    return { ok: false, source: "live", error: String(error).slice(0, 200) };
   }
+}
+
+/** One payment's evidence: the chain first, the snapshot second, and the answer says which. */
+export async function loadEvidence(pid: string): Promise<Evidence> {
+  const live = await withDeadline(readEvidenceLive(pid), LIVE_DEADLINE_MS, () => ({
+    ok: false,
+    source: "live" as const,
+    error: `the chain did not answer within ${LIVE_DEADLINE_MS / 1000} seconds`,
+  }));
+  if (live.ok && live.payment) return live;
+  const snapshot = loadSnapshot();
+  const recorded = snapshot && snapshot.network === NETWORK ? snapshotEvidence(snapshot, pid) : null;
+  if (!snapshot || !recorded) return live;
+  return {
+    ok: true,
+    source: "snapshot",
+    recordedAt: snapshot.recorded_at * 1000,
+    why: `the chain could not be read: ${live.error ?? "no answer"}`,
+    payment: recorded.payment,
+    case: recorded.case,
+  };
 }

@@ -21,7 +21,8 @@ export default function FeedLoading() {
       </div>
       <div className="notice">
         Reading the chain. Studio answers in one to ten seconds; the page is not waiting on
-        anything else.
+        anything else. If it has not answered in twenty, the recorded snapshot takes over and
+        says so.
       </div>
     </div>
   );

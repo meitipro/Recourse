@@ -5,12 +5,13 @@ Print this. Follow it exactly, three times clean, before recording.
 ## Before
 
 - [ ] `python scripts/test.py` is green. Style, both contracts linted, direct tests.
-- [ ] `python scripts/deploy.py` run fresh this morning. Studio persistence is
-      temporary and yesterday's addresses will be gone.
+- [ ] `python scripts/prepare.py` run today. The contracts are frozen and are
+      not redeployed; this funds the three accounts, registers the seller on
+      the frozen escrow, and writes `deployed.json` and `web/.env.local`.
 - [ ] `python scripts/verify.py` says the deployment matches this repository.
       A contract edited after deploying has a published address that no longer
       stands behind the published source.
-- [ ] `web/.env.local` carries the addresses `deploy.py` just wrote.
+- [ ] `web/.env.local` carries the frozen addresses `prepare.py` just wrote.
 - [ ] Feed open at http://localhost:4500, showing an empty state or the fresh rows.
 - [ ] Seller endpoint on http://localhost:4501, mode correct.
 - [ ] Terminal font size increased.
@@ -18,7 +19,7 @@ Print this. Follow it exactly, three times clean, before recording.
 ## Run
 
 ```bash
-python scripts/deploy.py          # 1  fresh contracts, funded accounts, seller registered
+python scripts/prepare.py         # 1  funded accounts, seller registered on the frozen contracts
 python scripts/demo.py            # 2  both paths, one command
 ```
 
@@ -41,6 +42,10 @@ Watch the feed row appear, move to judged, then settle.
 - [ ] The seller's upheld counter incremented.
 - [ ] The buyer's balance came back.
 - [ ] Nothing in the terminal is red.
+- [ ] `python scripts/snapshot.py` run after the last cycle, so
+      `evidence/snapshot.json` holds what was just recorded and
+      `python scripts/test.py` is green with it. Studio's persistence is
+      temporary; the snapshot is what outlives it.
 
 ## What the numbers should look like
 
@@ -95,10 +100,16 @@ back: a plain post succeeded three times in four here and failed ten times
 running inside one burst.
 
 **Money did not move after a verdict.** The settlement is an emitted message,
-which becomes its own transaction. The emitting receipt finalizing means only
-that the message was queued. On Studio a value message delivered to an ordinary
-account is refused, so the payment can read resolved on chain while no balance
-moved. Check the payee's balance rather than inferring it from the verdict.
+which becomes its own transaction and lands when the emitting one finalizes,
+about half a minute after the verdict is accepted. A balance read the instant
+the status turns resolved shows money still in flight as money that never
+came. `agent/run.py` and `scripts/withdraw.py` poll the balance for up to
+ninety seconds for that reason; do the same rather than inferring it from the
+verdict.
 
 **Everything worked yesterday and is gone today.** Studio persistence is
-temporary. Run `scripts/deploy.py`. That is what it is for.
+temporary, and the frozen pair goes with it. `evidence/snapshot.json` and
+`evidence/receipts/` hold what the chain held, and the site shows them, saying
+so, when the chain no longer answers. Redeploying is a `--unfreeze` and
+invalidates every published number; `contracts/FROZEN.json` lists what a
+redeploy has to redo before anything is published again.

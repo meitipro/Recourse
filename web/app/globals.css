@@ -654,6 +654,13 @@ tr.expandable:hover td {
   color: var(--refused);
 }
 
+/* The feed is showing the recorded snapshot rather than the chain. Solid where
+   the others are dashed, so it cannot be mistaken for the loading state. */
+.notice.recorded {
+  border-style: solid;
+  border-color: rgba(251, 191, 36, 0.55);
+}
+
 .skeleton {
   height: 0.8rem;
   border-radius: 3px;

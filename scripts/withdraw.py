@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import sys
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -42,9 +43,18 @@ def main() -> int:
     before = seller.balance(deployment["seller"])
     print(f"payment  {args.pid}  {int(row['amount']) / GEN:.2f} GEN  status {row['status']}  window ends {row['window_ends']}")
     outcome = seller.send(escrow, "withdraw", [args.pid])
-    after = seller.balance(deployment["seller"])
     print(f"withdrawn  tx {outcome['hash']}")
-    print(f"seller balance  {before / GEN:.2f} -> {after / GEN:.2f} GEN")
+    # The payout is a value message that becomes its own transaction and lands
+    # on finalization, about half a minute after the withdraw is accepted.
+    # Reading the balance the instant the receipt arrives reports money still
+    # in flight as money that never came, which this printed once.
+    deadline = time.time() + 90
+    after = seller.balance(deployment["seller"])
+    while after <= before and time.time() < deadline:
+        time.sleep(5)
+        after = seller.balance(deployment["seller"])
+    note = "" if after > before else "  (not landed after 90 s; the payout moves on finalization, check again)"
+    print(f"seller balance  {before / GEN:.2f} -> {after / GEN:.2f} GEN{note}")
     print("no consensus ran and nobody paid anything extra")
     return 0
 

@@ -66,6 +66,14 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
       <p className="case-sub">
         {citation ? `${pid} on ${NETWORK}` : `never disputed, so there is no case; payment ${pid} on ${NETWORK}`}
       </p>
+      {evidence.source === "snapshot" ? (
+        <div className="notice recorded" role="status">
+          <strong>Recorded snapshot, not a live read.</strong> Taken{" "}
+          {evidence.recordedAt ? new Date(evidence.recordedAt).toUTCString() : "at an unrecorded time"} from{" "}
+          {NETWORK}, a temporary testnet; {evidence.why}. Everything on this page is what the chain
+          held then.
+        </div>
+      ) : null}
 
       <dl className="case-facts">
         <dt>status</dt>
@@ -117,8 +125,11 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           <h2>What they wrote</h2>
           <blockquote className="case-reason">{decided.reason}</blockquote>
           <p className="caption">
-            Read from chain when this page was opened. The verdict is the committee&apos;s; the reason is the
-            leader&apos;s display string and was never compared.{" "}
+            {evidence.source === "snapshot"
+              ? "From the recorded snapshot, because the chain could not be read when this page was opened."
+              : "Read from chain when this page was opened."}{" "}
+            The verdict is the committee&apos;s; the reason is the leader&apos;s display string and was never
+            compared.{" "}
             <a href={`${EXPLORER[NETWORK]}`} rel="noreferrer">
               Explorer
             </a>

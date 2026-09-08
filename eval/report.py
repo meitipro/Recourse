@@ -97,9 +97,10 @@ def main() -> int:
         measured = time.strftime("%Y-%m-%d", time.gmtime(data[n]["measured_at"]))
         add(f"| {n} | `{data[n]['instance']}` | {measured} | {data[n]['runs']} |")
     add("")
-    add("The same frozen bytes on every network. One column per network, never merged")
-    add("and never averaged: two validator sets ruling on the same three strings is the")
-    add("measurement, and a disagreement between them is a finding, not noise.")
+    add("The same frozen bytes wherever they are deployed, one column per network, never")
+    add("merged and never averaged. studionet is the only deployment today; a second")
+    add("validator set ruling on the same three strings would be a second column, and a")
+    add("disagreement between them a finding, not noise.")
     add("")
 
     add("## The numbers")

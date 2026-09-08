@@ -86,6 +86,7 @@ function Evidence({ row }: { row: Row }) {
   const [state, setState] = useState<{
     loading: boolean;
     error?: string;
+    source?: "live" | "snapshot";
     payment?: Payment;
     verdict?: Case;
   }>({ loading: true });
@@ -98,7 +99,7 @@ function Evidence({ row }: { row: Row }) {
         if (!live) return;
         setState(
           data.ok
-            ? { loading: false, payment: data.payment, verdict: data.case }
+            ? { loading: false, source: data.source, payment: data.payment, verdict: data.case }
             : { loading: false, error: data.error || "could not read the chain" },
         );
       })
@@ -161,6 +162,9 @@ function Evidence({ row }: { row: Row }) {
               : payment.recorded_by && payment.recorded_by !== payment.seller
                 ? "Recorded by the buyer. The seller did not sign it."
                 : "No signature recorded."}
+            {state.source === "snapshot"
+              ? " From the recorded snapshot: the chain could not be read for this row."
+              : ""}
           </div>
         </div>
       </td>
@@ -226,11 +230,19 @@ export default function Feed({ data }: { data: FeedData }) {
         </div>
       </div>
 
+      {data.source === "snapshot" ? (
+        <div className="notice recorded" role="status">
+          <strong>Recorded snapshot, not a live read.</strong> Taken{" "}
+          {data.recordedAt ? new Date(data.recordedAt).toUTCString() : "at an unrecorded time"} from{" "}
+          {data.network}, a temporary testnet; {data.why}. Every row below is what the chain held
+          then, and every transaction hash behind it is in evidence/snapshot.json.
+        </div>
+      ) : null}
       {data.error ? (
         <div className="notice bad">
           The chain could not be read. {data.error}
           <br />
-          Last successful read: {data.readAt ? new Date(data.readAt).toUTCString() : "never"}.
+          Attempted at {new Date(data.readAt).toUTCString()}. No snapshot covers this network.
         </div>
       ) : rows.length === 0 ? (
         <div className="notice">
@@ -329,8 +341,12 @@ export default function Feed({ data }: { data: FeedData }) {
         </span>
       </div>
       <p className="caption">
-        Read from chain at {new Date(data.readAt).toUTCString()}. Click a row for the evidence the
-        validators saw.
+        {data.source === "snapshot"
+          ? `From the recorded snapshot of ${
+              data.recordedAt ? new Date(data.recordedAt).toUTCString() : "an unrecorded time"
+            }; the chain was tried at ${new Date(data.readAt).toUTCString()}.`
+          : `Read from chain at ${new Date(data.readAt).toUTCString()}.`}{" "}
+        Click a row for the evidence the validators saw.
       </p>
     </>
   );

@@ -1,0 +1,2312 @@
+{
+  "cases": [
+    {
+      "decided_at": 1788639398,
+      "opened_at": 1788639398,
+      "pid": "p-000002",
+      "reason": "The timestamp in the response (11:16:25Z) is 9 hours older than the time the response was recorded on chain (20:16:27Z), exceeding the five-second freshness limit.",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    },
+    {
+      "decided_at": 1788639536,
+      "opened_at": 1788639536,
+      "pid": "p-000003",
+      "reason": "Response timestamp 2026-09-05T11:18:41Z is ~9 hours before chain recording time 2026-09-05T20:18:43Z, far exceeding the 5-second freshness bound stated in the PROMISE.",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    },
+    {
+      "decided_at": 1788699731,
+      "opened_at": 1788699731,
+      "pid": "p-000007",
+      "reason": "Timestamp is 2026-09-04T09:20:02Z but response was recorded on chain at 2026-09-06T13:01:45Z, making the data ~52 hours old, far exceeding the 5-second freshness bound.",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    },
+    {
+      "decided_at": 1788713442,
+      "opened_at": 1788713442,
+      "pid": "p-000009",
+      "reason": "ts is ~1 day before chain recording time, violating 5s refresh",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    },
+    {
+      "decided_at": 1788713707,
+      "opened_at": 1788713707,
+      "pid": "p-000010",
+      "reason": "Promise requires refresh within five seconds. Response timestamp is about 31h34m48s older than the on-chain response time, so freshness bound was plainly not met.",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    },
+    {
+      "decided_at": 1788713876,
+      "opened_at": 1788713876,
+      "pid": "p-000012",
+      "reason": "Promise requires timestamp no more than 5 seconds old at response record time. Response ts 07:57:44Z is about 9 hours older than chain response time 16:57:46Z.",
+      "verdict": 2,
+      "verdict_name": "not_honored"
+    }
+  ],
+  "chain_id": 61999,
+  "dispute": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+  "escrow": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+  "evaluation": {
+    "v1": {
+      "accuracy": 17,
+      "instance": "0xcff13a617150bAd50D2b1d651576Bb8DA7aC11AE",
+      "measured_at": 1788613035,
+      "n": 18,
+      "network": "studionet",
+      "runs": 3,
+      "stability": 17,
+      "unclear": 3
+    },
+    "v2": {
+      "accuracy": 1,
+      "instance": "0x7711F22d507ED3C15cF42BA6Ead2A5BD72EFcb71",
+      "measured_at": 1788635504,
+      "n": 3,
+      "network": "studionet",
+      "runs": 3,
+      "stability": 2,
+      "unclear": 1
+    }
+  },
+  "explorer": "https://explorer-studio.genlayer.com",
+  "frozen": {
+    "bond_wei": "1000000000000000000",
+    "dispute_sha256": "7781e46eddb165156499d47a60b708efeb1978e92f2c3fb977c47cc148fbc008",
+    "escrow_sha256": "d500b250355db5b87eb3014392444305e5a9c4e8fc78e58f49ad8312da8355cc",
+    "frozen_at_commit": "ccc470a",
+    "window_seconds": 300
+  },
+  "network": "studionet",
+  "note": "What the chain held about the frozen contracts on studionet when this was recorded. studionet is a temporary testnet. The site reads the chain first and this file second, and says which one it is showing. Regenerate with: python scripts/snapshot.py",
+  "payments": [
+    {
+      "amount": "4000000000000000000",
+      "bond": "0",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "created_at": 1788639352,
+      "dispute_ends": 0,
+      "pid": "p-000001",
+      "recorded_by": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788639359,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T20:15:58Z\"}",
+      "response_sig": "0d35d1fc38f5a8e5ba1d86a5b4be58e5c44c7e3539fb9d5d41bff76c4ec2c2507ba84ee25066580b804de7508fe0020793a2d5bdf6334e3a3f13ff84af6a5f291b",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 1,
+      "status_name": "withdrawn",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0x3a12b069c5a9ff2010eda8f87ec6081f566f543c58db6e384cca1ffee106adf2",
+          "0xfdc9bf6f526cdcdea1d28a7f74610620e672def9b3018054e06a84f59ff66d3c",
+          "0x6cce1c2b7b4657c96716f463864cd177eb34515f7377c1afd3f5504aace7a194",
+          "0x432749db5be6dc1d5743bfdea7ea611c59b63d08b28a7fe61caddf5ca908a909",
+          "0xee72b4dcf9d7f5133ca535a674d4db9173aff30552670b91652b2474ca0a03fc",
+          "0x24f95f7f1c947358ce27364764be9b7cdc5f3cea7d51d95dd6e72a664856531a",
+          "0xb613c6f418bcef5243c31e932893cbb0f0a389dc2d87c56abd46d63a2fc8b8f2",
+          "0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2",
+          "0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd",
+          "0x7ea6b9c9f40cda4a9fba8ca8c8c464584b6b0c7322a821573b554b8030e89ce7",
+          "0x8044a84decac54f207e355a21ee4667c8c57174f771fa7aeb7feba005504b764",
+          "0x90f8e31edd754101e18ff1ac4fb55d4226ede8a4cb8308c41b30cb83705326d1"
+        ],
+        "open_dispute": null,
+        "pay": "0x6cce1c2b7b4657c96716f463864cd177eb34515f7377c1afd3f5504aace7a194",
+        "payouts": [
+          "0x90f8e31edd754101e18ff1ac4fb55d4226ede8a4cb8308c41b30cb83705326d1"
+        ],
+        "reclaim": null,
+        "record_response": "0x432749db5be6dc1d5743bfdea7ea611c59b63d08b28a7fe61caddf5ca908a909",
+        "settle": null,
+        "withdraw": "0x8044a84decac54f207e355a21ee4667c8c57174f771fa7aeb7feba005504b764"
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788639652
+    },
+    {
+      "amount": "4000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "case": {
+        "decided_at": 1788639398,
+        "opened_at": 1788639398,
+        "pid": "p-000002",
+        "reason": "The timestamp in the response (11:16:25Z) is 9 hours older than the time the response was recorded on chain (20:16:27Z), exceeding the five-second freshness limit.",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788639379,
+      "dispute_ends": 1788642992,
+      "pid": "p-000002",
+      "recorded_by": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788639387,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:16:25Z\"}",
+      "response_sig": "7e296da39c84b2c66f50c9dc5f1f05125c9e001947eb6b1a69fe725d0c4f8c9945372ba8296d5831c982b8d75af47b686793455c9d205a4197eb4de3d775c7501c",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07",
+        "every_attempt": [
+          "0xfa96ab4d74890d354ecdfeacfed2a3834145fe6940dd87464dfbf8a34b82eec2",
+          "0x205838ab689d12a2bcf742067f93d8fbfe637533fa898f7fb839e2a565064886",
+          "0x2f38774e2674659e6d2a2c07dbede81dc0d037f4ed6bc265078f6bacb0f045ca",
+          "0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07",
+          "0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8",
+          "0x8c1cab13cb9e6ef5e25f9941d121a3d279d8b88ebb6c7cec8cfbcac04ac30915"
+        ],
+        "open_dispute": "0x2f38774e2674659e6d2a2c07dbede81dc0d037f4ed6bc265078f6bacb0f045ca",
+        "pay": "0xfa96ab4d74890d354ecdfeacfed2a3834145fe6940dd87464dfbf8a34b82eec2",
+        "payouts": [
+          "0x8c1cab13cb9e6ef5e25f9941d121a3d279d8b88ebb6c7cec8cfbcac04ac30915"
+        ],
+        "reclaim": null,
+        "record_response": "0x205838ab689d12a2bcf742067f93d8fbfe637533fa898f7fb839e2a565064886",
+        "settle": "0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788639679
+    },
+    {
+      "amount": "4000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "case": {
+        "decided_at": 1788639536,
+        "opened_at": 1788639536,
+        "pid": "p-000003",
+        "reason": "Response timestamp 2026-09-05T11:18:41Z is ~9 hours before chain recording time 2026-09-05T20:18:43Z, far exceeding the 5-second freshness bound stated in the PROMISE.",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788639512,
+      "dispute_ends": 1788643131,
+      "pid": "p-000003",
+      "recorded_by": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788639523,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:18:41Z\"}",
+      "response_sig": "0ca6aaf5452e3ad2c2e35ff3b6d4239feb98489292d3119ce61305d8163adcb30d34cc71b8ea659f372cbe09ea3b72079f435809f00c4a7886e4018475943aae1b",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92",
+        "every_attempt": [
+          "0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271",
+          "0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216",
+          "0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+          "0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92",
+          "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+          "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5"
+        ],
+        "open_dispute": "0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+        "pay": "0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271",
+        "payouts": [
+          "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5"
+        ],
+        "reclaim": null,
+        "record_response": "0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216",
+        "settle": "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788639812
+    },
+    {
+      "amount": "1000000000000000000",
+      "bond": "0",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "created_at": 1788639634,
+      "dispute_ends": 0,
+      "pid": "p-000004",
+      "recorded_by": "0x0000000000000000000000000000000000000000",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 0,
+      "response": "",
+      "response_sig": "",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 0,
+      "status_name": "open",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0xe0b8d310e4416ee6332730b3838e6509447e484503822222f4523d3d89ca8324",
+          "0x9bdfb93c126ce4b17e1a3c06f7b3fb1d8f2e271a0bd3baa233a03978cf2bfc3b"
+        ],
+        "open_dispute": null,
+        "pay": "0xe0b8d310e4416ee6332730b3838e6509447e484503822222f4523d3d89ca8324",
+        "payouts": [],
+        "reclaim": null,
+        "record_response": null,
+        "settle": null,
+        "withdraw": null
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788639934
+    },
+    {
+      "amount": "1000000000000000000",
+      "bond": "0",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "created_at": 1788639766,
+      "dispute_ends": 0,
+      "pid": "p-000005",
+      "recorded_by": "0x0000000000000000000000000000000000000000",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 0,
+      "response": "",
+      "response_sig": "",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 0,
+      "status_name": "open",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0xea2c064adcc885b171e6d5930f8503b4cf7528b416e2e6ceb8b46d0660daf0ff",
+          "0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db"
+        ],
+        "open_dispute": null,
+        "pay": "0xea2c064adcc885b171e6d5930f8503b4cf7528b416e2e6ceb8b46d0660daf0ff",
+        "payouts": [],
+        "reclaim": null,
+        "record_response": null,
+        "settle": null,
+        "withdraw": null
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788640066
+    },
+    {
+      "amount": "2000000000000000000",
+      "bond": "0",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "created_at": 1788699677,
+      "dispute_ends": 0,
+      "pid": "p-000006",
+      "recorded_by": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788699682,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-04T18:20:02Z\"}",
+      "response_sig": "0xsig",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 0,
+      "status_name": "open",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0xd1afa99e6e9b6a9c1c8dffff6716c192c6ce6f7588f1dc1cdf35c85509c2da89",
+          "0xc23d9d898fa7a3498ea7b051eab3004685b012b2227a644422719b3a085fa60b",
+          "0x40d02ac7005b8523e9cc4c0c55344cd7ab647e048e35637d0bd4cb483552d229"
+        ],
+        "open_dispute": null,
+        "pay": "0xd1afa99e6e9b6a9c1c8dffff6716c192c6ce6f7588f1dc1cdf35c85509c2da89",
+        "payouts": [],
+        "reclaim": null,
+        "record_response": "0xc23d9d898fa7a3498ea7b051eab3004685b012b2227a644422719b3a085fa60b",
+        "settle": null,
+        "withdraw": null
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788699977
+    },
+    {
+      "amount": "4000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "case": {
+        "decided_at": 1788699731,
+        "opened_at": 1788699731,
+        "pid": "p-000007",
+        "reason": "Timestamp is 2026-09-04T09:20:02Z but response was recorded on chain at 2026-09-06T13:01:45Z, making the data ~52 hours old, far exceeding the 5-second freshness bound.",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788699696,
+      "dispute_ends": 1788703328,
+      "pid": "p-000007",
+      "recorded_by": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788699705,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-04T09:20:02Z\"}",
+      "response_sig": "0xsig",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d",
+        "every_attempt": [
+          "0xdda4f68196bcb9f0bef172e02648b8f0e03b3f5b70798a7b233a5f7af17302de",
+          "0x830c759c8badca2f8b20eef01ef2263add05329d4cb000dcb015df96da1a1911",
+          "0x505ddb7d7aae4cc39fbb2ef7242a4be0beea2e011391c3b96aec8f97329afdd3",
+          "0x3f48a51b0f88e6acf34e0f8b928770755f5c672496e3e5fcada658270c2c0e56",
+          "0x9800a7f2a447d114e207d8a9de322289d61cb6775a189c51bbddb6a09a311939",
+          "0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d",
+          "0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5",
+          "0x50eec8b6ab377c4dbc10a6a756e4d3dda8ae42ca4031b47ce9405a0ca8c06bef",
+          "0x1783a40dce3c7ef05a25d943a383d4355f4e9b29820506a90d9b2151fce49fab",
+          "0xb978adb16b10aed95c38f39e3f1540611e593fc9a681012e950cb6eabdef7b86"
+        ],
+        "open_dispute": "0x9800a7f2a447d114e207d8a9de322289d61cb6775a189c51bbddb6a09a311939",
+        "pay": "0xdda4f68196bcb9f0bef172e02648b8f0e03b3f5b70798a7b233a5f7af17302de",
+        "payouts": [
+          "0xb978adb16b10aed95c38f39e3f1540611e593fc9a681012e950cb6eabdef7b86"
+        ],
+        "reclaim": null,
+        "record_response": "0x830c759c8badca2f8b20eef01ef2263add05329d4cb000dcb015df96da1a1911",
+        "settle": "0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788699996
+    },
+    {
+      "amount": "1000000000000000000",
+      "bond": "0",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "created_at": 1788700072,
+      "dispute_ends": 0,
+      "pid": "p-000008",
+      "recorded_by": "0x0000000000000000000000000000000000000000",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 0,
+      "response": "",
+      "response_sig": "",
+      "seller": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "status": 0,
+      "status_name": "open",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0x1afbb22c0efc2495a84604db1a144e09ebc645f3d10186d8c2d4ed683c5343a4"
+        ],
+        "open_dispute": null,
+        "pay": "0x1afbb22c0efc2495a84604db1a144e09ebc645f3d10186d8c2d4ed683c5343a4",
+        "payouts": [],
+        "reclaim": null,
+        "record_response": null,
+        "settle": null,
+        "withdraw": null
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788700372
+    },
+    {
+      "amount": "2000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "case": {
+        "decided_at": 1788713442,
+        "opened_at": 1788713442,
+        "pid": "p-000009",
+        "reason": "ts is ~1 day before chain recording time, violating 5s refresh",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788713422,
+      "dispute_ends": 1788717039,
+      "pid": "p-000009",
+      "recorded_by": "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788713427,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+      "response_sig": "6846fb8fc666535009dcc4d1459ab32676d79f6e8847fda9210f5266926e13f0458880933f4ec65be110ecffdc6af51e162f180e2655f7ba3721712a2fcd51221b",
+      "seller": "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84",
+        "every_attempt": [
+          "0xa0dcca7ed2267fcc8f2aa81d72c087f450033dba3000bb2d9d3db68f482dab66",
+          "0xb315af3f08e553b2b99cfec5910e8712582b68e95b5acd89c402225e69722482",
+          "0x341f3a393cfa5cc82e3bbbc3c2bb3fb6391f2ad9884799800b1ad2fd9dd5f6cf",
+          "0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84",
+          "0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448",
+          "0x8b4fb17ceba3cf86d8169d46ad9dee8de727d335b983dd068cf53a1d0afaefa7"
+        ],
+        "open_dispute": "0x341f3a393cfa5cc82e3bbbc3c2bb3fb6391f2ad9884799800b1ad2fd9dd5f6cf",
+        "pay": "0xa0dcca7ed2267fcc8f2aa81d72c087f450033dba3000bb2d9d3db68f482dab66",
+        "payouts": [
+          "0x8b4fb17ceba3cf86d8169d46ad9dee8de727d335b983dd068cf53a1d0afaefa7"
+        ],
+        "reclaim": null,
+        "record_response": "0xb315af3f08e553b2b99cfec5910e8712582b68e95b5acd89c402225e69722482",
+        "settle": "0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788713722
+    },
+    {
+      "amount": "2000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "case": {
+        "decided_at": 1788713707,
+        "opened_at": 1788713707,
+        "pid": "p-000010",
+        "reason": "Promise requires refresh within five seconds. Response timestamp is about 31h34m48s older than the on-chain response time, so freshness bound was plainly not met.",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788713685,
+      "dispute_ends": 1788717302,
+      "pid": "p-000010",
+      "recorded_by": "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788713690,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+      "response_sig": "6e4801e5281ab69038e84c78a89aef5a9fce0fa0cf0cf94329cc471d8786f2364c5888c81067d112f2432a2eb5f16be76be77c3b396d864fb07980db015538031c",
+      "seller": "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7",
+        "every_attempt": [
+          "0x8448a6c94f96ae183c02118191cf181c40f72c3309be8d106ed60ad3297c3771",
+          "0x76a111a454869168c70cc8b92e799cccbae605045905f17e3a263814b3e382b4",
+          "0x335d333ca78ba131371aab8818be7f2015cfedaafbd57925ec27b0b4f8ba3470",
+          "0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7",
+          "0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed",
+          "0x52d00e21576c99dd2d74491e64b57f5f99e9b743b5662adbea850ea03678b24d"
+        ],
+        "open_dispute": "0x335d333ca78ba131371aab8818be7f2015cfedaafbd57925ec27b0b4f8ba3470",
+        "pay": "0x8448a6c94f96ae183c02118191cf181c40f72c3309be8d106ed60ad3297c3771",
+        "payouts": [
+          "0x52d00e21576c99dd2d74491e64b57f5f99e9b743b5662adbea850ea03678b24d"
+        ],
+        "reclaim": null,
+        "record_response": "0x76a111a454869168c70cc8b92e799cccbae605045905f17e3a263814b3e382b4",
+        "settle": "0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788713985
+    },
+    {
+      "amount": "4000000000000000000",
+      "bond": "0",
+      "buyer": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "created_at": 1788713823,
+      "dispute_ends": 0,
+      "pid": "p-000011",
+      "recorded_by": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788713836,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-06T16:57:13Z\"}",
+      "response_sig": "30550e9cf4c6dbe11220c9213161ec79e0e8d6bb335722613205f1566db095b5354ea3861996387d92e03b72d6693ef6cf68016952228a1c2e3854c8ca36b17e1b",
+      "seller": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "status": 0,
+      "status_name": "open",
+      "transactions": {
+        "adjudicate": null,
+        "every_attempt": [
+          "0x1cee7e92cd84432c722af6b73090c0d6849578d6d677adea277e2ba8d14e9c86",
+          "0x1dc09fd43d5294cdce552e89a3d3567fc7eb66392b39316c2f5c65ed4ca1f58a"
+        ],
+        "open_dispute": null,
+        "pay": "0x1cee7e92cd84432c722af6b73090c0d6849578d6d677adea277e2ba8d14e9c86",
+        "payouts": [],
+        "reclaim": null,
+        "record_response": "0x1dc09fd43d5294cdce552e89a3d3567fc7eb66392b39316c2f5c65ed4ca1f58a",
+        "settle": null,
+        "withdraw": null
+      },
+      "verdict": 0,
+      "verdict_name": "pending",
+      "window_ends": 1788714123
+    },
+    {
+      "amount": "4000000000000000000",
+      "bond": "1000000000000000000",
+      "buyer": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "case": {
+        "decided_at": 1788713876,
+        "opened_at": 1788713876,
+        "pid": "p-000012",
+        "reason": "Promise requires timestamp no more than 5 seconds old at response record time. Response ts 07:57:44Z is about 9 hours older than chain response time 16:57:46Z.",
+        "verdict": 2,
+        "verdict_name": "not_honored"
+      },
+      "created_at": 1788713858,
+      "dispute_ends": 1788717471,
+      "pid": "p-000012",
+      "recorded_by": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "request": "GET /quote?pair=ETH-USD",
+      "responded_at": 1788713866,
+      "response": "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-06T07:57:44Z\"}",
+      "response_sig": "4bfe6b2d51a9f07b311bab102875912d1c43d26402b9592923ebea4b7b08c45d3f8ba1372bf6ecfe48b0a6a0be7bc9ddadab61e3c101802abd46eb726a96eeab1b",
+      "seller": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "status": 3,
+      "status_name": "resolved",
+      "transactions": {
+        "adjudicate": "0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5",
+        "every_attempt": [
+          "0x97f7be07248e4f432d9703f6df4d1ce2184bf1d20cc5ad01f5c7f11dc6a4e4b0",
+          "0xf1094689b847f71550b6beeaa200a8024bb424cc4f37d2c5fa790869e0cf5e9c",
+          "0x1bc460f99e30e0508562452116d01f12e13b401c456c9ce5a5b8c7e4c9f58c4c",
+          "0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5",
+          "0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba",
+          "0xed48f5c4897989abcddbe66f38b4d06974910e2b32ae3500edad788c773cab8b"
+        ],
+        "open_dispute": "0x1bc460f99e30e0508562452116d01f12e13b401c456c9ce5a5b8c7e4c9f58c4c",
+        "pay": "0x97f7be07248e4f432d9703f6df4d1ce2184bf1d20cc5ad01f5c7f11dc6a4e4b0",
+        "payouts": [
+          "0xed48f5c4897989abcddbe66f38b4d06974910e2b32ae3500edad788c773cab8b"
+        ],
+        "reclaim": null,
+        "record_response": "0xf1094689b847f71550b6beeaa200a8024bb424cc4f37d2c5fa790869e0cf5e9c",
+        "settle": "0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba",
+        "withdraw": null
+      },
+      "verdict": 2,
+      "verdict_name": "not_honored",
+      "window_ends": 1788714158
+    }
+  ],
+  "receipts": {
+    "contested": {
+      "files": [
+        "evidence/receipts/contested-p-000003/01-pay-ec4189248f30.json",
+        "evidence/receipts/contested-p-000003/02-record_response-24795e35ab6f.json",
+        "evidence/receipts/contested-p-000003/03-open_dispute-0107b1fc6fd9.json",
+        "evidence/receipts/contested-p-000003/04-adjudicate-d46f878fc83c.json",
+        "evidence/receipts/contested-p-000003/05-settle-d3af20a6fa5b.json",
+        "evidence/receipts/contested-p-000003/06-payout-385a9cf0bdea.json"
+      ],
+      "pid": "p-000003"
+    },
+    "honest": {
+      "files": [
+        "evidence/receipts/honest-p-000001/01-pay-6cce1c2b7b46.json",
+        "evidence/receipts/honest-p-000001/02-record_response-432749db5be6.json",
+        "evidence/receipts/honest-p-000001/03-withdraw-8044a84decac.json",
+        "evidence/receipts/honest-p-000001/04-payout-90f8e31edd75.json"
+      ],
+      "pid": "p-000001"
+    }
+  },
+  "recorded_at": 1788893313,
+  "recorded_at_iso": "2026-09-08T18:48:33Z",
+  "refusals": [
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3a12b069c5a9ff2010eda8f87ec6081f566f543c58db6e384cca1ffee106adf2",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3a12b069c5a9ff2010eda8f87ec6081f566f543c58db6e384cca1ffee106adf2",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x4403fd6966af6443d8f4d26886eaa2858f47511a0cf2aca818782f2ca6e42de7",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x4403fd6966af6443d8f4d26886eaa2858f47511a0cf2aca818782f2ca6e42de7",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xfdc9bf6f526cdcdea1d28a7f74610620e672def9b3018054e06a84f59ff66d3c",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xfdc9bf6f526cdcdea1d28a7f74610620e672def9b3018054e06a84f59ff66d3c",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] unknown payment"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x9bdfb93c126ce4b17e1a3c06f7b3fb1d8f2e271a0bd3baa233a03978cf2bfc3b",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x9bdfb93c126ce4b17e1a3c06f7b3fb1d8f2e271a0bd3baa233a03978cf2bfc3b",
+      "method": "record_response",
+      "pid": "p-000004",
+      "refusal": "[EXPECTED] signature too long"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xee72b4dcf9d7f5133ca535a674d4db9173aff30552670b91652b2474ca0a03fc",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xee72b4dcf9d7f5133ca535a674d4db9173aff30552670b91652b2474ca0a03fc",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8087313f768a2b51027cb5850a35fc12c254b487493184c56b0817af3d5fe5cb",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x8087313f768a2b51027cb5850a35fc12c254b487493184c56b0817af3d5fe5cb",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x24f95f7f1c947358ce27364764be9b7cdc5f3cea7d51d95dd6e72a664856531a",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x24f95f7f1c947358ce27364764be9b7cdc5f3cea7d51d95dd6e72a664856531a",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not disputed"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xb613c6f418bcef5243c31e932893cbb0f0a389dc2d87c56abd46d63a2fc8b8f2",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xb613c6f418bcef5243c31e932893cbb0f0a389dc2d87c56abd46d63a2fc8b8f2",
+      "method": "record_response",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] response already recorded"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x6d87b3b08870a872efa36ba7b0a492a7960f8c2bec9042e1c168fb0938739473",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x6d87b3b08870a872efa36ba7b0a492a7960f8c2bec9042e1c168fb0938739473",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not disputed"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db",
+      "method": "record_response",
+      "pid": "p-000005",
+      "refusal": "[EXPECTED] signature too long"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x7ea6b9c9f40cda4a9fba8ca8c8c464584b6b0c7322a821573b554b8030e89ce7",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x7ea6b9c9f40cda4a9fba8ca8c8c464584b6b0c7322a821573b554b8030e89ce7",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x40d02ac7005b8523e9cc4c0c55344cd7ab647e048e35637d0bd4cb483552d229",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x40d02ac7005b8523e9cc4c0c55344cd7ab647e048e35637d0bd4cb483552d229",
+      "method": "withdraw",
+      "pid": "p-000006",
+      "refusal": "[EXPECTED] window open"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x505ddb7d7aae4cc39fbb2ef7242a4be0beea2e011391c3b96aec8f97329afdd3",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x505ddb7d7aae4cc39fbb2ef7242a4be0beea2e011391c3b96aec8f97329afdd3",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not buyer"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3f48a51b0f88e6acf34e0f8b928770755f5c672496e3e5fcada658270c2c0e56",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3f48a51b0f88e6acf34e0f8b928770755f5c672496e3e5fcada658270c2c0e56",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] wrong bond"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x50eec8b6ab377c4dbc10a6a756e4d3dda8ae42ca4031b47ce9405a0ca8c06bef",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x50eec8b6ab377c4dbc10a6a756e4d3dda8ae42ca4031b47ce9405a0ca8c06bef",
+      "method": "withdraw",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not open"
+    },
+    {
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1783a40dce3c7ef05a25d943a383d4355f4e9b29820506a90d9b2151fce49fab",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x1783a40dce3c7ef05a25d943a383d4355f4e9b29820506a90d9b2151fce49fab",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not open"
+    }
+  ],
+  "rpc": "https://studio.genlayer.com/api",
+  "sellers": {
+    "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714": {
+      "active": true,
+      "address": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "judgeable": true,
+      "live": 1,
+      "promise": "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+      "registered_at": 1788713799,
+      "reviewed": "",
+      "total": 2,
+      "upheld": 1
+    },
+    "0x7246e934d5824F55c4134E1112eCaCE165E5F805": {
+      "active": true,
+      "address": "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+      "judgeable": true,
+      "live": 0,
+      "promise": "Prices aggregated from at least three venues, refreshed within five seconds.",
+      "registered_at": 1788713677,
+      "reviewed": "",
+      "total": 1,
+      "upheld": 1
+    },
+    "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99": {
+      "active": true,
+      "address": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "judgeable": true,
+      "live": 4,
+      "promise": "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+      "registered_at": 1788639231,
+      "reviewed": "",
+      "total": 8,
+      "upheld": 3
+    },
+    "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB": {
+      "active": true,
+      "address": "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+      "judgeable": true,
+      "live": 0,
+      "promise": "Prices aggregated from at least three venues, refreshed within five seconds.",
+      "registered_at": 1788713355,
+      "reviewed": "",
+      "total": 1,
+      "upheld": 1
+    }
+  },
+  "stats": {
+    "bond_amount": "1000000000000000000",
+    "dispute_contract": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+    "held": "9000000000000000000",
+    "owner": "0xFEb134633A0BFBAE656DC7C0EEeEa4755a0e6959",
+    "payments": 12,
+    "window_seconds": 300
+  },
+  "totals": {
+    "by_status": {
+      "disputed": 0,
+      "open": 5,
+      "resolved": 6,
+      "withdrawn": 1
+    },
+    "decided": 6,
+    "disputes_opened": 6,
+    "held_wei": "9000000000000000000",
+    "median_pay_to_dispute_seconds": 22,
+    "payments": 12,
+    "refusals": 18,
+    "transactions": 72,
+    "unjudgeable": 0,
+    "unjudgeable_rate": 0.0,
+    "upheld": 6,
+    "upheld_rate": 1.0,
+    "verdicts": {
+      "honored": 0,
+      "not_honored": 6,
+      "unclear": 0
+    }
+  },
+  "transactions": [
+    {
+      "args": [
+        "300",
+        "1000000000000000000"
+      ],
+      "created_at": "2026-09-05T20:12:26.891824+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x26f04ac7c1952dd9678673666b51a4d78b61e214608a0f719c2733d01857b0e1",
+      "from": "0xFEb134633A0BFBAE656DC7C0EEeEa4755a0e6959",
+      "hash": "0x26f04ac7c1952dd9678673666b51a4d78b61e214608a0f719c2733d01857b0e1",
+      "method": "?",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x5125De939F7373eAE741B133FB32B7E9915C8F78"
+      ],
+      "created_at": "2026-09-05T20:13:04.512137+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x82c0026d6069ef2587d02080449eb3db153bef76b695495f9b907fcf69dd87cb",
+      "from": "0xFEb134633A0BFBAE656DC7C0EEeEa4755a0e6959",
+      "hash": "0x82c0026d6069ef2587d02080449eb3db153bef76b695495f9b907fcf69dd87cb",
+      "method": "?",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4"
+      ],
+      "created_at": "2026-09-05T20:13:44.935714+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xaca2290b9e93ff802bc14920836c31b6196c27e52c4dea8868744ba7e7b089d4",
+      "from": "0xFEb134633A0BFBAE656DC7C0EEeEa4755a0e6959",
+      "hash": "0xaca2290b9e93ff802bc14920836c31b6196c27e52c4dea8868744ba7e7b089d4",
+      "method": "set_dispute_contract",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old."
+      ],
+      "created_at": "2026-09-05T20:13:51.778169+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xe9723da54fbcfe0f81432fc9f969e7eb1c8beec0fdd19ef32d47c6fbaefc5ae4",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xe9723da54fbcfe0f81432fc9f969e7eb1c8beec0fdd19ef32d47c6fbaefc5ae4",
+      "method": "register_seller",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001",
+        "2",
+        "mine now"
+      ],
+      "created_at": "2026-09-05T20:15:08.324575+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3a12b069c5a9ff2010eda8f87ec6081f566f543c58db6e384cca1ffee106adf2",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3a12b069c5a9ff2010eda8f87ec6081f566f543c58db6e384cca1ffee106adf2",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "true"
+      ],
+      "created_at": "2026-09-05T20:15:13.533630+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x4403fd6966af6443d8f4d26886eaa2858f47511a0cf2aca818782f2ca6e42de7",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x4403fd6966af6443d8f4d26886eaa2858f47511a0cf2aca818782f2ca6e42de7",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001"
+      ],
+      "created_at": "2026-09-05T20:15:22.058630+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xfdc9bf6f526cdcdea1d28a7f74610620e672def9b3018054e06a84f59ff66d3c",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xfdc9bf6f526cdcdea1d28a7f74610620e672def9b3018054e06a84f59ff66d3c",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] unknown payment",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-05T20:15:52.177359+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x6cce1c2b7b4657c96716f463864cd177eb34515f7377c1afd3f5504aace7a194",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x6cce1c2b7b4657c96716f463864cd177eb34515f7377c1afd3f5504aace7a194",
+      "method": "pay",
+      "pid": "p-000001",
+      "refusal": "",
+      "returned": "p-000001",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000001",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T20:15:58Z\"}",
+        "0d35d1fc38f5a8e5ba1d86a5b4be58e5c44c7e3539fb9d5d41bff76c4ec2c2507ba84ee25066580b804de7508fe0020793a2d5bdf6334e3a3f13ff84af6a5f291b"
+      ],
+      "created_at": "2026-09-05T20:15:59.744021+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x432749db5be6dc1d5743bfdea7ea611c59b63d08b28a7fe61caddf5ca908a909",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x432749db5be6dc1d5743bfdea7ea611c59b63d08b28a7fe61caddf5ca908a909",
+      "method": "record_response",
+      "pid": "p-000001",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-05T20:16:19.938851+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xfa96ab4d74890d354ecdfeacfed2a3834145fe6940dd87464dfbf8a34b82eec2",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xfa96ab4d74890d354ecdfeacfed2a3834145fe6940dd87464dfbf8a34b82eec2",
+      "method": "pay",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": "p-000002",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000002",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:16:25Z\"}",
+        "7e296da39c84b2c66f50c9dc5f1f05125c9e001947eb6b1a69fe725d0c4f8c9945372ba8296d5831c982b8d75af47b686793455c9d205a4197eb4de3d775c7501c"
+      ],
+      "created_at": "2026-09-05T20:16:27.578909+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x205838ab689d12a2bcf742067f93d8fbfe637533fa898f7fb839e2a565064886",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x205838ab689d12a2bcf742067f93d8fbfe637533fa898f7fb839e2a565064886",
+      "method": "record_response",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000002"
+      ],
+      "created_at": "2026-09-05T20:16:32.953400+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x2f38774e2674659e6d2a2c07dbede81dc0d037f4ed6bc265078f6bacb0f045ca",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x2f38774e2674659e6d2a2c07dbede81dc0d037f4ed6bc265078f6bacb0f045ca",
+      "method": "open_dispute",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000002",
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:16:25Z\"}",
+        "Request recorded on chain at 2026-09-05T20:16:19Z. Response recorded on chain at 2026-09-05T20:16:27Z."
+      ],
+      "created_at": "2026-09-05T20:16:38.191050+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07",
+      "method": "adjudicate",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8"
+      ],
+      "triggered_by": "0x2f38774e2674659e6d2a2c07dbede81dc0d037f4ed6bc265078f6bacb0f045ca",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000002",
+        "2",
+        "The timestamp in the response (11:16:25Z) is 9 hours older than the time the response was recorded on chain (20:16:27Z), exceeding the five-second freshness limit."
+      ],
+      "created_at": "2026-09-05T20:17:26.029094+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8",
+      "method": "settle",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x8c1cab13cb9e6ef5e25f9941d121a3d279d8b88ebb6c7cec8cfbcac04ac30915"
+      ],
+      "triggered_by": "0x9b62da3ce571c82dc25bb1b7c2fb34460a0c7d19e3b6f80a1522b3baea6ede07",
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-05T20:17:59.188879+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8c1cab13cb9e6ef5e25f9941d121a3d279d8b88ebb6c7cec8cfbcac04ac30915",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x8c1cab13cb9e6ef5e25f9941d121a3d279d8b88ebb6c7cec8cfbcac04ac30915",
+      "method": "transfer",
+      "pid": "p-000002",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "triggered": [],
+      "triggered_by": "0x8d37dda70032d29119b7b1451f29f7cc00939a307f15f0652a5e4fa89dbea8b8",
+      "value_wei": "5000000000000000000"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-05T20:18:32.068818+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xec4189248f302fd4797c813ad98021728e3576629f6906bc43cbf27f69ab5271",
+      "method": "pay",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": "p-000003",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000003",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:18:41Z\"}",
+        "0ca6aaf5452e3ad2c2e35ff3b6d4239feb98489292d3119ce61305d8163adcb30d34cc71b8ea659f372cbe09ea3b72079f435809f00c4a7886e4018475943aae1b"
+      ],
+      "created_at": "2026-09-05T20:18:43.380276+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x24795e35ab6fb0e8fa639e8add431aa53b01f5da909e63e5a40958e2aa20f216",
+      "method": "record_response",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000003"
+      ],
+      "created_at": "2026-09-05T20:18:51.968814+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+      "method": "open_dispute",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000003",
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T11:18:41Z\"}",
+        "Request recorded on chain at 2026-09-05T20:18:32Z. Response recorded on chain at 2026-09-05T20:18:43Z."
+      ],
+      "created_at": "2026-09-05T20:18:56.075112+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92",
+      "method": "adjudicate",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d"
+      ],
+      "triggered_by": "0x0107b1fc6fd94b24e5c002c789c2086d5edca790463f20644263a4310a52b393",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000003",
+        "2",
+        "Response timestamp 2026-09-05T11:18:41Z is ~9 hours before chain recording time 2026-09-05T20:18:43Z, far exceeding the 5-second freshness bound stated in the PROMISE."
+      ],
+      "created_at": "2026-09-05T20:19:40.139912+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+      "method": "settle",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5"
+      ],
+      "triggered_by": "0xd46f878fc83cb995b17e9d7f7901ae173ecd3ec4616da78a25fff9fe827a1e92",
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-05T20:20:14.455523+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x385a9cf0bdea668ae822640a9e9c90e84058f4e50d004015abdd9b6c759803b5",
+      "method": "transfer",
+      "pid": "p-000003",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "triggered": [],
+      "triggered_by": "0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d",
+      "value_wei": "5000000000000000000"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-05T20:20:34.261014+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xe0b8d310e4416ee6332730b3838e6509447e484503822222f4523d3d89ca8324",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xe0b8d310e4416ee6332730b3838e6509447e484503822222f4523d3d89ca8324",
+      "method": "pay",
+      "pid": "p-000004",
+      "refusal": "",
+      "returned": "p-000004",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000004",
+        "{\"pair\":\"ETH-USD\"}",
+        "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111... (402 chars)"
+      ],
+      "created_at": "2026-09-05T20:20:39.475418+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x9bdfb93c126ce4b17e1a3c06f7b3fb1d8f2e271a0bd3baa233a03978cf2bfc3b",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x9bdfb93c126ce4b17e1a3c06f7b3fb1d8f2e271a0bd3baa233a03978cf2bfc3b",
+      "method": "record_response",
+      "pid": "p-000004",
+      "refusal": "[EXPECTED] signature too long",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001",
+        "2",
+        "mine now"
+      ],
+      "created_at": "2026-09-05T20:21:21.188820+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xee72b4dcf9d7f5133ca535a674d4db9173aff30552670b91652b2474ca0a03fc",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xee72b4dcf9d7f5133ca535a674d4db9173aff30552670b91652b2474ca0a03fc",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "true"
+      ],
+      "created_at": "2026-09-05T20:21:26.478872+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8087313f768a2b51027cb5850a35fc12c254b487493184c56b0817af3d5fe5cb",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x8087313f768a2b51027cb5850a35fc12c254b487493184c56b0817af3d5fe5cb",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001"
+      ],
+      "created_at": "2026-09-05T20:21:31.763532+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x24f95f7f1c947358ce27364764be9b7cdc5f3cea7d51d95dd6e72a664856531a",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x24f95f7f1c947358ce27364764be9b7cdc5f3cea7d51d95dd6e72a664856531a",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not disputed",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001",
+        "{\"pair\":\"ETH-USD\"}",
+        "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111... (402 chars)"
+      ],
+      "created_at": "2026-09-05T20:21:36.976163+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xb613c6f418bcef5243c31e932893cbb0f0a389dc2d87c56abd46d63a2fc8b8f2",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xb613c6f418bcef5243c31e932893cbb0f0a389dc2d87c56abd46d63a2fc8b8f2",
+      "method": "record_response",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] response already recorded",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001",
+        "2",
+        "mine now"
+      ],
+      "created_at": "2026-09-05T20:22:27.059380+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3ec68f45b96f8db0917c1fe2b24f64dddea104f47b291d23f28b9be9faede7b2",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "true"
+      ],
+      "created_at": "2026-09-05T20:22:32.372605+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x6d87b3b08870a872efa36ba7b0a492a7960f8c2bec9042e1c168fb0938739473",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x6d87b3b08870a872efa36ba7b0a492a7960f8c2bec9042e1c168fb0938739473",
+      "method": "set_judgeable",
+      "pid": null,
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001"
+      ],
+      "created_at": "2026-09-05T20:22:40.906956+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd",
+      "method": "reclaim",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not disputed",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-05T20:22:46.108835+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xea2c064adcc885b171e6d5930f8503b4cf7528b416e2e6ceb8b46d0660daf0ff",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xea2c064adcc885b171e6d5930f8503b4cf7528b416e2e6ceb8b46d0660daf0ff",
+      "method": "pay",
+      "pid": "p-000005",
+      "refusal": "",
+      "returned": "p-000005",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000005",
+        "{\"pair\":\"ETH-USD\"}",
+        "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111... (402 chars)"
+      ],
+      "created_at": "2026-09-05T20:22:51.691600+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db",
+      "method": "record_response",
+      "pid": "p-000005",
+      "refusal": "[EXPECTED] signature too long",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000001",
+        "2",
+        "mine now"
+      ],
+      "created_at": "2026-09-06T13:01:08.288799+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x7ea6b9c9f40cda4a9fba8ca8c8c464584b6b0c7322a821573b554b8030e89ce7",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x7ea6b9c9f40cda4a9fba8ca8c8c464584b6b0c7322a821573b554b8030e89ce7",
+      "method": "settle",
+      "pid": "p-000001",
+      "refusal": "[EXPECTED] not authorised",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T13:01:17.200310+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd1afa99e6e9b6a9c1c8dffff6716c192c6ce6f7588f1dc1cdf35c85509c2da89",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xd1afa99e6e9b6a9c1c8dffff6716c192c6ce6f7588f1dc1cdf35c85509c2da89",
+      "method": "pay",
+      "pid": "p-000006",
+      "refusal": "",
+      "returned": "p-000006",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "2000000000000000000"
+    },
+    {
+      "args": [
+        "p-000006",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-04T18:20:02Z\"}",
+        "0xsig"
+      ],
+      "created_at": "2026-09-06T13:01:22.763176+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xc23d9d898fa7a3498ea7b051eab3004685b012b2227a644422719b3a085fa60b",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0xc23d9d898fa7a3498ea7b051eab3004685b012b2227a644422719b3a085fa60b",
+      "method": "record_response",
+      "pid": "p-000006",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000006"
+      ],
+      "created_at": "2026-09-06T13:01:29.783911+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x40d02ac7005b8523e9cc4c0c55344cd7ab647e048e35637d0bd4cb483552d229",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x40d02ac7005b8523e9cc4c0c55344cd7ab647e048e35637d0bd4cb483552d229",
+      "method": "withdraw",
+      "pid": "p-000006",
+      "refusal": "[EXPECTED] window open",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T13:01:36.468787+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xdda4f68196bcb9f0bef172e02648b8f0e03b3f5b70798a7b233a5f7af17302de",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xdda4f68196bcb9f0bef172e02648b8f0e03b3f5b70798a7b233a5f7af17302de",
+      "method": "pay",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": "p-000007",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000007",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-04T09:20:02Z\"}",
+        "0xsig"
+      ],
+      "created_at": "2026-09-06T13:01:45.264831+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x830c759c8badca2f8b20eef01ef2263add05329d4cb000dcb015df96da1a1911",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x830c759c8badca2f8b20eef01ef2263add05329d4cb000dcb015df96da1a1911",
+      "method": "record_response",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000007"
+      ],
+      "created_at": "2026-09-06T13:01:50.548781+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x505ddb7d7aae4cc39fbb2ef7242a4be0beea2e011391c3b96aec8f97329afdd3",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x505ddb7d7aae4cc39fbb2ef7242a4be0beea2e011391c3b96aec8f97329afdd3",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not buyer",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000007"
+      ],
+      "created_at": "2026-09-06T13:01:59.178950+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3f48a51b0f88e6acf34e0f8b928770755f5c672496e3e5fcada658270c2c0e56",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x3f48a51b0f88e6acf34e0f8b928770755f5c672496e3e5fcada658270c2c0e56",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] wrong bond",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000001"
+    },
+    {
+      "args": [
+        "p-000007"
+      ],
+      "created_at": "2026-09-06T13:02:08.081049+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x9800a7f2a447d114e207d8a9de322289d61cb6775a189c51bbddb6a09a311939",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x9800a7f2a447d114e207d8a9de322289d61cb6775a189c51bbddb6a09a311939",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000007",
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-04T09:20:02Z\"}",
+        "Request recorded on chain at 2026-09-06T13:01:36Z. Response recorded on chain at 2026-09-06T13:01:45Z."
+      ],
+      "created_at": "2026-09-06T13:02:11.924863+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d",
+      "method": "adjudicate",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5"
+      ],
+      "triggered_by": "0x9800a7f2a447d114e207d8a9de322289d61cb6775a189c51bbddb6a09a311939",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000007",
+        "2",
+        "Timestamp is 2026-09-04T09:20:02Z but response was recorded on chain at 2026-09-06T13:01:45Z, making the data ~52 hours old, far exceeding the 5-second freshness bound."
+      ],
+      "created_at": "2026-09-06T13:03:12.644337+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5",
+      "method": "settle",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0xb978adb16b10aed95c38f39e3f1540611e593fc9a681012e950cb6eabdef7b86"
+      ],
+      "triggered_by": "0x52e90627b1cf63b4b21cfca6b537549935458b4058f861d9283a2a4be809cb2d",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000007"
+      ],
+      "created_at": "2026-09-06T13:03:22.237455+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x50eec8b6ab377c4dbc10a6a756e4d3dda8ae42ca4031b47ce9405a0ca8c06bef",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x50eec8b6ab377c4dbc10a6a756e4d3dda8ae42ca4031b47ce9405a0ca8c06bef",
+      "method": "withdraw",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not open",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000007"
+      ],
+      "created_at": "2026-09-06T13:03:27.983587+00:00",
+      "execution": "ERROR",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1783a40dce3c7ef05a25d943a383d4355f4e9b29820506a90d9b2151fce49fab",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x1783a40dce3c7ef05a25d943a383d4355f4e9b29820506a90d9b2151fce49fab",
+      "method": "open_dispute",
+      "pid": "p-000007",
+      "refusal": "[EXPECTED] not open",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-06T13:03:45.154787+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xb978adb16b10aed95c38f39e3f1540611e593fc9a681012e950cb6eabdef7b86",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0xb978adb16b10aed95c38f39e3f1540611e593fc9a681012e950cb6eabdef7b86",
+      "method": "transfer",
+      "pid": "p-000007",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "triggered": [],
+      "triggered_by": "0xf16aa9c426b69802905bbb3d06f2138c623260129ef6816795359d1100fddae5",
+      "value_wei": "5000000000000000000"
+    },
+    {
+      "args": [
+        "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T13:07:52.148804+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1afbb22c0efc2495a84604db1a144e09ebc645f3d10186d8c2d4ed683c5343a4",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x1afbb22c0efc2495a84604db1a144e09ebc645f3d10186d8c2d4ed683c5343a4",
+      "method": "pay",
+      "pid": "p-000008",
+      "refusal": "",
+      "returned": "p-000008",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "Prices aggregated from at least three venues, refreshed within five seconds."
+      ],
+      "created_at": "2026-09-06T16:49:15.245647+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x5dc871652d26cd5a08fea3161bed64a605fdebf0c26dd9d848dee82acae8bc2c",
+      "from": "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+      "hash": "0x5dc871652d26cd5a08fea3161bed64a605fdebf0c26dd9d848dee82acae8bc2c",
+      "method": "register_seller",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T16:50:22.354655+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xa0dcca7ed2267fcc8f2aa81d72c087f450033dba3000bb2d9d3db68f482dab66",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0xa0dcca7ed2267fcc8f2aa81d72c087f450033dba3000bb2d9d3db68f482dab66",
+      "method": "pay",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": "p-000009",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "2000000000000000000"
+    },
+    {
+      "args": [
+        "p-000009",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+        "6846fb8fc666535009dcc4d1459ab32676d79f6e8847fda9210f5266926e13f0458880933f4ec65be110ecffdc6af51e162f180e2655f7ba3721712a2fcd51221b"
+      ],
+      "created_at": "2026-09-06T16:50:27.755658+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xb315af3f08e553b2b99cfec5910e8712582b68e95b5acd89c402225e69722482",
+      "from": "0xD3D1065D8141C299b67537Ba314FDA09cD2381dB",
+      "hash": "0xb315af3f08e553b2b99cfec5910e8712582b68e95b5acd89c402225e69722482",
+      "method": "record_response",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000009"
+      ],
+      "created_at": "2026-09-06T16:50:39.024158+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x341f3a393cfa5cc82e3bbbc3c2bb3fb6391f2ad9884799800b1ad2fd9dd5f6cf",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x341f3a393cfa5cc82e3bbbc3c2bb3fb6391f2ad9884799800b1ad2fd9dd5f6cf",
+      "method": "open_dispute",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000009",
+        "Prices aggregated from at least three venues, refreshed within five seconds.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+        "Request recorded on chain at 2026-09-06T16:50:22Z. Response recorded on chain at 2026-09-06T16:50:27Z."
+      ],
+      "created_at": "2026-09-06T16:50:42.368159+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84",
+      "method": "adjudicate",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448"
+      ],
+      "triggered_by": "0x341f3a393cfa5cc82e3bbbc3c2bb3fb6391f2ad9884799800b1ad2fd9dd5f6cf",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000009",
+        "2",
+        "ts is ~1 day before chain recording time, violating 5s refresh"
+      ],
+      "created_at": "2026-09-06T16:52:23.980355+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448",
+      "method": "settle",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x8b4fb17ceba3cf86d8169d46ad9dee8de727d335b983dd068cf53a1d0afaefa7"
+      ],
+      "triggered_by": "0xb787091c8c250bb116b172e19ad7decebaf547dd6de6d488f5936d5b7f025a84",
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-06T16:52:58.250737+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8b4fb17ceba3cf86d8169d46ad9dee8de727d335b983dd068cf53a1d0afaefa7",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x8b4fb17ceba3cf86d8169d46ad9dee8de727d335b983dd068cf53a1d0afaefa7",
+      "method": "transfer",
+      "pid": "p-000009",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "triggered": [],
+      "triggered_by": "0x544899debc2cfbf36fbeb7a3d38ac06937d9765c7aafa7e55b2d3d0c70b6c448",
+      "value_wei": "3000000000000000000"
+    },
+    {
+      "args": [
+        "Prices aggregated from at least three venues, refreshed within five seconds."
+      ],
+      "created_at": "2026-09-06T16:54:37.325349+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x337a73f489a9872d741af5b072c99a876309d23a2691812ef48bd49c0833e046",
+      "from": "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+      "hash": "0x337a73f489a9872d741af5b072c99a876309d23a2691812ef48bd49c0833e046",
+      "method": "register_seller",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T16:54:45.248805+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8448a6c94f96ae183c02118191cf181c40f72c3309be8d106ed60ad3297c3771",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x8448a6c94f96ae183c02118191cf181c40f72c3309be8d106ed60ad3297c3771",
+      "method": "pay",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": "p-000010",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "2000000000000000000"
+    },
+    {
+      "args": [
+        "p-000010",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+        "6e4801e5281ab69038e84c78a89aef5a9fce0fa0cf0cf94329cc471d8786f2364c5888c81067d112f2432a2eb5f16be76be77c3b396d864fb07980db015538031c"
+      ],
+      "created_at": "2026-09-06T16:54:50.854111+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x76a111a454869168c70cc8b92e799cccbae605045905f17e3a263814b3e382b4",
+      "from": "0x7246e934d5824F55c4134E1112eCaCE165E5F805",
+      "hash": "0x76a111a454869168c70cc8b92e799cccbae605045905f17e3a263814b3e382b4",
+      "method": "record_response",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000010"
+      ],
+      "created_at": "2026-09-06T16:55:02.758822+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x335d333ca78ba131371aab8818be7f2015cfedaafbd57925ec27b0b4f8ba3470",
+      "from": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "hash": "0x335d333ca78ba131371aab8818be7f2015cfedaafbd57925ec27b0b4f8ba3470",
+      "method": "open_dispute",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000010",
+        "Prices aggregated from at least three venues, refreshed within five seconds.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-05T09:20:02Z\"}",
+        "Request recorded on chain at 2026-09-06T16:54:45Z. Response recorded on chain at 2026-09-06T16:54:50Z."
+      ],
+      "created_at": "2026-09-06T16:55:07.850810+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7",
+      "method": "adjudicate",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed"
+      ],
+      "triggered_by": "0x335d333ca78ba131371aab8818be7f2015cfedaafbd57925ec27b0b4f8ba3470",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000010",
+        "2",
+        "Promise requires refresh within five seconds. Response timestamp is about 31h34m48s older than the on-chain response time, so freshness bound was plainly not met."
+      ],
+      "created_at": "2026-09-06T16:56:11.269645+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed",
+      "method": "settle",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x52d00e21576c99dd2d74491e64b57f5f99e9b743b5662adbea850ea03678b24d"
+      ],
+      "triggered_by": "0x7f51bd2f8872ab57b5847713702aac84e7e016821e0d418819869c095f42bca7",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old."
+      ],
+      "created_at": "2026-09-06T16:56:39.193460+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x9084eb249651b738f55dee03098990ccf2e6653086fa100b9bda6d56283dd30d",
+      "from": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "hash": "0x9084eb249651b738f55dee03098990ccf2e6653086fa100b9bda6d56283dd30d",
+      "method": "register_seller",
+      "pid": null,
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-06T16:56:44.879650+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x52d00e21576c99dd2d74491e64b57f5f99e9b743b5662adbea850ea03678b24d",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x52d00e21576c99dd2d74491e64b57f5f99e9b743b5662adbea850ea03678b24d",
+      "method": "transfer",
+      "pid": "p-000010",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x02dFE45D9aD6671377c19361F42A362cAaFa44bD",
+      "triggered": [],
+      "triggered_by": "0xf0f35d06c54045f6689f6dbdfaeae0e44c3e3f427cd7611f6bd41cbe6b16beed",
+      "value_wei": "3000000000000000000"
+    },
+    {
+      "args": [
+        "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T16:57:03.582258+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1cee7e92cd84432c722af6b73090c0d6849578d6d677adea277e2ba8d14e9c86",
+      "from": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "hash": "0x1cee7e92cd84432c722af6b73090c0d6849578d6d677adea277e2ba8d14e9c86",
+      "method": "pay",
+      "pid": "p-000011",
+      "refusal": "",
+      "returned": "p-000011",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000011",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-06T16:57:13Z\"}",
+        "30550e9cf4c6dbe11220c9213161ec79e0e8d6bb335722613205f1566db095b5354ea3861996387d92e03b72d6693ef6cf68016952228a1c2e3854c8ca36b17e1b"
+      ],
+      "created_at": "2026-09-06T16:57:16.402376+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1dc09fd43d5294cdce552e89a3d3567fc7eb66392b39316c2f5c65ed4ca1f58a",
+      "from": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "hash": "0x1dc09fd43d5294cdce552e89a3d3567fc7eb66392b39316c2f5c65ed4ca1f58a",
+      "method": "record_response",
+      "pid": "p-000011",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+        "GET /quote?pair=ETH-USD"
+      ],
+      "created_at": "2026-09-06T16:57:38.367748+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x97f7be07248e4f432d9703f6df4d1ce2184bf1d20cc5ad01f5c7f11dc6a4e4b0",
+      "from": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "hash": "0x97f7be07248e4f432d9703f6df4d1ce2184bf1d20cc5ad01f5c7f11dc6a4e4b0",
+      "method": "pay",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": "p-000012",
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "4000000000000000000"
+    },
+    {
+      "args": [
+        "p-000012",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-06T07:57:44Z\"}",
+        "4bfe6b2d51a9f07b311bab102875912d1c43d26402b9592923ebea4b7b08c45d3f8ba1372bf6ecfe48b0a6a0be7bc9ddadab61e3c101802abd46eb726a96eeab1b"
+      ],
+      "created_at": "2026-09-06T16:57:46.346868+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xf1094689b847f71550b6beeaa200a8024bb424cc4f37d2c5fa790869e0cf5e9c",
+      "from": "0x5Ba058aE22806150B5a9BdCe1B8Be82663566714",
+      "hash": "0xf1094689b847f71550b6beeaa200a8024bb424cc4f37d2c5fa790869e0cf5e9c",
+      "method": "record_response",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000012"
+      ],
+      "created_at": "2026-09-06T16:57:51.998795+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x1bc460f99e30e0508562452116d01f12e13b401c456c9ce5a5b8c7e4c9f58c4c",
+      "from": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "hash": "0x1bc460f99e30e0508562452116d01f12e13b401c456c9ce5a5b8c7e4c9f58c4c",
+      "method": "open_dispute",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5"
+      ],
+      "triggered_by": null,
+      "value_wei": "1000000000000000000"
+    },
+    {
+      "args": [
+        "p-000012",
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+        "GET /quote?pair=ETH-USD",
+        "{\"pair\":\"ETH-USD\",\"price\":4182.1,\"sources\":3,\"ts\":\"2026-09-06T07:57:44Z\"}",
+        "Request recorded on chain at 2026-09-06T16:57:38Z. Response recorded on chain at 2026-09-06T16:57:46Z."
+      ],
+      "created_at": "2026-09-06T16:57:56.332879+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5",
+      "method": "adjudicate",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "triggered": [
+        "0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba"
+      ],
+      "triggered_by": "0x1bc460f99e30e0508562452116d01f12e13b401c456c9ce5a5b8c7e4c9f58c4c",
+      "value_wei": "0"
+    },
+    {
+      "args": [
+        "p-000012",
+        "2",
+        "Promise requires timestamp no more than 5 seconds old at response record time. Response ts 07:57:44Z is about 9 hours older than chain response time 16:57:46Z."
+      ],
+      "created_at": "2026-09-06T16:58:40.733844+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba",
+      "from": "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4",
+      "hash": "0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba",
+      "method": "settle",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0xed48f5c4897989abcddbe66f38b4d06974910e2b32ae3500edad788c773cab8b"
+      ],
+      "triggered_by": "0xd9b1cf5026f3feb9583aebb101bf8d178db1ca552bfbf85474ac2a1d947dd9d5",
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-06T16:59:13.339053+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0xed48f5c4897989abcddbe66f38b4d06974910e2b32ae3500edad788c773cab8b",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0xed48f5c4897989abcddbe66f38b4d06974910e2b32ae3500edad788c773cab8b",
+      "method": "transfer",
+      "pid": "p-000012",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x151cCd0ca721d21ddd564593b3326761BDEA626F",
+      "triggered": [],
+      "triggered_by": "0x3ce7ee4ed8362f3934336e361c894baeb50b97677faec1ee4b82374a3c23c4ba",
+      "value_wei": "5000000000000000000"
+    },
+    {
+      "args": [
+        "p-000001"
+      ],
+      "created_at": "2026-09-08T18:32:21.138610+00:00",
+      "execution": "SUCCESS",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x8044a84decac54f207e355a21ee4667c8c57174f771fa7aeb7feba005504b764",
+      "from": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "hash": "0x8044a84decac54f207e355a21ee4667c8c57174f771fa7aeb7feba005504b764",
+      "method": "withdraw",
+      "pid": "p-000001",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "triggered": [
+        "0x90f8e31edd754101e18ff1ac4fb55d4226ede8a4cb8308c41b30cb83705326d1"
+      ],
+      "triggered_by": null,
+      "value_wei": "0"
+    },
+    {
+      "args": [],
+      "created_at": "2026-09-08T18:32:54.542226+00:00",
+      "execution": "",
+      "explorer": "https://explorer-studio.genlayer.com/tx/0x90f8e31edd754101e18ff1ac4fb55d4226ede8a4cb8308c41b30cb83705326d1",
+      "from": "0x5125De939F7373eAE741B133FB32B7E9915C8F78",
+      "hash": "0x90f8e31edd754101e18ff1ac4fb55d4226ede8a4cb8308c41b30cb83705326d1",
+      "method": "transfer",
+      "pid": "p-000001",
+      "refusal": "",
+      "returned": null,
+      "status": "FINALIZED",
+      "to": "0x965c98389197055CFb3FD8b1E3e9a11AE6d40C99",
+      "triggered": [],
+      "triggered_by": "0x8044a84decac54f207e355a21ee4667c8c57174f771fa7aeb7feba005504b764",
+      "value_wei": "4000000000000000000"
+    }
+  ]
+}

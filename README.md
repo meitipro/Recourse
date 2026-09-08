@@ -215,7 +215,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 221 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 230 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -225,7 +225,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 221 direct tests cover the contracts through the double, the buyer agent,
+The 230 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Three of them are checks on
 the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
@@ -330,6 +330,34 @@ Every one is ACCEPTED with an execution result of ERROR. That is not a
 contradiction and it is the thing worth understanding about this protocol: a
 committee agreed that the refusal was the correct execution result. Accepted is
 never the same question as succeeded.
+
+### If the testnet has reset
+
+studionet keeps state for a while and then does not. Everything above was
+measured against the frozen pair there, so what the chain held is also written
+down in this repository, read back from the chain rather than typed:
+
+- [evidence/snapshot.json](evidence/snapshot.json): every payment row with its
+  frozen strings, every case, every transaction either contract ever sent or
+  received, decoded to method, payment and outcome, the refusals with the
+  sentence each was refused with, the totals the feed shows, and the
+  evaluation numbers. `python scripts/snapshot.py` regenerates it from a
+  throwaway account, which can read and cannot write.
+- [evidence/receipts/](evidence/receipts/): the raw receipt of every
+  transaction in one contested cycle (`p-000003`, the one the Rails section
+  cites) and one honest cycle (`p-000001`: paid, answered, and withdrawn by
+  the seller after the window), as the RPC returned them.
+
+The feed and the case pages read the chain first. If it has not answered in
+twenty seconds, or answers with no payments where the snapshot has some, they
+show the snapshot instead and say so at the top, with the time it was
+recorded; nothing built from the snapshot presents itself as live, and a
+chain that answers with rows is always what is shown.
+`tests/direct/test_snapshot.py` holds the snapshot to the rest of the
+repository: every transaction this README cites must be in it, its refusals
+must be the four above word for word, and its evaluation numbers must be the
+ones in `eval/RESULTS.md` and `eval/RESULTS-V2.md`, so re-measuring without
+re-taking the snapshot fails the gate.
 
 `contracts/README.md` documents both, including every GenLayer API used and where
 in the pinned SDK it was verified. `docs/SECURITY.md` is the adversarial review:
