@@ -19,6 +19,7 @@ import { Suspense, cache } from "react";
 
 import FeedPanel from "@/components/site/FeedPanel";
 import FeedSkeleton from "@/components/site/FeedSkeleton";
+import Clerk from "@/components/site/Clerk";
 import Hero from "@/components/site/Hero";
 import {
   ClosingSection,
@@ -44,6 +45,15 @@ type Results = {
   unclear: number;
   measured_at: number;
   rows: Array<{ id: string; correct: boolean; stable: boolean; expected: string }>;
+};
+
+type Case = {
+  id: string;
+  promise: string;
+  request: string;
+  response: string;
+  timing: string;
+  expected: string;
 };
 
 type Frozen = {
@@ -107,6 +117,17 @@ export default async function Page() {
   const frozen = readOutside<Frozen>(["contracts/FROZEN.json"]);
   const results = readOutside<Results>(["eval/results.json"]);
   const heldOut = readOutside<Results>(["eval/results-v2.json"]);
+  // The clerk offers the committed cases to load. They are the answer key, so
+  // they come from the file git proves was committed before the judge existed,
+  // never from anything typed here.
+  const cases = (readOutside<Case[]>(["eval/cases.json"]) ?? []).map((one) => ({
+    id: one.id,
+    promise: one.promise,
+    request: one.request,
+    response: one.response,
+    timing: one.timing,
+    expected: one.expected,
+  }));
   const chainId = frozen?.deployments?.[NETWORK]?.chain_id ?? 0;
 
   return (
@@ -153,6 +174,10 @@ export default async function Page() {
               <LiveFeed />
             </Suspense>
           </FeedSectionShell>
+        </div>
+
+        <div id="clerk">
+          <Clerk cases={cases} />
         </div>
 
         {results && heldOut ? (

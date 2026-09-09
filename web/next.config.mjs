@@ -23,6 +23,7 @@ const nextConfig = {
       "../eval/results-v2.json",
       "../contracts/FROZEN.json",
       "../evidence/snapshot.json",
+      "../eval/cases.json",
     ],
     "/case/[id]": ["../contracts/FROZEN.json", "../evidence/snapshot.json"],
     "/api/evidence": ["../contracts/FROZEN.json", "../evidence/snapshot.json"],

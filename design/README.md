@@ -51,11 +51,35 @@ content, so the header's group carries the clerk and the feed instead.
 
 ## The clerk
 
-`RecourseClerk.dc.html` is the design's own interactive judge: it takes the
-three frozen strings, puts the documented judge prompt to one model, and shows
-the verdict beside the committed expectation, marked "Recorded on chain: no".
-It is honest by construction and it is not built yet, because it needs a model
-behind it the way the linter's second stage does.
+`RecourseClerk.dc.html` is the design's own interactive judge, and it is built.
+`web/components/site/Clerk.tsx` came through the same converter as the rest of
+the site; `build_clerk.py` assembles it.
 
-Until it exists, its two call to action blocks are not on the page. A button
-that opens nothing is the kind of claim this site refuses everywhere else.
+Three strings in, one verdict out, through `/api/clerk` to the linter service,
+which loads `contracts/dispute.py` through the test double and runs `judge()`
+unchanged. What comes back is the deployed code's answer rather than a
+paraphrase of it, and it needs a model behind the linter the way stage 2 does.
+
+Two things the port decided:
+
+**The canvas's second mode is not here.** It ran all eighteen committed cases
+in the browser and scored itself. That would stand a second accuracy number,
+measured by one model rather than a committee, beside the published one. The
+mode tabs came out with it rather than sitting there as controls that do
+nothing.
+
+**A committed case is judged against its own timing block.** The chain writes
+that block, and a case from last week judged against this second's clock fails
+any freshness bound it carried, so loading case 01 and pressing the button
+would contradict its own committed answer. The panel sends the case's timing
+while the three strings are still that case, and says which clock was used.
+Anything typed by hand gets the clock now.
+
+Every state says "Recorded on chain: no", before a verdict and beside it, and
+both are literals rather than values so no later edit can flip them.
+`tests/direct/test_linter.py` holds the route to never logging and the panel to
+both disclaimers.
+
+The two call to action blocks in the how and evaluation sections are still off
+the page. They return when the clerk answers on the live site, which needs the
+hosting and the key, and not before.

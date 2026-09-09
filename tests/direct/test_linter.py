@@ -172,8 +172,8 @@ def test_every_path_returns_the_same_five_keys():
 # --- nothing is logged ------------------------------------------------------
 
 
-def _route_source() -> str:
-    raw = (ROOT / "web" / "app" / "api" / "lint" / "route.ts").read_text(encoding="utf-8")
+def _route_source(name: str = "lint") -> str:
+    raw = (ROOT / "web" / "app" / "api" / name / "route.ts").read_text(encoding="utf-8")
     # Comments are not code. A comment saying "nothing calls console" must not
     # fail the test that checks nothing calls console.
     source = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
@@ -240,3 +240,37 @@ def test_the_service_never_writes_the_promise_to_its_own_output(monkeypatch):
     assert payload["stage"] == 1 and payload["judgeable"] is False
     assert marker not in out.getvalue() and marker not in err.getvalue()
     assert "/lint" in err.getvalue(), "the access line records the path and nothing more"
+
+
+def test_the_clerk_route_never_logs_or_writes():
+    """
+    The same rule as the lint route, for the same reason. The clerk takes three
+    strings a seller and a buyer wrote, which is more of somebody's business
+    than a promise is, not less.
+    """
+    source = _route_source("clerk")
+    handler = source[source.index("export async function POST") :]
+    assert "console." not in handler
+    assert "console." not in source[: source.index("export async function POST")]
+    assert not re.search(r"\bfrom\s+['\"](fs|node:fs|fs/promises)['\"]", source)
+    assert "writeFile" not in source and "appendFile" not in source
+    # The three strings leave this route to exactly one place, and that place
+    # is derived from the linter's own URL so a deployment cannot point the
+    # clerk somewhere the linter is not.
+    assert source.count("fetch(") == 1
+    assert "LINTER_URL" in source and "JUDGE_URL" in source
+
+
+def test_the_clerk_never_claims_a_verdict_was_recorded():
+    """
+    One model, no chain. The panel says so before a verdict and beside it, and
+    both are literals rather than values, so no later edit can flip them by
+    changing a variable.
+    """
+    panel = (ROOT / "web" / "components" / "site" / "Clerk.tsx").read_text(encoding="utf-8")
+    body = panel[panel.index("return ("):]
+    assert body.count("Recorded on chain") == 2, "the standing disclaimer or the result line is gone"
+    assert ">no<" in body, "the answer to Recorded on chain is not a literal no"
+    # The judge endpoint says the same thing in its own reply.
+    service = (ROOT / "linter" / "serve.py").read_text(encoding="utf-8")
+    assert '"recorded_on_chain": False' in service
