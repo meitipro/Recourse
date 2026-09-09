@@ -6,6 +6,13 @@ designer or a reviewer can check the page against it line by line. Where the
 page and this document disagree, one of them is wrong and it is the page that
 gets fixed, unless the disagreement is a new decision recorded here first.
 
+Two kinds of rule are mixed in here, and a redesign should tell them apart.
+The rules about what is shown and how it must not mislead (sections 1, 4, 6.1,
+6.2, 6.4, 6.5, 7, 9, 10) come from the project and bind any design of it. The
+rules about shape, width and button chrome (sections 2 shape, 3, 5.1) describe
+this build and a new design is free to replace them, so long as one filled
+control remains the one that does work.
+
 The page has three jobs, in this order: explain the gap, show the mechanism,
 prove the thing runs by showing live verdicts. Everything on it serves one of
 the three or is not on it.
@@ -72,7 +79,7 @@ Defined once in `web/app/globals.css` on `:root`. Nothing else names a colour.
 | `--text` | `#eef3f8` | headings, numbers, primary copy |
 | `--text-2` | `#aeb9c8` | body paragraphs |
 | `--muted` | `#7c8798` | captions, legends, labels under tiles |
-| `--dim` | `#4a5468` | eyebrows, the small denominator beside a headline number |
+| `--dim` | `#4a5468` | eyebrows, the small denominator beside a headline number. **Fails WCAG AA for text**: 2.57:1 on ground, 2.48:1 on panel, measured. A redesign must not inherit it for anything a reader has to read; `--muted` at 5.38:1 is the lightest grey that passes |
 
 ### Accent
 
