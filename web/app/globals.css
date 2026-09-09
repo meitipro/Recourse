@@ -1023,3 +1023,49 @@ footer {
   border-radius: 999px;
   background: var(--accent-wash);
 }
+
+/* --- the design canvas -------------------------------------------------- */
+/* The ported design's own base rules and keyframes, from the canvas. The site
+   sets its type and colour on the page wrapper rather than on body, so these
+   stay narrow: a reset, link colours, and the animations the panels use. */
+
+a {
+  color: #22D3EE;
+  border-bottom: 0;
+}
+
+a:hover {
+  color: #67E8F9;
+  border-bottom-color: transparent;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.24);
+}
+
+@keyframes rc-shimmer { 0% { opacity: 0.35; } 50% { opacity: 0.75; } 100% { opacity: 0.35; } }
+@keyframes rc-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes rc-travel { 0% { left: 0%; opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+@keyframes rc-fill { 0% { transform: scaleX(0); } 88% { transform: scaleX(1); } 100% { transform: scaleX(1); } }
+@keyframes rc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes rc-cue { 0% { transform: translateY(-10px); } 100% { transform: translateY(28px); } }
+@keyframes rc-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(220%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hover and focus states from the canvas. React has no inline pseudo
+   classes, so each declaration the design carried as an attribute became one
+   class and one rule here, generated rather than typed. */
+
+.rc-hover-1:hover { color: #EEF3F8; }
+.rc-hover-2:hover { background: rgba(255,255,255,0.06); color: #EEF3F8; }
+.rc-focus-3:focus-visible { border-bottom-color: #22D3EE; }
+.rc-hover-4:hover { background: rgba(255,255,255,0.16); }
+.rc-hover-5:hover { color: #EEF3F8; text-decoration: underline; }
+.rc-hover-6:hover { border-color: #313A4D; }
+.rc-hover-7:hover { background: rgba(34,211,238,0.13); }

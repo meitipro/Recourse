@@ -39,9 +39,9 @@ def test_the_feed_and_the_contract_agree_on_the_verdict_codes():
     codes = _contract_codes(w.escrow_mod, "V_")
     assert codes == {"none": 0, "honored": 1, "not_honored": 2, "unclear": 3}
 
-    feed = (ROOT / "web" / "components" / "Feed.tsx").read_text(encoding="utf-8")
-    match = re.search(r"const VERDICT = \[(.*?)\] as const;", feed, re.S)
-    assert match, "the feed no longer declares a VERDICT table, so this check is dead"
+    feed = (ROOT / "web" / "components" / "site" / "FeedPanel.tsx").read_text(encoding="utf-8")
+    match = re.search(r"const VERDICT_NAMES = \[(.*?)\] as const;", feed, re.S)
+    assert match, "the feed no longer declares a VERDICT_NAMES table, so this check is dead"
     names = [piece.strip().strip('"') for piece in match.group(1).split(",") if piece.strip()]
 
     # Index in the array must be the code the contract stores.
@@ -58,7 +58,7 @@ def test_the_feed_and_the_contract_agree_on_the_status_codes():
     codes = _contract_codes(w.escrow_mod, "ST_")
     assert codes == {"open": 0, "withdrawn": 1, "disputed": 2, "resolved": 3}
 
-    feed = (ROOT / "web" / "components" / "Feed.tsx").read_text(encoding="utf-8")
+    feed = (ROOT / "web" / "components" / "site" / "FeedPanel.tsx").read_text(encoding="utf-8")
     # The feed branches on the numbers directly rather than naming them, so what
     # is checked is that every code the contract can store is handled.
     handled = {int(n) for n in re.findall(r"row\.status === (\d)", feed)}
