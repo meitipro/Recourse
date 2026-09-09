@@ -8,7 +8,7 @@ gets fixed, unless the disagreement is a new decision recorded here first.
 
 Two kinds of rule are mixed in here, and a redesign should tell them apart.
 The rules about what is shown and how it must not mislead (sections 1, 4, 6.1,
-6.2, 6.4, 6.5, 7, 9, 10) come from the project and bind any design of it. The
+6.2, 6.4, 6.5, 7, 8, 9, 10) come from the project and bind any design of it. The
 rules about shape, width and button chrome (sections 2 shape, 3, 5.1) describe
 this build and a new design is free to replace them, so long as one filled
 control remains the one that does work.
@@ -458,6 +458,18 @@ pretending.
 ---
 
 ## 8. The case page
+
+**This route is load bearing and a drawer cannot replace it.** Four published
+things depend on a case having its own URL: the video script's line that a
+citation is a permalink and the fourteen second shot that opens one cold
+(`docs/SCRIPT.md`, the shot at 0:42 and the row in "What each line rests on"),
+the shot list's blank third tab, and the hosting smoke test that runs
+`curl .../case/RC-2026-0003 | grep -c "not honored"` and expects 1
+(`docs/HOSTING.md`). The last of those also fixes the rendering: the verdict
+words must be in the HTML the server returns, so a case rendered only after a
+client fetch fails the test even when it looks right in a browser. A drawer is
+for scanning the feed; the route is for citing one case to somebody who was
+not on the page. Keep both.
 
 `/case/RC-YYYY-NNNN` and `/case/p-NNNNNN` are the same page. Metadata title
 is the id. Everything on it is read from the chain when opened, with the same
