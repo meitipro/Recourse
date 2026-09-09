@@ -71,6 +71,24 @@ chain never fails them, it only makes the snapshot quietly stale. A gate that
 needs the network is a gate people learn to ignore, so this is a command
 somebody runs and reads rather than one CI runs for them.
 
+## The two README images
+
+```bash
+cd web && npx next build && LINTER_URL=http://127.0.0.1:4503/lint npx next start -p 4500
+python linter/serve.py            # another terminal, for the linter shot
+python docs/shots.py              # drives the Chrome already on this machine
+```
+
+It writes `docs/images/feed.png` and `docs/images/linter.png` from a production
+build, so no development indicator lands in the picture. The feed shot waits
+until the four tiles carry numbers, because a capture mid load shows dashes.
+The linter shot types "Returns accurate market data.", the promise payment
+p-000014 ran on chain, and waits for the refusal; stage 1 answers that one
+without a model, so this needs no key.
+
+Recapture whenever the chain totals change, and rewrite both captions in the
+same commit to describe what the new images show.
+
 ## What the numbers should look like
 
 Measured on Studio, with judgment starting on acceptance and money moving on
