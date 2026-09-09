@@ -366,8 +366,75 @@ def pick_cycles(payments: list[dict], chosen: dict[str, str | None]) -> dict[str
 
 
 # --- main --------------------------------------------------------------------
+def check(chain: Chain, escrow: str, dispute: str, out: pathlib.Path) -> int:
+    """
+    Say whether the recorded snapshot still matches the chain.
+
+    Deliberately not part of scripts/test.py. The snapshot tests are
+    one directional: they hold the snapshot to the repository, so writing to
+    the chain never breaks them, it only makes the snapshot quietly stale. A
+    gate that needs the network is a gate people learn to ignore, so this is a
+    command someone runs before publishing rather than one CI runs for them.
+
+    A chain that cannot be reached is not a drift. It says so and exits zero.
+    """
+    if not out.exists():
+        print(f"{out.name} does not exist yet. Run: python scripts/snapshot.py")
+        return 1
+    recorded = json.loads(out.read_text(encoding="utf-8"))
+    totals = recorded["totals"]
+    print(f"snapshot   recorded {recorded['recorded_at_iso']} on {recorded['network']}")
+
+    # Three quick attempts rather than the ten a snapshot run is willing to
+    # spend. Somebody runs this before publishing and waits for the answer, so
+    # an unreachable chain has to say so in seconds.
+    def quickly(what: str, fn, *fn_args):
+        last: Exception | None = None
+        for attempt in range(3):
+            try:
+                return fn(*fn_args)
+            except Exception as error:  # noqa: BLE001
+                last = error
+                time.sleep(2 * (attempt + 1))
+        raise last if last else RuntimeError(what)
+
+    try:
+        stats = quickly("stats", chain.read_json, escrow, "stats")
+        live_payments = int(stats["payments"])
+        time.sleep(PACE_SECONDS)
+        cases = quickly("recent_verdicts", chain.read_json, dispute, "recent_verdicts", [max(live_payments, 1)])
+    except Exception as error:  # noqa: BLE001
+        print(f"chain      unreachable: {str(error)[:140]}")
+        print("No drift can be measured without the chain, so this is not a failure.")
+        return 0
+
+    live_verdicts = {name: sum(1 for case in cases if case["verdict_name"] == name) for name in VERDICT_NAMES[1:]}
+    drift = []
+    if live_payments != totals["payments"]:
+        drift.append(f"payments: snapshot {totals['payments']}, chain {live_payments}")
+    for name, count in live_verdicts.items():
+        if count != totals["verdicts"].get(name):
+            drift.append(f"{name}: snapshot {totals['verdicts'].get(name)}, chain {count}")
+
+    print(f"chain      {live_payments} payments, verdicts {live_verdicts}")
+    if not drift:
+        print("no drift. The recorded evidence still describes the chain.")
+        return 0
+    print("\nDRIFT. The snapshot no longer describes the chain:")
+    for line in drift:
+        print(f"  {line}")
+    print("\nEvery published total comes from the snapshot, so re-take it before publishing:")
+    print("  python scripts/snapshot.py")
+    print("Then check the numbers in README.md and eval/RESULTS.md against it.")
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--check", action="store_true",
+        help="compare the recorded snapshot against the chain and report drift, writing nothing",
+    )
     parser.add_argument("--network", default=None, help="the network to read; default studionet, the only deployment")
     parser.add_argument("--out", default=str(SNAPSHOT), help="where to write the snapshot")
     parser.add_argument("--contested", default=None, help="payment id of the contested cycle to keep raw receipts for")
@@ -386,6 +453,10 @@ def main() -> int:
     print(f"network   {network}  chain {deployment['chain_id']}")
     print(f"escrow    {deployment['escrow']}")
     print(f"dispute   {deployment['dispute']}")
+
+    if args.check:
+        return check(chain, deployment["escrow"], deployment["dispute"], pathlib.Path(args.out))
+
     print("reading, paced to the rate limit ...")
 
     body = take(chain, deployment["escrow"], deployment["dispute"], explorer)

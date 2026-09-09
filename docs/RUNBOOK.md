@@ -47,6 +47,30 @@ Watch the feed row appear, move to judged, then settle.
       `python scripts/test.py` is green with it. Studio's persistence is
       temporary; the snapshot is what outlives it.
 
+## Before publishing anything
+
+Run this after the last cycle that touched the chain, and read the answer:
+
+```bash
+python scripts/snapshot.py --check
+```
+
+It compares the recorded snapshot's payment count and verdict distribution
+against the chain and writes nothing. Three answers, and only one of them means
+carry on:
+
+| it says | what to do |
+| --- | --- |
+| no drift | nothing. The published totals still describe the chain |
+| DRIFT, with the lines that differ | `python scripts/snapshot.py`, then check the totals in `README.md` against it |
+| chain unreachable | nothing is wrong. Drift cannot be measured without the chain, so it exits zero and says so |
+
+**This is not in `scripts/test.py`, on purpose.** The ten snapshot tests are
+one directional: they hold the snapshot to the repository, so writing to the
+chain never fails them, it only makes the snapshot quietly stale. A gate that
+needs the network is a gate people learn to ignore, so this is a command
+somebody runs and reads rather than one CI runs for them.
+
 ## What the numbers should look like
 
 Measured on Studio, with judgment starting on acceptance and money moving on
