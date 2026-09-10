@@ -404,6 +404,47 @@ does not ask the on chain gate today, so the linter is what stands in front of
 a promise; asking the gate at registration is a contract change and the
 contracts are frozen, which puts it under Later.
 
+### The clerk: run the judge yourself
+
+Everything above is a record of what the committee said. The clerk is the one
+place a reader can put a case to the judge and watch it answer. It sits on the
+site between the live feed and the evaluation.
+
+Three strings in: a promise, a request, a response. `/api/clerk` forwards them
+to the linter service, which loads `contracts/dispute.py` through the same test
+double the direct tests use and runs its `judge()` unchanged: both presentation
+orders, the one retry on a malformed answer, and the resolution of a
+disagreement to `unclear`. What comes back is the deployed code's answer, not a
+paraphrase of it. Any of the eighteen committed cases in `eval/cases.json` can
+be loaded, and a loaded case is judged against its own timing block, with its
+committed expectation shown beside the answer for as long as the three strings
+are left as committed.
+
+**What it is not.** It is one model where the chain uses a committee of five,
+and there is no chain in it at all. Every answer carries
+`recorded_on_chain: false`, and the panel says "Recorded on chain: no" before
+any verdict and again beside every verdict. Nothing it produces is a verdict,
+and none of it feeds the published 17 of 18 or 1 of 3. The design offered a
+mode that ran all eighteen cases in the browser and scored itself; it was left
+out, because it would stand a second accuracy number, measured by one model,
+beside the one measured by consensus.
+
+**What a public panel that spends model calls owes a reader:**
+
+- **A tighter rate limit than the linter's.** Six judgments a minute from one
+  address and thirty across everyone, against thirty and a hundred and twenty
+  for the linter. Every judgment is at least two model calls, one per
+  presentation order, where the linter's stage 1 spends none.
+- **No log.** The route sends the three strings to the linter service and
+  nowhere else, and the service records the method, the path and the status of
+  a request, never its body. Somebody will paste something they should not
+  have, and the only safe log is the one that does not exist.
+  `tests/direct/test_linter.py` holds the route to that from its source, and
+  holds the panel to both of its "Recorded on chain: no" lines.
+
+It needs a model behind the linter, the same as the linter's stage 2. Without
+one it answers with its error state and the reason, and never with a verdict.
+
 ### Refusals on chain
 
 A page showing only successes proves the file compiles. Refusing is what this
