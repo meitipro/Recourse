@@ -17,7 +17,7 @@
  * would be a second accuracy number measured a different way.
  */
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 const MONO = "'Geist Mono', ui-monospace, monospace";
 
@@ -131,7 +131,12 @@ export default function Clerk({ cases }: { cases: Case[] }) {
   const verdict = answer?.verdict ?? "";
   const matched = expectation && verdict ? expectation === verdict : null;
 
-  const curlCmd = `curl -s -X POST https://recourse.vercel.app/api/clerk \\
+  // The example targets wherever this page is actually served from. It used to
+  // name recourse.vercel.app, which belongs to an unrelated project, so a
+  // reader copying it would have sent three strings to a stranger.
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
+  const curlCmd = `curl -s -X POST ${origin || "<this site>"}/api/clerk \\
   -H "Content-Type: application/json" \\
   -d '{"promise": "...", "request": "...", "response": "..."}'`;
 

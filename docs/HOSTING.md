@@ -31,10 +31,18 @@ curl -s -X POST https://recourse-linter.vercel.app/api/lint \
 
 ## 2. The site
 
+**`recourse.vercel.app` is not ours.** It serves an unrelated project called
+Recourse Language, checked on 11 September. A project named `recourse` gets a
+team scoped address instead, and every smoke test aimed at the short name
+would be testing a stranger's site, where a case permalink returns nothing and
+reads as our bug. `recourse-site.vercel.app` was unclaimed the same day, and so
+were `recourse-linter` and `recourse-mcp`. If `recourse-site` is taken by the
+time you import, pick any free name and use its address in every test below.
+
 | | |
 | --- | --- |
 | Repository | `meitipro/Recourse` |
-| Project name | `recourse` |
+| Project name | `recourse-site`. Not `recourse`: see the note above this table |
 | Root directory | `web` |
 | Framework | Next.js (detected) |
 | Include source files outside the root directory | **on** (the page reads `../eval/*.json` and `../contracts/FROZEN.json`; `web/next.config.mjs` traces them into the function) |
@@ -47,9 +55,9 @@ thing a visitor tries.
 Smoke test:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://recourse.vercel.app/
-curl -s https://recourse.vercel.app/case/RC-2026-0003 | grep -c "not honored"     # 1
-curl -s -X POST https://recourse.vercel.app/api/lint \
+curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://recourse-site.vercel.app/
+curl -s https://recourse-site.vercel.app/case/RC-2026-0003 | grep -c "not honored"     # 1
+curl -s -X POST https://recourse-site.vercel.app/api/lint \
   -H "Content-Type: application/json" -d '{"promise": "High quality results."}'
 ```
 
