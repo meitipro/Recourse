@@ -6,8 +6,8 @@ repository publishes today, and nothing on screen is something the build
 cannot show at recording time. Items marked OPTIONAL are not live on every
 machine; the script reads correctly with them left out.
 
-The contested path takes about ninety seconds of real time, so the video
-cannot watch it in real time. The stopwatch on screen is what makes the jump
+The contested path takes well over a minute and a half of real time, so the
+video cannot watch it in real time. The stopwatch on screen is what makes the jump
 cuts honest: the viewer sees the real elapsed time at each cut.
 
 Every browser shot below names something that is on the site as it stands
@@ -22,13 +22,13 @@ Prepare everything in the shot list at the bottom before pressing record.
 | --- | --- | --- |
 | 0:00 to 0:10 | **Browser, the site, freshly loaded, top of the page.** The RECOURSE wordmark and "A promise that costs something to break." Behind them the lane runs: within the first few seconds one tick rises, marked CONTESTED, and slides back marked RETURNED. Hold for it. | An agent pays an endpoint it has never met, for one call, with nothing signed. The whole contract is one sentence the seller published on its own. Recourse is the dispute right for exactly that call. |
 | 0:10 to 0:18 | **Terminal A.** `python scripts/demo.py` has just started. The first lines show the promise read from chain and the seller's address: `promise   Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.` and `judgeable True`. | This is the promise, on chain, written by the seller alone. Three venues. Five seconds. That sentence is the entire agreement. |
-| 0:18 to 0:30 | **Terminal A, the honest path.** The block under `the honest path`: `check ok`, `payment p-000NNN`, `outcome accepted, letting the window expire`, `signature verified`. | The honest path first. The agent pays into escrow, the response is good, the agent lets the window expire. No consensus ran. Nobody paid anything extra. That is what proves this is not a tax on honest sellers. |
+| 0:18 to 0:30 | **Terminal A, the honest path.** The block under `the honest path`: `check ok`, `payment p-000NNN`, `outcome accepted, letting the window expire`, `signature verified`. | The honest path first. The agent pays into escrow, the response is good, the agent lets the window expire. No judgment ran. Nobody paid anything extra. That is what proves this is not a tax on honest sellers. |
 | 0:30 to 0:36 | **Terminal A.** The line `The same endpoint switches to stale and still returns 200.` and under it `check      stale: 32400s old, promise allows 5s`. | Same endpoint. It switches to serving a nine hour old price, and still returns two hundred. Every deterministic check passes except the one that read the promise. |
 | 0:36 to 0:42 | **Terminal A and Terminal B side by side.** Terminal A prints `disputed         bond 1 GEN posted, no human involved`. Terminal B is `python scripts/stopwatch.py`, just started, reading `00:0N`. | The agent posts a one GEN bond and files the dispute itself. No human is in the loop from here on. The clock starts. |
 | 0:42 to 0:56 | **Browser, the case page** at `/case/RC-2026-NNNN` for this payment, opened from the citation in the feed row once the case row exists. The four blocks: promise, request, response, timing. Scroll slowly. **Terminal B** stays visible in a corner, counting. | Five validators receive four strings. The promise, the request, the response, and the chain's own record of when each arrived. Neither party wrote that last one. They answer one question, in both presentation orders, and a committee has to agree. |
-| 0:56 to 1:04 | **Jump cut.** Terminal A prints `verdict    not_honored` and the reason line. Terminal B reads about `00:55` to `01:00`. Hold on the reason. | Under a minute: not honored. The reason is the committee's, written to chain, and it names the five second bound the seller wrote. |
-| 1:04 to 1:12 | **Jump cut.** Terminal A prints `dispute to money back  88.Ns` and `refund   5 GEN returned, balance is net zero`. Terminal B reads about `01:28`. Stop the stopwatch. Then **Browser, section 05, Live feed**, "Every payment, every case, public": the new row shows its citation `RC-2026-NNNN`, status `SETTLED, FINALIZED`, verdict `NOT HONORED`. | Money moves on finalization, half a minute after the verdict, so a successful appeal could never reverse a payout. Payment and bond are back. The case has a citation, and the citation is a permalink. |
-| 1:12 to 1:18 | OPTIONAL, needs the honest payment's window (300 s) to have closed. **Terminal A:** `python scripts/withdraw.py p-000NNN` for the honest payment. Output: `withdrawn`, seller balance up, `no consensus ran and nobody paid anything extra`. If not recording this, the feed row reading `RELEASED, UNCOLLECTED` covers it. | And the honest payment from the start: its window closed, the seller collects it, and no committee ever heard about it. |
+| 0:56 to 1:04 | **Jump cut.** Terminal A prints `verdict    not_honored` and the reason line. Terminal B reads about `01:05`. Hold on the reason. | About a minute: not honored. The reason is the committee's, written to chain, and it names the five second bound the seller wrote. |
+| 1:04 to 1:12 | **Jump cut.** Terminal A prints `dispute to money back  NNN.Ns` and `refund   5 GEN returned, balance is net zero`. Terminal B reads about `01:40`. Stop the stopwatch. Then **Browser, section 05, Live feed**, "Every payment, every case, public": the new row shows its citation `RC-2026-NNNN`, status `SETTLED, FINALIZED`, verdict `NOT HONORED`. | Money moves on finalization, half a minute after the verdict, so a successful appeal could never reverse a payout. Payment and bond are back. The case has a citation, and the citation is a permalink. |
+| 1:12 to 1:18 | OPTIONAL, needs the honest payment's window (300 s) to have closed. **Terminal A:** `python scripts/withdraw.py p-000NNN` for the honest payment. Output: `withdrawn`, seller balance up, `no judgment ran and nobody paid anything extra`. If not recording this, the feed row reading `RELEASED, UNCOLLECTED` covers it. | And the honest payment from the start: its window closed, the seller collects it, and no committee ever heard about it. |
 | 1:18 to 1:28 | **Browser, section 06, Evaluation**, "The number, published whatever it is". Four numbers at the same size: `17 / 18`, `17 / 18`, `3 / 18`, `1 / 3`. Hold on both accuracy figures together. | Judged against answers committed before the code: seventeen of eighteen. Against three cases committed before the runner could read them and never tuned against: one of three. Both numbers, the same size, always. That gap is the honest measurement of this judge. |
 | 1:28 to 1:30 | **Browser, the hero's strip**, the two copyable addresses, Escrow and Dispute, then the footer's `studionet / chain 61999`. | Same bytes, frozen, and the hashes prove it. |
 
@@ -39,11 +39,11 @@ Ninety seconds. About two hundred words.
 | spoken | where it is published |
 | --- | --- |
 | three venues, five seconds | the registered promise, read from chain at demo start |
-| nobody paid anything extra | the honest path: no consensus, `outcome accepted` |
+| nobody paid anything extra | the honest path: no judgment, `outcome accepted` |
 | one GEN bond | `bond_wei` in `contracts/FROZEN.json`, printed by the demo, and the site's Contest step reads it from the same file |
 | four strings, neither party wrote the last | `README.md`, "Three things we got wrong first"; the case page's timing block |
 | both presentation orders, a committee has to agree | `contracts/dispute.py` `judge()`; `docs/RULES.md` rule 04 |
-| under a minute; half a minute more to money | the demo's own two lines, about 60 s and about 89 s |
+| about a minute; half a minute more to money | the demo's own two lines, and the medians over the public record in `evidence/snapshot.json`, which the README prints |
 | a citation that is a permalink | `/case/RC-2026-NNNN` |
 | seventeen of eighteen, one of three | `eval/RESULTS.md`, `eval/HELD-OUT.md`, the site's section 06 |
 | same bytes, hashes prove it | `contracts/FROZEN.json`, the README's contract table |

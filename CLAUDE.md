@@ -28,7 +28,7 @@ Read it before changing a contract. The four worth holding in your head:
       can set it.
     Three verdicts only. Only a clear verdict moves funds.
     The validator compares the verdict field and never the reason string.
-    The happy path adds zero latency and runs no consensus.
+    The happy path adds zero latency and runs no judgment.
     The evaluation set was committed one commit before the judgment contract,
       and cases-v2.json was committed alone before the runner could read it.
       git log proves the commit order, which is not the same as proving when

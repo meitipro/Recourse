@@ -274,3 +274,41 @@ def test_the_clerk_never_claims_a_verdict_was_recorded():
     # The judge endpoint says the same thing in its own reply.
     service = (ROOT / "linter" / "serve.py").read_text(encoding="utf-8")
     assert '"recorded_on_chain": False' in service
+
+
+def test_the_offline_sentence_follows_linter_url_alone():
+    """
+    Each panel can fail two ways: a build with no linter behind it, and a
+    linter that did not answer. Only the first gets the offline sentence. The
+    routes decide which it is from LINTER_URL alone, so the words each panel
+    matches on must be the words its own route sends in that one case.
+    """
+    lint = _route_source("lint")
+    clerk = _route_source("clerk")
+    site = ROOT / "web" / "components" / "site"
+    hero = (site / "Hero.tsx").read_text(encoding="utf-8")
+    panel = (site / "Clerk.tsx").read_text(encoding="utf-8")
+
+    # "not configured" is what each route sends when its URL is empty.
+    assert re.search(r'if \(!LINTER_URL\) \{\s*return NextResponse\.json\(\{ error: "linter not configured" \}', lint)
+    assert re.search(r'if \(!JUDGE_URL\) \{\s*return NextResponse\.json\(\{ error: "the clerk is not configured" \}', clerk)
+    # A linter that did not answer is a failure with a way back, never the
+    # offline build.
+    assert lint.count('"Could not reach the linter. Try again."') == 2
+    assert clerk.count('"Could not reach the clerk. Try again."') == 2
+    # Each panel gives the offline sentence on its own route's words and no other.
+    assert 'error.includes("linter not configured")' in hero and "has no linter behind it" in hero
+    assert 'error.includes("not configured")' in panel and "has no judge behind it" in panel
+
+
+def test_the_promise_limit_a_reader_sees_is_the_contracts():
+    """
+    The hero counts a promise against a limit, and the limit is the frozen
+    escrow's own. It is written in three places, so all three are held to the
+    contract.
+    """
+    escrow = (ROOT / "contracts" / "escrow.py").read_text(encoding="utf-8")
+    limit = int(re.search(r"^MAX_PROMISE = (\d+)", escrow, re.M).group(1))
+    assert f"const MAX_PROMISE = {limit};" in _route_source("lint")
+    hero = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
+    assert f"/ {limit}`" in hero, "the hero's counter names a limit the contract does not have"

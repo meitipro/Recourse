@@ -21,6 +21,8 @@ disagreement between them a finding, not noise.
 | stability, all 3 runs of a case agreed | 2/3 |
 | landed on unclear, the honesty signal | 1/3 |
 
+The tuned set, measured on its own 18 cases, scores **17/18**: [RESULTS.md](RESULTS.md).
+
 ## Every case
 
 | case | expected | studionet observed | studionet correct |

@@ -111,7 +111,7 @@ def main() -> int:
         if not args.contested:
             rule("the honest path")
             print("The seller serves a good response. The agent checks it, accepts it, and")
-            print("lets the window expire. No consensus runs and nobody pays anything extra.\n")
+            print("lets the window expire. No judgment runs and nobody pays anything extra.\n")
             honest = agent("--mode", "correct", "--no-dispute")
             print(f"  check      {honest['check']['reason']}")
             print(f"  payment    {honest['pid']}, {honest['response']}")

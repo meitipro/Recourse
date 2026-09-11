@@ -79,8 +79,11 @@ def _lint_deployed(name: str, source: str) -> int:
         # Never shell=True: this repository lives under a path with a space in
         # it and the shell splits on it, so the linter reports an unrecognised
         # argument for every file and it reads as a broken tool.
+        # Decoded as utf-8 explicitly: the linter prints a tick, and Windows
+        # would otherwise decode it through the ansi codepage into mojibake.
         result = subprocess.run(
-            ["genvm-lint", "lint", str(target)], capture_output=True, text=True, env=env
+            ["genvm-lint", "lint", str(target)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
         )
         # `check` prints a green validation line underneath a lint failure, so
         # the first line and the exit code are what count, never the last line.
@@ -132,6 +135,27 @@ def main() -> int:
                     print(f"      repo:     {local_lines[index][:90]}")
                     print(f"      on chain: {chain_lines[index][:90]}")
                     break
+
+    # The evaluation ran on instances of its own. They are held to the same
+    # bytes, because a score measured on a different judge would not be this
+    # judge's score. A testnet reset loses them, which is a note, not a failure.
+    local = normalise((ROOT / "contracts" / "dispute.py").read_text(encoding="utf-8"))
+    for results in ("eval/results.json", "eval/results-v2.json"):
+        path = ROOT / results
+        instance = json.loads(path.read_text(encoding="utf-8")).get("instance") if path.exists() else None
+        if not instance:
+            continue
+        print(f"\nevaluation instance for {results}  {instance}")
+        try:
+            onchain = normalise(deployed_source(chain, instance))
+        except Exception as error:  # noqa: BLE001
+            print(f"  could not read it back, which a testnet reset explains: {str(error)[:120]}")
+            continue
+        if onchain == local:
+            print(f"  runs the same contracts/dispute.py ({len(local)} bytes)")
+        else:
+            failures += 1
+            print(f"  MISMATCH: the score in {results} was measured on different bytes")
 
     print("\nlive state")
     try:

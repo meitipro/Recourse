@@ -7,7 +7,7 @@ The seller collects an uncontested payment after its window has closed.
 
 This is the last step of the honest path, the one the demo leaves for the
 window to reach: no dispute was filed, the window expired, and the seller
-takes the payment. No consensus runs, nobody paid anything extra, and the
+takes the payment. No judgment runs, nobody paid anything extra, and the
 feed's row goes from "released, uncollected" to "withdrawn". The contract
 refuses it before the window closes, and says so.
 """
@@ -55,7 +55,7 @@ def main() -> int:
         after = seller.balance(deployment["seller"])
     note = "" if after > before else "  (not landed after 90 s; the payout moves on finalization, check again)"
     print(f"seller balance  {before / GEN:.2f} -> {after / GEN:.2f} GEN{note}")
-    print("no consensus ran and nobody paid anything extra")
+    print("no judgment ran and nobody paid anything extra")
     return 0
 
 

@@ -1,0 +1,5 @@
+# The frozen contracts are hashed over their committed bytes, which are LF.
+# Without this a Windows checkout writes CRLF, and a reader who recomputes the
+# sha256 in contracts/FROZEN.json gets a different answer from the same file.
+contracts/*.py text eol=lf
+contracts/FROZEN.json text eol=lf

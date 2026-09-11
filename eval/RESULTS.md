@@ -21,6 +21,8 @@ disagreement between them a finding, not noise.
 | stability, all 3 runs of a case agreed | 17/18 |
 | landed on unclear, the honesty signal | 3/18 |
 
+The held out set, measured on its own 3 cases, scores **1/3**: [RESULTS-V2.md](RESULTS-V2.md).
+
 On studionet, stability counts 1 case(s) as unstable (07) where one run never returned a verdict: a dropped transaction on a hosted network, not the judge disagreeing with itself.
 
 ## Every case

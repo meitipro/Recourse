@@ -10,9 +10,13 @@ run again. Nothing here touches a network.
 
 from __future__ import annotations
 
+import datetime
 import json
 import pathlib
 import re
+import subprocess
+
+import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SNAPSHOT_PATH = ROOT / "evidence" / "snapshot.json"
@@ -192,3 +196,116 @@ def test_the_snapshot_carries_no_private_material():
             if isinstance(secret, str) and len(secret) >= 32:
                 assert secret.lower().removeprefix("0x") not in text
     assert "private_key" not in text
+
+
+def _epoch(value: str) -> float:
+    return datetime.datetime.fromisoformat(value).timestamp()
+
+
+def test_the_settlement_timings_the_site_and_readme_state_are_the_chains_own():
+    """
+    The README's timing block, the site's section 04 and its section 07 state
+    four numbers about settlement. All four are totals here, each recomputed
+    from the transactions by walking the hashes that link them, open_dispute
+    to adjudicate to settle to payout, and each is held to where it is printed.
+    """
+    txs = SNAPSHOT["transactions"]
+    by_hash = {t["hash"]: t for t in txs}
+    verdict = {p["pid"]: p["verdict_name"] for p in payments()}
+    to_verdict, money_back, finality, committee = [], [], [], []
+    for judged in txs:
+        if judged["method"] != "adjudicate" or judged["execution"] != "SUCCESS":
+            continue
+        if judged.get("validators"):
+            committee.append(judged["validators"])
+        opener = by_hash.get(judged.get("triggered_by") or "")
+        settles = [
+            t for t in txs
+            if t.get("triggered_by") == judged["hash"] and t["method"] == "settle" and t["execution"] == "SUCCESS"
+        ]
+        if not opener or not settles:
+            continue
+        assert opener["method"] == "open_dispute", judged["hash"]
+        settle = settles[0]
+        if judged.get("accepted_at"):
+            finality.append(_epoch(settle["created_at"]) - judged["accepted_at"])
+        if settle.get("accepted_at"):
+            to_verdict.append(settle["accepted_at"] - _epoch(opener["created_at"]))
+        payouts = [t for t in txs if t.get("triggered_by") == settle["hash"] and t["method"] == "transfer"]
+        if payouts and settle.get("accepted_at"):
+            finality.append(min(_epoch(t["created_at"]) for t in payouts) - settle["accepted_at"])
+        if payouts and verdict[judged["pid"]] == "not_honored":
+            money_back.append(min(_epoch(t["created_at"]) for t in payouts) - _epoch(opener["created_at"]))
+    assert to_verdict and money_back and finality and committee, "the snapshot predates the settlement timings; re-take it"
+
+    def median(values):
+        ordered = sorted(values)
+        return round(ordered[len(ordered) // 2])
+
+    totals = SNAPSHOT["totals"]
+    assert totals["median_dispute_to_verdict_seconds"] == median(to_verdict)
+    assert totals["median_dispute_to_money_back_seconds"] == median(money_back)
+    assert totals["median_finality_seconds"] == median(finality)
+    assert totals["committee"] == median(committee)
+    # The committee a listed record reports is the one the raw receipts name.
+    for label in ("contested", "honored", "unclear"):
+        for rel in SNAPSHOT["receipts"][label]["files"]:
+            if "-adjudicate-" in rel:
+                receipt = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+                assert len(receipt["last_round"]["round_validators"]) == totals["committee"], rel
+    # Printed where they are stated.
+    flat = " ".join(README.split())
+    assert f"dispute to verdict {totals['median_dispute_to_verdict_seconds']} seconds" in flat
+    assert f"dispute to money back {totals['median_dispute_to_money_back_seconds']} seconds" in flat
+    assert f"finalizes a median of {totals['median_finality_seconds']} seconds" in flat
+    assert f"committee {totals['committee']} nodes per round" in flat
+    # And typed nowhere on the site.
+    sections = (ROOT / "web" / "components" / "site" / "Sections.tsx").read_text(encoding="utf-8")
+    for typed in ("about 90 seconds", "half a minute", "committee of five", "ten model calls"):
+        assert typed not in sections, f"the site types {typed!r} instead of reading it"
+
+
+def test_the_readmes_fee_figures_are_the_receipts_the_snapshot_keeps():
+    """
+    What judgment costs on studionet is stated from receipts. The snapshot
+    keeps eth_gasPrice and the receipt of the first success of each method
+    and of the first refusal, and the README's figures must be exactly what
+    those say.
+    """
+    fees = SNAPSHOT["fees"]
+    assert fees["eth_gasPrice"] == "0x0"
+    methods = {r["method"] for r in fees["receipts"]}
+    assert "adjudicate" in methods, "no receipt of a transaction that ran the judgment"
+    assert any(r["execution"] == "ERROR" for r in fees["receipts"]), "no refusal in the sample"
+    for receipt in fees["receipts"]:
+        assert receipt["effectiveGasPrice"] is not None and int(receipt["effectiveGasPrice"], 16) == 0, receipt["hash"]
+        assert receipt["gasUsed"] is not None and int(receipt["gasUsed"], 16) == 8000000, receipt["hash"]
+    flat = " ".join(README.split())
+    assert "`eth_gasPrice` returns `0x0`" in flat
+    assert "a `gasUsed` of exactly `8000000`" in flat
+
+
+def test_the_evaluation_prose_on_the_site_is_held_to_what_it_describes():
+    """
+    The evaluation section names the one miss and the two commits that put the
+    answer key before the judge. Neither is a count a template can read, so the
+    miss is held to results.json and the commits to git's own history, where a
+    clone has history to read.
+    """
+    sections = (ROOT / "web" / "components" / "site" / "Sections.tsx").read_text(encoding="utf-8")
+    results = json.loads((ROOT / "eval" / "results.json").read_text(encoding="utf-8"))
+    misses = [row["id"] for row in results["rows"] if not row["correct"]]
+    assert misses == ["12"], f"the site explains case 12 as the one miss, and results.json records {misses}"
+    assert "The one miss in the first set is case 12," in sections
+    shallow = subprocess.run(
+        ["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT, capture_output=True, text=True
+    ).stdout.strip()
+    if shallow != "false":
+        pytest.skip("a shallow clone has no history to hold the commits to")
+    for path, named in (("eval/cases.json", "b50757f"), ("eval/cases-v2.json", "04ca928")):
+        added = subprocess.run(
+            ["git", "log", "--diff-filter=A", "--format=%H", "--", path],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        ).stdout.split()
+        assert added and added[-1].startswith(named), f"{path} was added in {added[-1:]}, and the site says {named}"
+        assert named in sections

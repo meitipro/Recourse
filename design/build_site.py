@@ -415,6 +415,10 @@ __HERO__
 }
 '''
 
+# The fourth total is the case record's own clock: payment to the moment the
+# dispute reached the judge. "median" alone read as time to a verdict or to
+# money back, which are longer and are stated, from the chain, in section 04.
+hero = sub_once(hero, "</span> median</span>", "</span> median, pay to dispute</span>", "hero median label")
 (OUT / "Hero.tsx").write_text(HERO_TSX.replace("__HERO__", hero.rstrip()), encoding="utf-8")
 
 # --------------------------------------------------------------- sections
@@ -462,14 +466,19 @@ closing = read("sec-closing.jsx")
 how = sub_once(
     how,
     "Verdict and money land in the same transaction. The receipt is public.",
-    "The verdict is written and the settlement it implies is emitted with it. "
-    "Money moves when that transaction finalizes, about half a minute later, so "
-    "an appeal can never arrive after the payout. Both receipts are public.",
+    "The verdict is written when the committee accepts it. The settlement it "
+    "implies runs once that transaction finalizes{finalityLabel}, and the money "
+    "moves once the settlement finalizes in turn, so an appeal can never arrive "
+    "after the payout. Every receipt is public.",
     "settle step",
 )
 # 2. The published end to end number is the money, not the verdict.
-how = sub_once(how, ">under one minute<", ">about 90 seconds<", "end to end")
-how = sub_once(how, ">End to end<", ">Dispute to money back<", "end to end label")
+how = sub_once(how, ">under one minute<", ">{moneyBackLabel}<", "end to end")
+how = sub_once(how, ">End to end<", ">Dispute to money back, median<", "end to end label")
+# Every write on GenLayer goes through a committee, the honest path's
+# included. What the paid path skips is judgment: no model is asked anything.
+how = sub_once(how, ">No consensus in the paid path<", ">No judgment in the paid path<", "how sidebar")
+how = sub_once(how, "No consensus in this path, no latency added.", "No judgment in this path, no latency added.", "call step")
 # 3. The settlement window is read from the freeze record.
 how = sub_once(how, ">a few minutes<", ">{windowLabel}<", "settlement window")
 # "one settling transaction" was the same claim as the corrected Settle step:
@@ -495,8 +504,7 @@ evaluation = remove_block(evaluation, "v.showAgent", levels=2)
 limits = sub_once(
     limits,
     "Judgment costs about one dollar per case, so the first version targets payments above that line. Session batching is the route below it.",
-    "One adjudication is ten model calls: a committee of five, each asking the same "
-    "question in both presentation orders. studionet charges nothing for them, so this "
+    "{work} studionet charges nothing for them, so this "
     "states the work rather than a price it cannot read off a receipt. Session batching "
     "is the route to payments below the cost of judging one.",
     "cost limit",
@@ -527,9 +535,21 @@ evaluation = evaluation.replace("2026-09-05", "{measuredOn}")
 evaluation = sub_once(
     evaluation,
     "gave the same reason three times",
-    "gave the same ground in all three runs",
+    "gave the same ground in all {spell(results.runs)} runs",
     "case 12 wording",
 )
+
+# The counts in the evaluation's prose are read from the results files too, and
+# written out the way the copy writes numbers.
+for old, new, label in (
+    (">Eighteen cases committed before the run<", ">{capital(spell(results.n))} cases committed before the run<", "cases eyebrow"),
+    (">Eighteen cases with the correct verdict", ">{capital(spell(results.n))} cases with the correct verdict", "cases lede"),
+    ("The first eighteen cases are the set", "The first {spell(results.n)} cases are the set", "first set"),
+    ("three runs per case, through real consensus", "{spell(results.runs)} runs per case, through real consensus", "runs lede"),
+    (">Three runs per case on studionet", ">{capital(spell(results.runs))} runs per case on studionet", "runs legend"),
+    ("The three held out cases were committed alone", "The {spell(heldOut.n)} held out cases were committed alone", "held out count"),
+):
+    evaluation = sub_once(evaluation, old, new, label)
 
 # The eighteen case chips become one map over the measured rows, keeping the
 # design's own two colourways: green where the judge matched the committed
@@ -538,7 +558,7 @@ CHIPS = """<div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTo
         {results.rows.map((row) => (
           <span
             key={row.id}
-            title={`Expected ${row.expected.replace("_", " ")} - ${row.correct ? "matched" : "did not match"} - ${row.stable ? "all three runs agreed" : "the three runs disagreed"}`}
+            title={`Expected ${row.expected.replace("_", " ")} - ${row.correct ? "matched" : "did not match"} - ${row.stable ? `all ${runs} runs agreed` : `the ${runs} runs disagreed`}`}
             style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "36px", padding: "7px 9px", font: "500 11px 'Geist Mono', ui-monospace, monospace", color: row.correct ? "#4ADE80" : "#F87171", background: row.correct ? "rgba(74,222,128,0.10)" : "rgba(248,113,113,0.10)", border: `1px solid ${row.correct ? "rgba(74,222,128,0.35)" : "rgba(248,113,113,0.35)"}`, borderRadius: "0", fontVariantNumeric: "tabular-nums" }}
           >
             {row.id}
@@ -570,6 +590,20 @@ type Results = {
   rows: Array<{ id: string; correct: boolean; stable: boolean; expected: string }>;
 };
 
+const WORDS = [
+  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+];
+
+/** A count read from a committed file, written the way the copy writes numbers. */
+function spell(n: number): string {
+  return Number.isInteger(n) && n >= 0 && n < WORDS.length ? WORDS[n] : String(n);
+}
+
+function capital(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function GapSection() {
   return (
     <>
@@ -586,12 +620,27 @@ __FAILURES__
   );
 }
 
-export function HowSection({ windowSeconds, bondWei }: { windowSeconds: number | null; bondWei: string | null }) {
+export function HowSection({
+  windowSeconds,
+  bondWei,
+  moneyBackSeconds,
+  finalitySeconds,
+}: {
+  windowSeconds: number | null;
+  bondWei: string | null;
+  moneyBackSeconds: number | null;
+  finalitySeconds: number | null;
+}) {
   // Read from contracts/FROZEN.json. The canvas said "a few minutes", which is
   // what this shows only when the record is missing.
   const windowLabel = windowSeconds ? `${windowSeconds} seconds` : "a few minutes";
   // Read from contracts/FROZEN.json, the value the escrow was deployed with.
   const bondLabel = bondWei ? ` of ${Number(bondWei) / 1e18} GEN` : "";
+  // Both from evidence/snapshot.json, timed off the chain's own transactions:
+  // the median over the public record, by the feed's rule. Money back is timed
+  // on the not_honored cases, the only ruling that returns the payment.
+  const moneyBackLabel = moneyBackSeconds ? `${moneyBackSeconds} seconds` : "-";
+  const finalityLabel = finalitySeconds ? `, about ${finalitySeconds} seconds later` : "";
   return (
     <>
 __HOW__
@@ -616,6 +665,7 @@ export function EvaluationSection({
 }) {
   const measuredOn = new Date(results.measured_at * 1000).toISOString().slice(0, 10);
   const byId = new Map(results.rows.map((row) => [row.id, row]));
+  const runs = spell(results.runs);
   return (
     <>
 __EVALUATION__
@@ -623,7 +673,12 @@ __EVALUATION__
   );
 }
 
-export function LimitsSection() {
+export function LimitsSection({ committee }: { committee: number | null }) {
+  // The committee is the size the chain's own receipts show, recorded in
+  // evidence/snapshot.json. Each member asks in both presentation orders.
+  const work = committee
+    ? `One adjudication is ${spell(committee * 2)} model calls: a committee of ${spell(committee)}, each asking the same question in both presentation orders.`
+    : "One adjudication asks every member of the committee the same question in both presentation orders.";
   return (
     <>
 __LIMITS__

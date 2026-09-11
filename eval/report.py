@@ -111,6 +111,16 @@ def main() -> int:
     add(f"| stability, all {runs} runs of a case agreed | " + " | ".join(f"{data[n]['stability']}/{total}" for n in networks) + " |")
     add("| landed on unclear, the honesty signal | " + " | ".join(f"{data[n]['unclear']}/{total}" for n in networks) + " |")
     add("")
+    # The other set's score, beside this one. The README and the site never
+    # print one without the other, and neither does a report.
+    other = "v2" if args.set == "v1" else "v1"
+    other_path = results_path(SETS[other]["base"], networks[0])
+    if other_path.exists():
+        theirs = json.loads(other_path.read_text(encoding="utf-8"))
+        which = "The held out set" if other == "v2" else "The tuned set"
+        target = SETS[other]["out"].name
+        add(f"{which}, measured on its own {theirs['n']} cases, scores **{theirs['accuracy']}/{theirs['n']}**: [{target}]({target}).")
+        add("")
     for n in networks:
         errored = [r for r in data[n]["rows"] if "error" in r["observed"]]
         if errored:

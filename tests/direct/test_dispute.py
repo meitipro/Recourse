@@ -769,7 +769,7 @@ def test_each_verdict_settles_the_matching_way_through_both_contracts():
 
 
 def test_the_quiet_close_never_touches_the_judgment_contract():
-    """The honest path adds no consensus and no latency. Nothing is asked."""
+    """The honest path adds no judgment and no latency. Nothing is asked."""
     w = World().with_dispute()
     w.register()
     pid = w.pay()
@@ -811,3 +811,25 @@ if __name__ == "__main__":
     for line in failures:
         print("  FAIL", line)
     sys.exit(1 if failures else 0)
+
+
+def test_the_readmes_prompt_size_is_the_prompt_this_contract_builds():
+    """
+    The README's cost block states how long the judgment prompt is. It is
+    measured here, over every committed case in both presentation orders,
+    through the frozen contract's own build_prompt, and the token figures are
+    that length at four characters a token, ten calls a dispute.
+    """
+    root = pathlib.Path(__file__).resolve().parents[2]
+    mod = World().with_dispute().dispute_mod
+    cases = json.loads((root / "eval" / "cases.json").read_text(encoding="utf-8"))
+    sizes = [
+        len(mod.build_prompt(c["promise"], c["request"], c["response"], c["timing"], reverse=reverse))
+        for c in cases
+        for reverse in (False, True)
+    ]
+    tokens = int(round(sum(sizes) / len(sizes) / 4, -1))
+    readme = " ".join((root / "README.md").read_text(encoding="utf-8").split())
+    assert f"prompt size {min(sizes)} to {max(sizes)} chars" in readme
+    assert f"about {tokens} tokens" in readme
+    assert f"input tokens per dispute about {tokens * 10}" in readme

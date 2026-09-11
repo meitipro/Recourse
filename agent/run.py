@@ -196,7 +196,7 @@ def main() -> int:
     report["pay_hash"] = paid["hash"]
     out(report, args.json, f"paid             {args.amount} GEN, payment {pid}")
 
-    # 3 - call the endpoint and receive the response immediately. No consensus
+    # 3 - call the endpoint and receive the response immediately. No judgment
     # in this path, so nothing here adds latency to an honest sale.
     # The proof is whatever the rail identifies the settlement by. On x402 that
     # is the escrow payment id; on an outside rail it is that rail's own
@@ -249,7 +249,7 @@ def main() -> int:
     # chose the request.
     if verdict.ok or not verdict.contestable or args.no_dispute:
         # 6a - quiet close. The window expires and the seller withdraws. Nobody
-        # paid anything extra and no consensus ran.
+        # paid anything extra and no judgment ran.
         row = buyer.read_json(escrow, "get_payment", [pid])
         report["outcome"] = "declined" if verdict.mode == "declined" else "accepted"
         report["window_ends"] = row["window_ends"]

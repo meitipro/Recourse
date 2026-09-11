@@ -212,7 +212,7 @@ verdicts."
 Five steps in a row, each with a two digit index (`01` to `05`), a one word
 title and one line: Call, Hold, Contest, Judge, Settle. Below, three facts in a
 row: the settlement window in seconds read from `FROZEN.json`, "uncontested
-releases with no consensus", "the honest path adds no latency". The window
+releases with no judgment", "the honest path adds no latency". The window
 figure is never typed; if the record is missing it says "a few minutes".
 
 ### 4.6 Live feed

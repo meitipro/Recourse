@@ -32,19 +32,20 @@ one on the site, is traced to its source in [docs/SOURCES.md](docs/SOURCES.md).
 ## Run the demo
 
 ```bash
-pip install genlayer_py anthropic        # Python 3.12
+pip install genlayer_py anthropic pytest # Python 3.12
 # and genvm-lint on PATH: scripts/test.py lints and validates the contracts with it
 python scripts/prepare.py                # funds three accounts, registers a seller
 python scripts/demo.py                   # both paths, against the frozen contracts
 ```
 
-A clean clone was run exactly this way before this README was finished; the only
-thing it assumed already present was `genvm-lint`, which is why that line is
-there. `prepare.py` deploys nothing. The contracts are frozen at the addresses in
-`contracts/FROZEN.json` and every published number is tied to them, so a clone
-gets accounts of its own, funded from the Studio faucet, and a seller among
-them registered on the frozen escrow. `deploy.py` refuses to run while the
-freeze stands, and says what to do instead.
+A clean clone, in a fresh virtual environment, was run exactly this way on
+11 September. It needed `genvm-lint` on the path and, for `scripts/test.py`,
+`pytest`, which is why both are named above. `prepare.py` deploys nothing. The
+contracts are frozen at the addresses in `contracts/FROZEN.json` and every
+chain number published here is tied to them, so a clone gets accounts of its
+own, funded from the Studio faucet, and a seller among them registered on the
+frozen escrow. `deploy.py` refuses to run while the freeze stands, and says
+what to do instead.
 
 An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
@@ -57,20 +58,21 @@ shot, timed, every spoken number one this repository publishes.
 
 ![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 
-Measured on studionet, printed by the demo on every run:
+Measured on studionet, as medians over every dispute on the public record in
+`evidence/snapshot.json`, and printed by the demo for its own run:
 
 ```
-dispute to verdict      about 60 seconds
-dispute to money back   about 89 seconds
+dispute to verdict      67 seconds
+dispute to money back   100 seconds
 ```
 
-The verdict lands inside a minute. The money follows once the judgment
-transaction finalizes, which is another half minute, and that ordering is
-deliberate: **judgment starts on acceptance and money moves on finalization.**
-Paying out on acceptance would be faster and would mean a successful appeal
-could reverse a verdict after the money had already gone. The honest number for
-"money back" is therefore the ninety second one, and it is the one the demo
-prints.
+The verdict reaches the escrow first. The money follows once the settlement
+transaction finalizes, and a transaction here finalizes a median of 30
+seconds after its committee accepts it. That ordering is deliberate:
+**judgment starts on acceptance and money moves on finalization.** Paying out
+on acceptance would be faster and would mean a successful appeal could reverse
+a verdict after the money had already gone. The honest number for "money back"
+is therefore the longer one, and it is the one the demo prints last.
 
 ## How it works
 
@@ -84,7 +86,7 @@ prints.
                                    v
    +----------------+      +-------+---------+      +---------------------+
    |  BUYER AGENT   |----->|  RecourseEscrow |<---->|  RecourseDispute    |
-   |  (off chain)   | pay  |  deterministic  | call |  one model call     |
+   |  (off chain)   | pay  |  deterministic  | call |  2 model calls      |
    |  checks promise|      |  holds funds    |      |  3 frozen strings   |
    |  files dispute |      |  records evid.  |      |  1 narrow question  |
    +----------------+      +-------+---------+      +----------+----------+
@@ -100,7 +102,7 @@ prints.
 1. The seller registers and publishes a delivery promise in plain language.
 2. The buyer pays. Funds enter escrow, not the seller balance.
 3. The response is delivered instantly and recorded on chain with the seller's
-   signature over its hash. No consensus in this path, so no latency is added.
+   signature over its hash. No judgment runs in this path, so no latency is added.
 4. A settlement window runs. If nobody contests, the seller withdraws.
 5. To contest, the buyer posts a bond. Validators receive the promise, the
    request and the response, and answer one question.
@@ -160,8 +162,8 @@ held out     1/3     three further cases, answers committed before the
                      runner could read them, never tuned against
 ```
 
-Those two accuracy figures appear together everywhere this project states
-either, and the section after next says why.
+The README, the site and both reports print those two accuracy figures
+together, and the section after next says why.
 
 Commit order shows when a file was committed, not when it was written, and
 [eval/RESULTS.md](eval/RESULTS.md) says so under "What this evidence does and
@@ -169,18 +171,25 @@ does not show".
 
 ### Corrections, and what caught each one
 
-A project that reports no mistakes is a project nobody checked. Every number
-above has been wrong once, or would have flattered if left alone. Each row
-names what caught it, because the catching mechanism is the part worth
-trusting:
+A project that reports no mistakes is a project nobody checked. Each row is a
+claim this file or the site made that was wrong, or would have flattered if
+left alone, and names what caught it, because the catching mechanism is the
+part worth trusting:
 
 | the claim, as it stood | what caught it |
 | --- | --- |
-| **17 of 18**, measured on the set the judgment question had already been narrowed against. | Three held out cases, committed alone before the runner could read them. They score **1 of 3**. The next section is that story, and the two figures appear together everywhere either one appears. |
-| **Case 12 could have been narrowed away.** Its committed answer is `unclear`, the judge answers `not_honored`, and a third pass at the question would have made it pass. | The rule that an evaluation case is never edited to make a run succeed. It is published as a miss instead, because narrowing the question against the cases that remain is fitting the prompt to the set. |
+| **17 of 18**, measured on the set the judgment question had already been narrowed against. | Three held out cases, committed alone before the runner could read them. They score **1 of 3**. The next section is that story, and the README, the site and both reports print the two figures together. |
+| **Case 12 could have been narrowed away.** Its committed answer is `unclear`, the judge answers `not_honored`, and narrowing the question a third time, against this case, was the obvious way to make it pass. | The rule that an evaluation case is never edited to make a run succeed. It is published as a miss instead, because narrowing the question against the cases that remain is fitting the prompt to the set. |
 | **About a dollar an adjudication**, inherited from published examples of a differently shaped contract. | Trying to measure it. studionet charges nothing and `gasUsed` is the limit echoed back rather than work done, so no dollar figure could have come from this deployment. What replaced it is countable: ten model calls a dispute. |
 | **"median settlement" on the feed**, which measured payment to dispute and never measured settlement. | Reading what the two chain timestamps are. A case's `opened_at` and `decided_at` are one message's fixed datetime, so they cannot see how long judgment took. The tile was relabelled rather than removed: the number was real, its name was not. |
-| **Two transaction hashes in this file, typed rather than read off the chain.** | Review caught them before the gate ran, and `tests/direct/test_snapshot.py` is what would have caught them at it: every hash this README cites must exist in `evidence/snapshot.json`. They were replaced with hashes read out of the snapshot, and all ten now verify against recorded chain data. |
+| **Two transaction hashes in this file, typed rather than read off the chain.** | Review caught them before the gate ran, and `tests/direct/test_snapshot.py` is what would have caught them at it: every hash this README cites must exist in `evidence/snapshot.json`. They were replaced with hashes read out of the snapshot, and all ten now verify against recorded chain data. The commit that put this table here, `3e45df4`, records it. |
+| **89 seconds from dispute to money back**, a figure from the ordering the contracts no longer use. | A number audit that opened each figure's source: no file held it. Both timings above are now medians the snapshot computes from the chain's own timestamps, and a test fails if this file or the site types one. |
+| **231 direct tests.** | The same audit. The suite had grown, so `scripts/test.py` now reads the count off pytest and fails when this file disagrees. |
+| **Every number here measured against the frozen pair.** | The same audit. The two evaluation scores ran on instances of their own. They run the same bytes, which `scripts/verify.py` now reads back and checks. |
+| **A judgment prompt of 1771 to 1961 characters.** | Rebuilding the prompt with the frozen contract's own `build_prompt` over every case gives 1814 to 2004. A test measures it now. |
+| **No consensus on the honest path.** | Reading the honest cycle's receipts: every write, a pay included, is voted on by a committee of five. What the honest path skips is judgment, and every page says so now. |
+| **A clean clone needed only genvm-lint.** | A clean clone in a fresh virtual environment, walked by an agent that had never seen the repository: `scripts/test.py` also needed pytest, which the install line now names. |
+| **Four claims on the site, from its design canvas**: a bond sized to the cost of judgment, one call across cards, x402 and any chain, card networks that govern x402, and a median with no name. | Checking each against this repository and a primary source. Each was corrected, and [docs/SOURCES.md](docs/SOURCES.md) holds every outside claim with the page it rests on. |
 
 Design corrections are a different list and further down, under
 [Three things we got wrong first](#three-things-we-got-wrong-first). Those were
@@ -237,22 +246,23 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 231 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 239 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
-RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # 26 live checks
+RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle, 26 checks along it
 python eval/run.py --set v1 --runs 3    # the tuned set, on chain
 python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out set
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 231 direct tests cover the contracts through the double, the buyer agent,
+The 239 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
-every dependency injected, and the dry run judge. Three of them are checks on
-the repository itself: the contracts' hashes against `contracts/FROZEN.json`,
-the linter's question against the AST of the frozen contract, and the bot's
-source against any chain write.
+every dependency injected, and the dry run judge. Many of them check the
+repository itself rather than the code: the contracts' hashes against
+`contracts/FROZEN.json`, the linter's question against the AST of the frozen
+contract, the bot's source against any chain write, and the evidence snapshot
+against every hash, refusal, timing and score this README cites.
 
 A green suite says the tests agree with the code, not that they would notice if
 the code were wrong. `scripts/mutate.py` deletes one defence at a time across
@@ -274,7 +284,7 @@ prove the contracts' own logic: which guard fires first, what each method writes
 and that the settlement table moves the right money to the right party. They
 prove nothing about GenVM, and the file that provides them says so at the top.
 
-Two of the tests are structural rather than behavioural:
+Several tests are structural rather than behavioural. Two of them:
 
 - `test_no_model_call_reaches_the_escrow` asserts the money path contains no
   model or web API at all.
@@ -301,7 +311,7 @@ git clone https://github.com/meitipro/recourse-skill && cd recourse-skill/mcp
 npm install && npm test && npm run dev        # http://localhost:4504/api/mcp
 
 # the promise linter, one service behind the site panel and the MCP
-python linter/serve.py                        # http://127.0.0.1:4503/lint
+python linter/serve.py                        # POST a promise to http://127.0.0.1:4503/lint
 python -m linter.examples --dry               # the six worked examples
 ```
 
@@ -316,7 +326,7 @@ frozen contracts through `web/.env.local`, which `prepare.py` writes.
 
 ## Contracts
 
-Two files, frozen at their bytes, deployed once. The two hashes in
+Two files, frozen at their bytes. The two hashes in
 `contracts/FROZEN.json` are a sha256 over each contract, and `scripts/check.py`
 fails the local gate on any edit to either file or on a deployment entry whose
 chain id does not match its name. There is one deployment, on studionet:
@@ -328,7 +338,11 @@ chain id does not match its name. There is one deployment, on studionet:
 The record is keyed by network because the freeze is over the bytes rather than
 over where they live. studionet is its only key, every script defaults to it,
 and a `--network` naming anything else stops with the sentence that it has never
-been deployed. Every number published here was measured against this pair.
+been deployed. Every chain number published here was measured against this
+pair. The two evaluation scores were measured on instances of their own,
+deployed earlier the same day from the same `dispute.py`, and
+`scripts/verify.py` reads both back and compares them to the frozen bytes the
+same way it checks the pair.
 
 Verify with `python scripts/verify.py`, which reads the source back off the
 chain, diffs it against this repository, and runs the linter over the bytes that
@@ -348,7 +362,7 @@ put on the record too, by `python scripts/verdicts.py`:
 | --- | --- | --- | --- | --- |
 | `not_honored` | p-000003 | a nine hour old price against a five second promise | payment and bond to the buyer | [0xd3af20a6...](https://explorer-studio.genlayer.com/tx/0xd3af20a6fa5bfa3184797dd7bb737d354003b0fddb6a0e84f91ca7d083c5013d) |
 | `honored` | p-000013 | a compliant response contested anyway; the buyer's own check passed and it disputed regardless | payment and bond to the seller, so the bond was forfeit | [0x28d2663a...](https://explorer-studio.genlayer.com/tx/0x28d2663a590d1d9d3a44b7eea1288f9d0383e5ed3a079b285ebc742cb87d327d) |
-| `unclear` | p-000014 | a second seller whose whole promise is "Returns accurate market data." served a stale price | payment to the seller, bond back to the buyer | [0x048e71a0...](https://explorer-studio.genlayer.com/tx/0x048e71a0c83f582012a872df2a824b5ac7ae3dbe6fddc6019ecbac721b3324a5) |
+| `unclear` | p-000014 | another seller, whose whole promise is "Returns accurate market data." served a stale price | payment to the seller, bond back to the buyer | [0x048e71a0...](https://explorer-studio.genlayer.com/tx/0x048e71a0c83f582012a872df2a824b5ac7ae3dbe6fddc6019ecbac721b3324a5) |
 
 The `unclear` row is the one worth reading. The breach is real: the price was
 nine hours old. The promise cannot support a ruling on it, because it never
@@ -359,9 +373,10 @@ inventing a standard the seller never wrote:
 > measurable standard here beyond accuracy, and accuracy must not be judged
 > against the real world.
 
-That is evaluation case 08 executed on chain rather than against a double, and
-it is what stops the unclear verdict being a claim about a code path nobody has
-watched run. Ruling against a seller on a standard the promise never stated
+That is the promise from evaluation case 08, put to a committee on chain rather
+than to a double, against a staler price than the case's own, and it drew the
+answer case 08 has committed. It is what stops the unclear verdict being a
+claim about a code path nobody has watched run. Ruling against a seller on a standard the promise never stated
 would be as wrong as clearing one that broke a standard it did.
 
 **The buyer agent would have filed neither dispute.** It does not contest a
@@ -401,8 +416,10 @@ or named source. Say what arrives and how fresh, not how good.
 ```
 
 That refusal costs nothing and arrives before the seller is ever paid, where
-the verdict on p-000014 cost a bond, two consensus rounds and a buyer who got
-its money back only because the unclear rule sends it back. `register_seller`
+the verdict on p-000014 took a bond and three transactions through consensus,
+the dispute, the judgment and the settlement, and left the buyer with its bond
+and without its payment, because an unclear verdict returns the bond and lets
+the payment stand. `register_seller`
 does not ask the on chain gate today, so the linter is what stands in front of
 a promise; asking the gate at registration is a contract change and the
 contracts are frozen, which puts it under Later.
@@ -461,15 +478,16 @@ contract is for, so the refusals are on chain deliberately and
 | `reclaim` | `[EXPECTED] not disputed` | [0x2dd95fdf...](https://explorer-studio.genlayer.com/tx/0x2dd95fdf749cbff7cde79721d480380806e5c14c635565559b8467d0d4283cdd) |
 | `record_response` with a 402 character signature | `[EXPECTED] signature too long` | [0xd1bbbb95...](https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db) |
 
-Every one is ACCEPTED with an execution result of ERROR. That is not a
+Every one was accepted by its committee, and has since finalized, with an
+execution result of ERROR. That is not a
 contradiction and it is the thing worth understanding about this protocol: a
 committee agreed that the refusal was the correct execution result. Accepted is
 never the same question as succeeded.
 
 ### If the testnet has reset
 
-studionet keeps state for a while and then does not. Everything above was
-measured against the frozen pair there, so what the chain held is also written
+studionet keeps state for a while and then does not. Every chain number above
+was measured against the frozen pair there, so what the chain held is also written
 down in this repository, read back from the chain rather than typed:
 
 - [evidence/snapshot.json](evidence/snapshot.json): every payment row with its
@@ -483,7 +501,7 @@ down in this repository, read back from the chain rather than typed:
   ruled `not_honored` (`p-000003`, the one the Rails section cites), one ruled
   `honored` (`p-000013`), one ruled `unclear` (`p-000014`), and one never
   disputed at all (`p-000001`: paid, answered, and withdrawn by the seller
-  after the window closed, with no consensus anywhere in it).
+  after the window closed, with no judgment anywhere in it).
 
 The feed and the case pages read the chain first. If it has not answered in
 twenty seconds, or answers with no payments where the snapshot has some, they
@@ -491,8 +509,9 @@ show the snapshot instead and say so at the top, with the time it was
 recorded; nothing built from the snapshot presents itself as live, and a
 chain that answers with rows is always what is shown.
 `tests/direct/test_snapshot.py` holds the snapshot to the rest of the
-repository: every transaction this README cites must be in it, its refusals
-must be the four above word for word, and its evaluation numbers must be the
+repository: every transaction this README cites must be in it, the four
+refusals above must be among its refusals word for word, its timings must be
+the ones printed near the top of this file, and its evaluation numbers must be the
 ones in `eval/RESULTS.md` and `eval/RESULTS-V2.md`, so re-measuring without
 re-taking the snapshot fails the gate.
 
@@ -526,10 +545,11 @@ contain no reference time. Worse, `gl.message` has no timestamp at all, so the
 contract has nothing to compare against either. Judgment gets a fourth string:
 a timing block the chain writes, naming when the request and the response were
 recorded, and the prompt names which of them freshness is measured against. The
-first version measured against the clock at checking time, which is after two
-consensus rounds, so a response delivered in two seconds was reported stale
-against a five second promise purely because the transactions took longer than
-the promise did.
+buyer agent had the same problem from its side: its first check measured
+freshness against the clock at checking time, after the response had been
+recorded on chain, so a response that was fresh when it arrived was reported
+stale against a five second promise purely because a transaction took longer
+than the promise did. It measures against the moment the response arrived now.
 
 **Consensus cannot see a bias every validator shares.** A committee catches a
 leader that answers differently from everyone else. It cannot catch a leader
@@ -609,9 +629,12 @@ and was never measured here, so it is gone. What replaces it is what can be read
 off a receipt and counted in the source.
 
 **On studionet the fee is zero, and that is not a discount.** `eth_gasPrice`
-returns `0x0`, every receipt reports `effectiveGasPrice` of `0`, and `gasUsed`
-comes back as exactly `8000000` on every transaction whether it ran a model or
-refused in three lines. It is the limit echoed back, not work measured. So there
+returns `0x0`, and every receipt sampled, the first success of each method on
+chain and the first refusal, reports an `effectiveGasPrice` of `0x0` and a
+`gasUsed` of exactly `8000000`, whether it ran ten model calls or refused on
+its first check.
+`evidence/snapshot.json` keeps those receipts under `fees`. It is the limit
+echoed back, not work measured. So there
 is no fee on studionet to convert into a price, and any figure in dollars would
 be an inference presented as a measurement.
 
@@ -621,9 +644,9 @@ What is countable is the work:
 committee                    5 nodes per round   receipt, last_round.round_validators
 model calls per node         2                   judge() asks in both orders
 model calls per adjudication 10                  at round zero, before any rotation
-prompt size                  1771 to 1961 chars  measured across all 18 cases
-                             about 470 tokens
-input tokens per dispute     about 4700
+prompt size                  1814 to 2004 chars  every committed case, both orders
+                             about 480 tokens    at four characters a token
+input tokens per dispute     about 4800
 ```
 
 Each validator re-runs `judge()` in full, so the committee multiplies the calls
@@ -639,9 +662,12 @@ judge leaning the same way on every node is worth it.
 
 The dollar figure therefore depends on what a validator network charges for
 that work, which studionet does not set. It also has no single answer per call:
-the receipt shows each node selecting a model by policy, `policy:prd-qwen`
-choosing between the `qwen3-coder`, `qwen3.6-27b` and `gpt-5.4` families by
-success rate, so two nodes in one committee need not have run the same model.
+the receipts show each node choosing a model by a policy of its own.
+`policy:prd-qwen`, on one node, admits the `qwen3-coder`, `qwen3.6-27b` and
+`gpt-5.4` families when their success rate is at least 0.2 and then prefers
+them in that order, while the adjudication in p-000003 was led by a node on
+`policy:prd-sonnet`. Two nodes in one committee need not have run the same
+model.
 
 The floor on what is worth disputing is set here by the bond instead, which is
 what a losing dispute costs the buyer and is a number this repository actually
@@ -657,8 +683,8 @@ written to deploy to Vercel as three projects from these two repositories
 team token available to this build can list that team's projects but cannot
 create one, so the three imports are a dashboard step for the account owner.
 [docs/HOSTING.md](docs/HOSTING.md) has every setting each import needs and a
-smoke test for each, and `reference/07-addresses.json` already names the URLs
-they will have.
+smoke test for each, and the skill's `reference/07-addresses.json` already
+names the URLs the linter and the MCP server will have.
 
 **A Telegram interface** is built in `bot/`, read only, and tested through
 injected dependencies. It has not been run against a live token, so it is not

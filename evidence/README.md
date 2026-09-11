@@ -9,7 +9,16 @@ chain held is written down here, read back from the chain rather than typed.
 `python scripts/snapshot.py` writes it from a throwaway account, which can
 read and cannot write. It holds:
 
-- `totals`: what the feed's tiles show, computed by the feed's own rules.
+- `totals`: what the feed's tiles show, computed by the feed's own rules, and
+  four numbers the README's timing block and the site's How and Limits sections
+  state: the median time from a dispute to the verdict and to the money back,
+  the median time a transaction takes to finalize once its committee accepts
+  it, and the size of the committee. Each is traced through the transactions by
+  hash, open_dispute to adjudicate to settle to payout, and nothing that prints
+  them types them.
+- `fees`: `eth_gasPrice`, and the receipt of the first success of each method
+  on chain and of the first refusal, with the `gasUsed` and `effectiveGasPrice`
+  each returned.
 - `payments`: every payment row with its frozen strings, its case when it was
   contested, and the hash of every transaction that touched it: pay,
   record_response, open_dispute, adjudicate, settle, withdraw, the payouts.
@@ -26,8 +35,9 @@ read and cannot write. It holds:
 
 The site reads the chain first and this file second, and says which one it is
 showing. `tests/direct/test_snapshot.py` holds this file to the rest of the
-repository: every transaction the README cites must be in it, its refusals
-must be the README's, and its evaluation numbers must be the reports', so
+repository: every transaction the README cites must be in it, the README's
+four refusals must be among its own word for word, its timings and fees must be
+the ones the README prints, and its evaluation numbers must be the reports', so
 re-measuring without re-taking the snapshot fails the gate.
 
 ## receipts/
@@ -44,8 +54,8 @@ The four directories, and what each one is:
 | --- | --- | --- |
 | `contested-p-000003/` | 6 | A nine hour old price against a promise allowing five seconds. Ruled **not_honored**: payment and bond both returned to the buyer, and the seller's upheld counter moved. This is the cycle the README's Rails section cites, bought against an opaque settlement id. |
 | `honored-p-000013/` | 6 | A compliant response, contested anyway. Ruled **honored**: payment and bond both to the seller, so the buyer's bond was forfeit. What stops contesting everything being free. |
-| `unclear-p-000014/` | 7 | A real breach, nine hours stale, against a second seller whose whole promise was "Returns accurate market data.". Ruled **unclear**: the payment stood and the bond came back, because a promise nobody can rule on is the seller's fault and not the buyer's. Two payouts, one to each party, which is why this one has seven files. |
-| `honest-p-000001/` | 4 | Never disputed. Paid, answered, the window expired, and the seller withdrew. No consensus ran anywhere in it and nobody paid anything extra. |
+| `unclear-p-000014/` | 7 | A real breach, nine hours stale, against another seller, whose whole promise was "Returns accurate market data.". Ruled **unclear**: the payment stood and the bond came back, because a promise nobody can rule on is the seller's fault and not the buyer's. Two payouts, one to each party, which is why this one has seven files. |
+| `honest-p-000001/` | 4 | Never disputed. Paid, answered, the window expired, and the seller withdrew. No judgment ran anywhere in it and nobody paid anything extra. |
 
 The names come from `snapshot.json`, which records the payment id behind each
 directory along with its verdict and the files it holds.

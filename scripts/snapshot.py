@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import datetime
 import json
 import pathlib
 import shutil
@@ -160,6 +161,14 @@ def summarise(tx: dict, explorer: str) -> dict:
         "returned": outcome["returned"],
         "refusal": outcome["refusal"],
         "triggered_by": tx.get("triggered_by"),
+        # When the committee accepted it, and how many validators voted on
+        # its last round. The settlement timings and the committee are read
+        # from these rather than typed anywhere.
+        "accepted_at": tx.get("timestamp_awaiting_finalization"),
+        # A receipt names the committee in last_round. A listed record does
+        # not, and carries the size the committee started with instead.
+        "validators": len((tx.get("last_round") or {}).get("round_validators") or [])
+        or int(tx.get("num_of_initial_validators") or 0),
         "triggered": list(tx.get("triggered_transactions") or []),
         "explorer": f"{explorer}/tx/{tx['hash']}",
     }
@@ -190,6 +199,103 @@ def payment_of(entry: dict, by_hash: dict[str, dict]) -> str | None:
             return pid
         parent = by_hash[parent].get("triggered_by")
     return None
+
+
+def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
+    """
+    What the README and the site state about settlement, read off the chain.
+
+    Every adjudication is traced by hash: the open_dispute that triggered it,
+    the settle it emitted once it finalized, and the payouts that settle sent
+    once it finalized in turn. Each figure is a median by the feed's rule,
+    sorted and the element at n // 2:
+
+    - dispute to verdict: from the dispute to the settle being accepted, the
+      moment the escrow shows the ruling, over every decided dispute
+    - dispute to money back: from the dispute to the first payout, over the
+      disputes ruled not_honored, the only verdict that returns the payment
+    - finality: from a transaction being accepted to the transaction it emits
+      on finalization, over both such hops, judgment to settle and settle to
+      payout
+    - committee: how many validators each adjudication started with
+    """
+
+    def epoch(value: str) -> float:
+        return datetime.datetime.fromisoformat(value).timestamp()
+
+    def median(values: list[float]) -> int | None:
+        ordered = sorted(values)
+        return round(ordered[len(ordered) // 2]) if ordered else None
+
+    verdict = {p["pid"]: p["verdict_name"] for p in payments}
+    by_hash = {e["hash"]: e for e in transactions}
+    to_verdict: list[float] = []
+    money_back: list[float] = []
+    finality: list[float] = []
+    committee: list[float] = []
+    for judged in transactions:
+        if judged["method"] != "adjudicate" or judged["execution"] != "SUCCESS":
+            continue
+        if judged.get("validators"):
+            committee.append(judged["validators"])
+        opener = by_hash.get(judged.get("triggered_by") or "")
+        settle = next(
+            (
+                e for e in transactions
+                if e.get("triggered_by") == judged["hash"] and e["method"] == "settle" and e["execution"] == "SUCCESS"
+            ),
+            None,
+        )
+        if not opener or not settle:
+            continue
+        if judged.get("accepted_at"):
+            finality.append(epoch(settle["created_at"]) - judged["accepted_at"])
+        if settle.get("accepted_at"):
+            to_verdict.append(settle["accepted_at"] - epoch(opener["created_at"]))
+        payouts = [e for e in transactions if e.get("triggered_by") == settle["hash"] and e["method"] == "transfer"]
+        if payouts and settle.get("accepted_at"):
+            finality.append(min(epoch(e["created_at"]) for e in payouts) - settle["accepted_at"])
+        if payouts and verdict.get(judged["pid"]) == "not_honored":
+            money_back.append(min(epoch(e["created_at"]) for e in payouts) - epoch(opener["created_at"]))
+    return {
+        "median_dispute_to_verdict_seconds": median(to_verdict),
+        "median_dispute_to_money_back_seconds": median(money_back),
+        "median_finality_seconds": median(finality),
+        "committee": median(committee),
+    }
+
+
+def fee_sample(chain: Chain, transactions: list[dict]) -> dict:
+    """
+    What studionet charges, read off the chain rather than asserted.
+
+    The first success of each method on chain, and the first refusal, so the
+    sample spans a transaction that ran the judgment and one refused on its
+    first check. eth_gasPrice and each
+    receipt's effectiveGasPrice and gasUsed are kept exactly as returned.
+    """
+    picked: dict[str, dict] = {}
+    for e in transactions:
+        if e["execution"] not in ("SUCCESS", "ERROR"):
+            continue
+        key = e["method"] if e["execution"] == "SUCCESS" else "refused"
+        picked.setdefault(key, e)
+    receipts = []
+    for key in sorted(picked):
+        e = picked[key]
+        got = paced(
+            "eth_getTransactionReceipt", chain.client.provider.make_request, "eth_getTransactionReceipt", [e["hash"]],
+        )
+        receipt = got.get("result") or {}
+        receipts.append({
+            "hash": e["hash"],
+            "method": e["method"],
+            "execution": e["execution"],
+            "gasUsed": receipt.get("gasUsed"),
+            "effectiveGasPrice": receipt.get("effectiveGasPrice"),
+        })
+    price = paced("eth_gasPrice", chain.client.provider.make_request, "eth_gasPrice", [])
+    return {"eth_gasPrice": price.get("result"), "receipts": receipts}
 
 
 # --- the snapshot ------------------------------------------------------------
@@ -255,6 +361,8 @@ def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
         if e["execution"] == "ERROR" and e["refusal"].startswith("[EXPECTED]")
     ]
 
+    fees = fee_sample(chain, transactions)
+
     decided = [p for p in payments if int(p["status"]) == 3]
     verdicts = {name: sum(1 for p in decided if p["verdict_name"] == name) for name in VERDICT_NAMES[1:]}
     elapsed = sorted(
@@ -272,6 +380,8 @@ def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
         "unjudgeable_rate": round(verdicts["unclear"] / len(decided), 4) if decided else None,
         # The feed's rule exactly: sorted, the element at n // 2. The two must agree.
         "median_pay_to_dispute_seconds": int(elapsed[len(elapsed) // 2]) if elapsed else None,
+        # What the site's How and Limits sections state, from the chain.
+        **settlement_timings(transactions, payments),
         "held_wei": str(stats["held"]),
         "transactions": len(transactions),
         "refusals": len(refusals),
@@ -284,6 +394,7 @@ def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
         "transactions": transactions,
         "refusals": refusals,
         "totals": totals,
+        "fees": fees,
     }
 
 
@@ -349,7 +460,7 @@ CYCLES = {
 
 
 def pick_cycles(payments: list[dict], chosen: dict[str, str | None]) -> dict[str, dict]:
-    """One payment per label: the one named on the command line, else the most recent that fits."""
+    """One payment per label: the one named, on the command line or by the last snapshot, else the most recent that fits."""
     by_pid = {p["pid"]: p for p in payments}
     picked: dict[str, dict] = {}
     for label, (fits, _) in CYCLES.items():
@@ -486,6 +597,7 @@ def main() -> int:
         "totals": body["totals"],
         "evaluation": evaluation(),
         "refusals": body["refusals"],
+        "fees": body["fees"],
         "sellers": body["sellers"],
         "payments": body["payments"],
         "cases": body["cases"],
@@ -494,7 +606,18 @@ def main() -> int:
     }
 
     if not args.no_receipts:
-        chosen = {"contested": args.contested, "honest": args.honest, "honored": args.honored, "unclear": args.unclear}
+        # A re-take keeps the cycles the published snapshot already names,
+        # because the README and evidence/README.md cite those payments by
+        # id. Without this the newest cycle of each kind silently replaced
+        # them, which is how p-000003 was nearly lost as the contested cycle.
+        previous: dict[str, str] = {}
+        if pathlib.Path(args.out).exists():
+            try:
+                recorded = json.loads(pathlib.Path(args.out).read_text(encoding="utf-8"))
+                previous = {label: info["pid"] for label, info in recorded.get("receipts", {}).items()}
+            except (ValueError, KeyError, TypeError):
+                previous = {}
+        chosen = {label: getattr(args, label) or previous.get(label) for label in CYCLES}
         picked = pick_cycles(body["payments"], chosen)
         for label in CYCLES:
             if label in picked:
@@ -518,6 +641,11 @@ def main() -> int:
     print(f"disputes opened     {t['disputes_opened']}   decided {t['decided']}   verdicts {t['verdicts']}")
     print(f"upheld rate         {t['upheld_rate']}   unjudgeable rate {t['unjudgeable_rate']}")
     print(f"median pay->dispute {t['median_pay_to_dispute_seconds']} s")
+    print(
+        f"settlement medians  verdict {t['median_dispute_to_verdict_seconds']} s, money back "
+        f"{t['median_dispute_to_money_back_seconds']} s, finality {t['median_finality_seconds']} s, "
+        f"committee {t['committee']}"
+    )
     print(f"transactions        {t['transactions']}   refusals on chain {t['refusals']}")
     for label, info in snapshot["receipts"].items():
         print(f"{label:9} receipts  {info['pid']}  {info['verdict']:12} {len(info['files'])} files")

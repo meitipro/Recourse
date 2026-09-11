@@ -12,8 +12,8 @@ Print this. Follow it exactly, three times clean, before recording.
       A contract edited after deploying has a published address that no longer
       stands behind the published source.
 - [ ] `web/.env.local` carries the frozen addresses `prepare.py` just wrote.
-- [ ] Feed open at http://localhost:4500, showing an empty state or the fresh rows.
-- [ ] Seller endpoint on http://localhost:4501, mode correct.
+- [ ] Feed open at `http://localhost:4500`, showing an empty state or the fresh rows.
+- [ ] Seller endpoint on `http://localhost:4501`, mode correct.
 - [ ] Terminal font size increased.
 
 ## Run
@@ -92,27 +92,32 @@ same commit to describe what the new images show.
 ## What the numbers should look like
 
 Measured on Studio, with judgment starting on acceptance and money moving on
-finalization:
+finalization. Each write is accepted in around five seconds:
 
     pay                       around 5s
     record_response           around 5s
     open_dispute              around 5s
-    dispute to verdict        54 to 61s
-    dispute to money back     around 86s
+
+The two figures that matter are medians over every dispute on the public
+record, kept in `evidence/snapshot.json` under `totals` and printed at the top
+of the README: `median_dispute_to_verdict_seconds` and
+`median_dispute_to_money_back_seconds`. One run lands ten or twenty seconds
+either side of them.
 
 The earlier ordering, where the adjudication also waited for finalization,
 stacked two appeal windows and measured 89 seconds to the verdict alone. Do not
 quote a number from memory: `demo.py` prints the real one every time it runs,
 and it is the only one worth saying out loud.
 
-**Say the right one out loud.** The verdict is inside a minute; the money is not,
-because the settlement message only fires once the judgment transaction
-finalizes. Those are two separate transactions and the second is the one that
-matters to the buyer. If the video says "money back in under a minute" over a
-run that took ninety seconds, a judge with the receipt open will see it. Say
-"the verdict lands in under a minute and the money follows on finality", which
-is both true and a better answer, because paying out before finality would mean
-a successful appeal could reverse a verdict after the money had gone.
+**Say the right one out loud.** The verdict lands in about a minute and the
+money later, because the settlement message only fires once the judgment
+transaction finalizes. Those are two separate transactions and the second is
+the one that matters to the buyer. If the video says "money back in under a
+minute" over a run that took a hundred seconds, a judge with the receipt open
+will see it. Say "the verdict lands in about a minute and the money follows on
+finality", which is both true and a better answer, because paying out before
+finality would mean a successful appeal could reverse a verdict after the
+money had gone.
 
 ## If something goes wrong
 

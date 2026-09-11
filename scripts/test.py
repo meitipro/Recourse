@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -42,6 +43,28 @@ def run(label: str, command: list[str], env: dict | None = None) -> bool:
     if result.returncode != 0:
         print(f"--- {label} FAILED (exit {result.returncode})")
     return result.returncode == 0
+
+
+def readme_states_the_test_count(python: str) -> bool:
+    """
+    The README says how many direct tests there are. A count typed once goes
+    stale the day a test is added, and it did, so the gate reads it off pytest.
+    """
+    print("\n=== readme test count " + "=" * 35)
+    collected = subprocess.run(
+        [python, "-m", "pytest", "tests/direct/", "--collect-only", "-q", "-p", "no:gltest", "-p", "no:gltest_direct"],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    found = re.search(r"(\d+) tests? collected", collected.stdout)
+    stated = set(re.findall(r"(\d+) direct tests", (ROOT / "README.md").read_text(encoding="utf-8")))
+    if not found:
+        print("--- could not read a count from pytest")
+        return False
+    if stated != {found.group(1)}:
+        print(f"--- README states {sorted(stated)} direct tests, pytest collects {found.group(1)}")
+        return False
+    print(f"README and pytest agree: {found.group(1)} direct tests")
+    return True
 
 
 def main() -> int:
@@ -74,6 +97,8 @@ def main() -> int:
         steps = [step for step in steps if step[0].startswith(("lint ", "validate "))]
 
     failed = [label for label, command, env in steps if not run(label, command, env)]
+    if not only_lint and not readme_states_the_test_count(python):
+        failed.append("readme test count")
 
     # The feed is only checked when it has been installed. A judge cloning this
     # to read the contracts should not be told the repository is broken because

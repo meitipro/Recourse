@@ -62,6 +62,17 @@ type Frozen = {
   deployments?: Record<string, { chain_id: number }>;
 };
 
+/**
+ * Three totals the snapshot times off the chain's own transactions and
+ * receipts. The How and Limits sections state them, so they are read here and
+ * never typed there.
+ */
+type SettlementTotals = {
+  median_dispute_to_money_back_seconds?: number | null;
+  median_finality_seconds?: number | null;
+  committee?: number | null;
+};
+
 /** One chain read per request, shared by the hero and the feed. */
 const getFeed = cache(() => loadFeed(50));
 
@@ -117,6 +128,8 @@ export default async function Page() {
   const frozen = readOutside<Frozen>(["contracts/FROZEN.json"]);
   const results = readOutside<Results>(["eval/results.json"]);
   const heldOut = readOutside<Results>(["eval/results-v2.json"]);
+  const settlement: SettlementTotals =
+    readOutside<{ totals?: SettlementTotals }>(["evidence/snapshot.json"])?.totals ?? {};
   // The clerk offers the committed cases to load. They are the answer key, so
   // they come from the file git proves was committed before the judge existed,
   // never from anything typed here.
@@ -166,7 +179,12 @@ export default async function Page() {
 
         <GapSection />
         <FailuresSection />
-        <HowSection windowSeconds={frozen?.window_seconds ?? null} bondWei={frozen?.bond_wei ?? null} />
+        <HowSection
+          windowSeconds={frozen?.window_seconds ?? null}
+          bondWei={frozen?.bond_wei ?? null}
+          moneyBackSeconds={settlement.median_dispute_to_money_back_seconds ?? null}
+          finalitySeconds={settlement.median_finality_seconds ?? null}
+        />
 
         <div id="feed">
           <FeedSectionShell>
@@ -184,7 +202,7 @@ export default async function Page() {
           <EvaluationSection results={results} heldOut={heldOut} />
         ) : null}
 
-        <LimitsSection />
+        <LimitsSection committee={settlement.committee ?? null} />
         <ClosingSection />
       </main>
       <SiteFooter network={NETWORK} chainId={chainId} />
