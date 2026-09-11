@@ -166,7 +166,7 @@ export default async function Page() {
 
         <GapSection />
         <FailuresSection />
-        <HowSection windowSeconds={frozen?.window_seconds ?? null} />
+        <HowSection windowSeconds={frozen?.window_seconds ?? null} bondWei={frozen?.bond_wei ?? null} />
 
         <div id="feed">
           <FeedSectionShell>

@@ -1,5 +1,14 @@
 # The site: design specification
 
+> **Read this first.** This specification was written from the site as built
+> before the Claude Design canvas was ported in `448b7b5`. Its binding rules,
+> sections 1, 6.1, 6.2, 6.4, 6.5, 7, 8, 9 and 10, still hold, and the port was
+> checked against every one of them. Its descriptions of layout and copy,
+> section 2's shapes, section 3 and the section by section walk in 4, describe
+> that earlier build. The canvas in `design/Recourse.dc.html` now decides those,
+> and `design/README.md` lists every place the port departed from the canvas
+> and why.
+
 What the page at `web/` must contain, how each part behaves, and the rules
 that decide every colour, word and button. Written from the site as built, so a
 designer or a reviewer can check the page against it line by line. Where the

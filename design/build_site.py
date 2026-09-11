@@ -184,6 +184,30 @@ hero = sub_once(hero, "0x5125...8F78", "{escrowShort}", "hero escrow")
 hero = sub_once(hero, "0x80A9...0Cc4", "{disputeShort}", "hero dispute")
 # The raw canvas element becomes the ported animation component.
 old_canvas = '<canvas id="rc-lane" aria-hidden="true" style={{ position: "absolute", inset: "0", zIndex: "0", width: "100%", height: "100%", display: "block" } as React.CSSProperties}> </canvas>'
+# The canvas labelled a link "Read the article" and pointed it at the author's
+# X profile. There is no article, so the label named something that does not
+# exist. It becomes the thing it can actually do.
+hero = sub_once(hero, ">Read the article</a>", ">Live verdicts</a>", "hero article link")
+hero = sub_once(hero, 'href="https://x.com/meitipro1" target="_blank" rel="noreferrer"', 'href="#feed"', "hero article href")
+
+# Every lint error printed "This is the offline copy of the site", including a
+# rate limit or a dropped connection on the live page. The offline sentence is
+# kept for a build that genuinely has no linter behind it, which the route
+# reports as "linter not configured"; anything else shows the real failure.
+hero = sub_once(
+    hero,
+    ">This is the offline copy of the site. Judging runs against a model, which needs the live page - everything else here works without a network.</p>",
+    '>{v.lintOffline ? "This copy of the site has no linter behind it, so nothing can be judged here. The feed and the evaluation do not need one." : v.lintReason}</p>',
+    "hero error copy",
+)
+
+# The rewrite block rendered whether or not there was a rewrite, so a stage 1
+# refusal showed an empty box with a Copy button over nothing.
+suggestion_open = '<div style={{ position: "relative", marginTop: "12px", background: "#0C1018", padding: "12px 14px", paddingRight: "74px" } as React.CSSProperties}>'
+at = hero.index(suggestion_open)
+end = hero.index("</div>", hero.index("{v.copySugLabel}</button>")) + len("</div>")
+hero = hero[:at] + "{v.lintSuggestion && (<>" + hero[at:end] + "</>)}" + hero[end:]
+
 hero = sub_once(
     hero, old_canvas,
     '<div aria-hidden="true" style={{ position: "absolute", inset: "0", zIndex: "0" }}>'
@@ -353,6 +377,7 @@ export default function Hero({
     lintPass: done && result!.judgeable,
     lintFail: done && !result!.judgeable,
     lintError: status === "error",
+    lintOffline: status === "error" && error.includes("linter not configured"),
     lintReason: done ? result!.reason : error,
     lintSuggestion: done ? result!.suggestion || "" : "",
     copySuggestion: () => {
@@ -394,6 +419,29 @@ __HERO__
 
 # --------------------------------------------------------------- sections
 gap = read("sec-gap.jsx")
+# The canvas said "by late April 2026". The source found says "by April",
+# so the page says what the source says. docs/SOURCES.md has it.
+gap = sub_once(gap, "reported by late April 2026.", "reported by April 2026.", "gap stat date")
+# Row 03 said "One call across cards, x402 and any chain". No source found
+# supports the cards half, and x402 is not a card rail. The wording verified
+# before the port was "one rail across chains and providers", which x402's own
+# docs support, and the usage figures are x402's own, so the row says so.
+gap = sub_once(gap, ">x402, cards, any chain<", ">x402, across chains<", "interop label")
+gap = sub_once(
+    gap,
+    "One call across cards, x402 and any chain. Sixty nine thousand active agents and one hundred and sixty five million transactions",
+    "One rail across chains and providers. Sixty nine thousand active agents and one hundred and sixty five million x402 transactions",
+    "interop row",
+)
+# "Govern" said more than the source does. Premier members of the x402
+# Foundation hold an appointed seat on its Governing Board, so that is what
+# the closing line says.
+gap = sub_once(
+    gap,
+    "now govern a payment rail that has none.",
+    "now sit on the board of a payment rail that has none.",
+    "board line",
+)
 failures = read("sec-failures.jsx")
 how = read("sec-how.jsx")
 feedsection = read("sec-clerkcta.jsx")
@@ -424,6 +472,18 @@ how = sub_once(how, ">under one minute<", ">about 90 seconds<", "end to end")
 how = sub_once(how, ">End to end<", ">Dispute to money back<", "end to end label")
 # 3. The settlement window is read from the freeze record.
 how = sub_once(how, ">a few minutes<", ">{windowLabel}<", "settlement window")
+# "one settling transaction" was the same claim as the corrected Settle step:
+# the verdict and the money are two transactions, deliberately. The second
+# line of the heading now states something the demo sentence already stands on.
+how = sub_once(how, ">one settling transaction</em>", ">no human in the loop</em>", "how heading")
+# The bond is fixed at deployment and read from the freeze record. It is not
+# sized to the cost of judgment, and studionet charges nothing for judgment.
+how = sub_once(
+    how,
+    ">The agent posts a bond sized to the cost of judgment and opens a case. No human is involved.</p>",
+    ">The agent posts a fixed bond{bondLabel} and opens a case. No human is involved.</p>",
+    "contest step",
+)
 # 4. The dollar a case figure was inherited from a differently shaped contract
 #    and never measured here. It was removed from the README once already.
 # The clerk is the design's own feature and needs a model behind it, so its two
@@ -462,6 +522,14 @@ evaluation = bind_number(evaluation, "Held out set", "heldOut.accuracy")
 evaluation = evaluation.replace(">/ 18<", ">/ {results.n}<")
 evaluation = evaluation.replace(">/ 3<", ">/ {heldOut.n}<")
 evaluation = evaluation.replace("2026-09-05", "{measuredOn}")
+# The three runs gave three differently worded reasons on one ground, the
+# venues. eval/results.json holds all three.
+evaluation = sub_once(
+    evaluation,
+    "gave the same reason three times",
+    "gave the same ground in all three runs",
+    "case 12 wording",
+)
 
 # The eighteen case chips become one map over the measured rows, keeping the
 # design's own two colourways: green where the judge matched the committed
@@ -518,10 +586,12 @@ __FAILURES__
   );
 }
 
-export function HowSection({ windowSeconds }: { windowSeconds: number | null }) {
+export function HowSection({ windowSeconds, bondWei }: { windowSeconds: number | null; bondWei: string | null }) {
   // Read from contracts/FROZEN.json. The canvas said "a few minutes", which is
   // what this shows only when the record is missing.
   const windowLabel = windowSeconds ? `${windowSeconds} seconds` : "a few minutes";
+  // Read from contracts/FROZEN.json, the value the escrow was deployed with.
+  const bondLabel = bondWei ? ` of ${Number(bondWei) / 1e18} GEN` : "";
   return (
     <>
 __HOW__
@@ -597,6 +667,16 @@ __FOOTER__
 }
 '''
 footer = footer.replace("studionet / chain 61999", "{network} / chain {chainId}")
+# "Article" linked to the author's X profile, which the footer already links
+# as @meitipro1. There is no article. And "Repository" linked the account
+# rather than the repository.
+footer = sub_once(
+    footer,
+    '<a href="https://x.com/meitipro1" target="_blank" rel="noreferrer" style={{ color: "#AEB9C8" } as React.CSSProperties}>Article</a>',
+    "",
+    "footer article link",
+)
+footer = sub_once(footer, 'href="https://github.com/meitipro" ', 'href="https://github.com/meitipro/Recourse" ', "footer repository link")
 (OUT / "SiteFooter.tsx").write_text(FOOTER_TSX.replace("__FOOTER__", footer.rstrip()), encoding="utf-8")
 
 print("wrote:")

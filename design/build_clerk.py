@@ -85,6 +85,18 @@ body = remove_guard(body, "{v.isBatch && (<>")
 # Single is the only mode now, so its guard is noise.
 body = body.replace("{v.isSingle && (<>", "{true && (<>", 1)
 
+# The canvas said the bond is sized to the cost of judgment. It is fixed when
+# the escrow is deployed, studionet charges nothing for judgment, and the bond
+# is forfeit when the response is ruled honored, which is the real reason a
+# frivolous case is not free.
+OLD_BOND = "The bond is sized to the cost of judgment, so a frivolous case is not free."
+assert body.count(OLD_BOND) == 1, "the clerk's bond sentence moved"
+body = body.replace(
+    OLD_BOND,
+    "The bond is fixed when the escrow is deployed and is forfeit when the response is ruled honored, so contesting everything is not free.",
+    1,
+)
+
 # The canvas printed "Recorded on chain: no" beside a verdict, so a reader only
 # met it after judging. It belongs in the state a reader meets first, and it is
 # a literal rather than a value, so no later edit can make this panel claim it
@@ -315,7 +327,12 @@ export default function Clerk({ cases }: { cases: Case[] }) {
     elapsed: answer ? `${answer.seconds}s, timing from ${answer.timing_from}` : "-",
     expected: expectation ? expectation.replace("_", " ") : "not a committed case",
     expectedColor: matched === null ? "#7C8798" : matched ? "#4ADE80" : "#F87171",
-    errorText: error,
+    // The route answers "not configured" only when the build has no
+    // LINTER_URL, so that is the one case that gets the offline sentence.
+    // Anything else is a real failure and says so, with a way to retry.
+    errorText: error.includes("not configured")
+      ? "This copy of the site has no judge behind it, so the clerk cannot rule here. The feed and the evaluation do not need one."
+      : error,
     curlCmd,
     copyCurl: () => {
       navigator.clipboard?.writeText(curlCmd);

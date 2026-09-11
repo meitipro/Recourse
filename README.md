@@ -26,6 +26,9 @@ arrived.
 **Agents can spend money in milliseconds. Nothing in the stack lets them get it
 back.**
 
+Every claim above that rests on something outside this repository, and every
+one on the site, is traced to its source in [docs/SOURCES.md](docs/SOURCES.md).
+
 ## Run the demo
 
 ```bash
