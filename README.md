@@ -246,7 +246,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 257 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 260 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -256,7 +256,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 257 direct tests cover the contracts through the double, the buyer agent,
+The 260 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -679,7 +679,7 @@ Everything out of scope for this deployment, in one place.
 
 **Hosting.** The site, the linter and the MCP server run locally today and are
 written to deploy to Vercel as three projects from these two repositories
-(`web/`, the repository root for `api/lint.py`, and `recourse-skill/mcp`). The
+(`web/`, the repository root for `api/lint.py` and `api/judge.py`, and `recourse-skill/mcp`). The
 team token available to this build can list that team's projects but cannot
 create one, so the three imports are a dashboard step for the account owner.
 [docs/HOSTING.md](docs/HOSTING.md) has every setting each import needs and a

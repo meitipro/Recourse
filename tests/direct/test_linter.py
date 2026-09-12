@@ -272,7 +272,7 @@ def test_the_clerk_never_claims_a_verdict_was_recorded():
     assert body.count("Recorded on chain") == 2, "the standing disclaimer or the result line is gone"
     assert ">no<" in body, "the answer to Recorded on chain is not a literal no"
     # The judge endpoint says the same thing in its own reply.
-    service = (ROOT / "linter" / "serve.py").read_text(encoding="utf-8")
+    service = (ROOT / "linter" / "judgment.py").read_text(encoding="utf-8")
     assert '"recorded_on_chain": False' in service
 
 
@@ -332,3 +332,89 @@ def test_a_missing_credential_is_model_unavailable_not_a_crash(monkeypatch):
     monkeypatch.setattr(anthropic, "Anthropic", lambda *args, **kwargs: Bare())
     with pytest.raises(ModelUnavailable, match="no Anthropic credential"):
         ClaudeModel().ask("Returns the spot price within five seconds.")
+
+
+def test_the_hosted_linter_answers_every_route_the_site_calls():
+    """
+    The site's clerk turns LINTER_URL's /lint into /judge. A hosted linter
+    without that function leaves the clerk asking a URL that does not exist,
+    and nothing fails anywhere: it worked locally only because linter/serve.py
+    answers /judge itself. Every route the site derives must be a function in
+    api/, listed in vercel.json, answering through the same code as the local
+    service.
+    """
+    clerk = _route_source("clerk")
+    assert 'replace(/\\/lint$/, "/judge")' in clerk, "the clerk derives its judge some other way now"
+    config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    for name in ("lint", "judge"):
+        assert (ROOT / "api" / f"{name}.py").exists(), f"the hosted linter has no /api/{name}"
+        assert f"api/{name}.py" in config["functions"], f"vercel.json does not configure api/{name}.py"
+    hosted = (ROOT / "api" / "judge.py").read_text(encoding="utf-8")
+    local = (ROOT / "linter" / "serve.py").read_text(encoding="utf-8")
+    assert "from linter.judgment import answer" in hosted and "from linter.judgment import answer" in local
+
+
+def test_the_judge_answers_one_shape_and_says_when_there_is_no_model():
+    from linter.judgment import answer
+
+    class Agreeing:
+        calls = 0
+
+        def ask(self, prompt):
+            self.calls += 1
+            return '{"verdict": "not_honored", "reason": "the price is nine hours old"}'
+
+    case = {
+        "promise": "Returns the spot price, with a timestamp no more than five seconds old.",
+        "request": "GET /quote?pair=ETH-USD",
+        "response": '{"pair": "ETH-USD", "price": 1, "ts": "2026-09-01T00:00:00Z"}',
+        "timing": "Request recorded on chain at 2026-09-01T09:00:00Z. Response recorded on chain at 2026-09-01T09:00:02Z.",
+    }
+    code, body = answer(case, model=Agreeing())
+    assert code == 200 and body["verdict"] == "not_honored" and body["recorded_on_chain"] is False
+    assert body["timing_from"] == "the case"
+    assert answer({**case, "response": " "}, model=Agreeing())[0] == 400
+    assert answer({**case, "promise": "x" * 4001}, model=Agreeing())[0] == 413
+    code, body = answer(case, model=NoModel())
+    assert code == 503 and "no model" in body["error"]
+
+
+def test_the_hosted_judge_function_answers_the_way_vercel_serves_it(monkeypatch):
+    """
+    api/judge.py itself, behind an HTTP server the way Vercel serves it: the
+    class named handler. With no model it says so as a 503, and it refuses a
+    body it cannot use before any model is asked.
+    """
+    import importlib.util
+    from http.server import ThreadingHTTPServer
+
+    from linter import service
+
+    monkeypatch.setenv("RECOURSE_LINTER_BACKEND", "none")
+    monkeypatch.setattr(service, "_DEFAULT", NoModel())
+    spec = importlib.util.spec_from_file_location("hosted_judge", ROOT / "api" / "judge.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), module.handler)
+    port = server.server_address[1]
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+
+    def post(body: dict) -> tuple[int, dict]:
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/judge", data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json"}, method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return response.status, json.loads(response.read())
+        except urllib.error.HTTPError as error:
+            return error.code, json.loads(error.read())
+
+    try:
+        case = {"promise": "Returns the spot price within five seconds.", "request": "GET /quote", "response": '{"price": 1}'}
+        code, body = post(case)
+        assert code == 503 and "no model" in body["error"]
+        code, body = post({**case, "request": ""})
+        assert code == 400 and "request" in body["error"]
+    finally:
+        server.shutdown()

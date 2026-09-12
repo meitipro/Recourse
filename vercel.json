@@ -1,3 +1,6 @@
 {
-  "functions": { "api/lint.py": { "maxDuration": 60 } }
+  "functions": {
+    "api/lint.py": { "maxDuration": 60 },
+    "api/judge.py": { "maxDuration": 60 }
+  }
 }
