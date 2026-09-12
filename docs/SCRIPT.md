@@ -68,18 +68,20 @@ Ninety seconds. About two hundred words.
   answer. Wait for, top to bottom: NOT JUDGEABLE; the gate's reason, one line
   of at most 120 characters, about the missing freshness limit; a dark box
   holding the rewrite, with Copy at its top right; the line saying nothing
-  pasted is stored. The gate refused this promise in both of two runs here,
-  and one of them, through the linter's own code, produced these two lines:
+  pasted is stored. The gate refused this promise in both of two runs made for
+  this script, and one of them produced these two lines:
 
       'Refreshed regularly' gives no freshness limit, and 'pricing data' names no field, count or bound.
       Each response includes a numeric price for exactly the pair requested, with a timestamp showing that price was refreshed within the 24 hours before the response.
 
-  Opus 5 answered those runs in place of the hosted call, since no key is on
-  this machine, and a model writes both lines, so they change every run: wait
-  for the shape, not the words. Paste it once on the hosted site before
-  recording. If it answers Judgeable there, the second choice is
+  Every run named here is a stand-in, not output from a linter backend: no
+  credential was available on the build machine, so the linter's own prompts
+  were answered by a separate model instance, Opus 5, and `lint()` parsed the
+  answers. A model writes both lines, so they change every run: wait for the
+  shape, not the words. Paste it once on the hosted site before recording. If
+  it answers Judgeable there, the second choice is
   `Prices are updated every so often from a number of trusted venues.`, also
-  refused in both runs here. Words: *A promise can name what it returns and
+  refused in both of its runs. Words: *A promise can name what it returns and
   still leave open how fresh it is. The gate's own question catches that
   before any money moves, and the linter offers a version a judge could rule
   on.* Without a key, leave this shot out: the refusal above stands on its

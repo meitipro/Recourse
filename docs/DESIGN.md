@@ -2,12 +2,16 @@
 
 > **Read this first.** This specification was written from the site as built
 > before the Claude Design canvas was ported in `448b7b5`. Its binding rules,
-> sections 1, 6.1, 6.2, 6.4, 6.5, 7, 8, 9 and 10, still hold, and the port was
-> checked against every one of them. Its descriptions of layout and copy,
-> section 2's shapes, section 3 and the section by section walk in 4, describe
-> that earlier build. The canvas in `design/Recourse.dc.html` now decides those,
-> and `design/README.md` lists every place the port departed from the canvas
-> and why.
+> sections 1, 6.1, 6.2, 6.4, 6.5, 7, 8, 9 and 10, still hold. The port was
+> checked against them as rules and not against every number and quoted
+> string in them, and some of those had changed: section 12 lists each, and
+> they now say what the page does. One rule in section 7 the page does not
+> meet, and it is marked where it stands. Its descriptions of layout and copy,
+> section 2's shapes, section 3, the section by section walk in 4, the buttons
+> of 5.1 and the table and drawer of 6.3, describe that earlier build. The
+> canvas in `design/Recourse.dc.html` now decides those, and
+> `design/README.md` lists every place the port departed from the canvas and
+> why.
 
 What the page at `web/` must contain, how each part behaves, and the rules
 that decide every colour, word and button. Written from the site as built, so a
@@ -69,7 +73,12 @@ Model output quoted from chain state is a record and is never normalised.
 
 ## 2. Tokens
 
-Defined once in `web/app/globals.css` on `:root`. Nothing else names a colour.
+Defined in `web/app/globals.css` on `:root`, where the case page's classes read
+them. The ported sections write the same values as literals and add four the
+tokens lack: `#e8b366` for the linter's Not judgeable label and its edge,
+`#151a25` for row rules, `#0b0e15` behind an open row, and `#05191f` for text
+on the clerk's solid accent chip. The case page's recorded notice edge,
+`rgba(251,191,36,0.55)`, is a fifth.
 
 ### Surfaces
 
@@ -88,7 +97,7 @@ Defined once in `web/app/globals.css` on `:root`. Nothing else names a colour.
 | `--text` | `#eef3f8` | headings, numbers, primary copy |
 | `--text-2` | `#aeb9c8` | body paragraphs |
 | `--muted` | `#7c8798` | captions, legends, labels under tiles |
-| `--dim` | `#4a5468` | eyebrows, the small denominator beside a headline number. **Fails WCAG AA for text**: 2.57:1 on ground, 2.48:1 on panel, measured. A redesign must not inherit it for anything a reader has to read; `--muted` at 5.38:1 is the lightest grey that passes |
+| `--dim` | `#4a5468` | eyebrows, the small denominator beside a headline number. **Fails WCAG AA for text**: 2.57:1 on ground, 2.48:1 on panel, measured. A redesign must not inherit it for anything a reader has to read; `--muted`, 5.38:1 on ground and 5.19:1 on panel, is the dimmest grey that passes |
 
 ### Accent
 
@@ -126,6 +135,9 @@ the build machine and must not be reintroduced.
 Body is 15px, line height 1.6. Paragraph measure is capped at 62ch. `h1` is
 `clamp(2rem, 6vw, 3.4rem)`; `h2` is `clamp(1.3rem, 3.2vw, 1.75rem)`; headline
 numbers are `clamp(3rem, 12vw, 5.5rem)`. Numbers always use tabular figures.
+Those are the rules in `globals.css`, which the case page uses; the ported
+sections set their own sizes inline, the hero's `h1` at
+`clamp(52px, 6vw, 112px)` above 380px wide.
 
 ### Shape
 
@@ -301,10 +313,10 @@ explorer wherever they appear, and are displayed in mono.
 
 ### 5.3 The address button
 
-`.addr`: a mono button showing the first six and last four characters of an
-address. Click copies the full address to the clipboard and the label reads
-"copied" for 1.2 seconds. Title attribute carries the full address. Clicking
-it does not open the row it sits in.
+The escrow and dispute addresses in the hero are buttons showing the first six
+and last four characters. A click copies the full address to the clipboard,
+and a COPIED tip shows for 1.2 seconds. The seller address in a feed row is
+text, not a button.
 
 ### 5.4 Pills and badges
 
@@ -325,7 +337,7 @@ page is telling the reader about itself rather than about the chain.
 | --- | --- | --- |
 | `.notice` | dashed hairline-strong | the two sets explanation; "feed is live and waiting"; "evaluation not run yet" |
 | `.notice.bad` | dashed, refused at 40% | the chain could not be read; the evidence could not be read |
-| `.notice.recorded` | **solid**, pending at 55% | the feed is showing the recorded snapshot |
+| `.notice.recorded` | **solid**, amber at 55% | the case page is showing the recorded snapshot; the feed draws the same solid edge itself |
 
 The recorded notice is solid where every other notice is dashed, so it cannot
 be mistaken for the loading state or for an error. It is the one notice that
@@ -343,10 +355,10 @@ of `live` or `snapshot`, and the page prints it. There are exactly four states:
 
 | state | tiles | above the table | caption under the table |
 | --- | --- | --- | --- |
-| loading | four dashes | "Reading the chain. Studio answers in one to ten seconds; the page is not waiting on anything else. If it has not answered in twenty, the recorded snapshot takes over and says so." | none |
-| live | numbers | nothing | "Read from chain at {time}. Click a row for the evidence the validators saw." |
-| snapshot | numbers from the snapshot | the recorded notice: "Recorded snapshot, not a live read. Taken {time} from studionet, a temporary testnet; {why}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json." | "From the recorded snapshot of {time}; the chain was tried at {time}." |
-| failed, no snapshot | four dashes | `.notice.bad`: "The chain could not be read. {error}. Attempted at {time}. No snapshot covers this network." | none |
+| loading | four dashes | "Reading the chain", then "Studio answers in one to ten seconds; the page is not waiting on anything else. If it has not answered in twenty, the recorded snapshot takes over and says so." | none |
+| live | numbers | a notice, "Chain, reading the escrow contract", then "The table below reads payments, statuses and elapsed times straight from the escrow contract when this page was opened. It renders its skeleton first and its empty state second, and never a row that did not happen." | "Click a row for the three frozen strings the validators were given" |
+| snapshot | numbers from the snapshot | the recorded notice, "Recorded snapshot, not a live read", then "Taken {time} from studionet, a temporary testnet; {why}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json." | "From the recorded snapshot; the chain was tried at {time}." |
+| failed, no snapshot | four dashes | a dashed red notice, "The chain could not be read", then "{error} No snapshot covers this network, so nothing is shown rather than something invented. Attempted at {time}." | none |
 
 A live answer with rows always wins. The snapshot takes over only when the
 chain did not answer inside the deadline, or answered with no payments where
@@ -354,12 +366,13 @@ the snapshot has some, and `why` names which.
 
 ### 6.2 The four tiles
 
-`.stats`, four `.stat` cells each with a mono `.stat-value` and a muted
-`.stat-label`:
+Four cells, each a mono value over a muted label:
 
-1. **payments**: the contract's own count, not the row count.
+1. **payments**: the contract's own count, not the row count. The row count
+   stands in only when the contract returned none.
 2. **disputes opened**: rows with status disputed or resolved.
-3. **upheld**: `not_honored / resolved`, shown as `6/8`, never as a percentage.
+3. **upheld**: `not_honored / resolved`, shown as a fraction, `N/M`, never as
+   a percentage.
 4. **median pay to dispute**: the median of `decided_at - created_at` over
    resolved rows, in seconds. Not "median settlement": a case's `opened_at`
    and `decided_at` are one message's fixed datetime, so chain timestamps
@@ -394,39 +407,42 @@ skeleton blocks, never a spinner.
 
 ### 6.4 The verdict badge
 
-Mono, 0.66rem, uppercase, 3px radius, hairline border.
+Mono, 9.5px, uppercase with 0.12em tracking, square corners, a 1px border.
 
 | verdict | text | border | background |
 | --- | --- | --- | --- |
 | honored | resolved green | green at 35% | resolved wash |
 | not_honored | refused red | red at 35% | refused wash |
 | unclear | text-2 | hairline-strong, **dashed** | none |
-| pending | pending amber | amber at 35% | pending wash |
+| pending, and not contested | muted | hairline | none |
 
 Unclear is deliberately colourless and dashed. It is neither success nor
-failure, and giving it either colour would misreport what it means.
+failure, and giving it either colour would misreport what it means. A disputed
+payment still waiting on its verdict reads pending in muted grey; its amber is
+carried by the state beside it, `in consensus`.
 
 ### 6.5 State, and the two words that are not the same
 
 | status on chain | label | tone |
 | --- | --- | --- |
-| resolved | `settled, finalized` | green dot |
-| withdrawn | `withdrawn` | green dot |
-| disputed, case written | `judged, accepted` | amber dot |
-| disputed, no case yet | `in consensus` | amber dot |
-| open, window expired | `released, uncollected` | grey dot |
-| open, window running | `window open` | grey dot |
+| resolved | `settled, finalized` | green |
+| withdrawn | `withdrawn` | green |
+| disputed, case written | `judged, accepted` | amber |
+| disputed, no case yet | `in consensus` | amber |
+| open, window expired | `released, uncollected` | grey |
+| open, window running | `window open` | grey |
 
 Accepted means the committee agreed on the receipt, provisional until the
 appeal window closes. Finalized means appeals complete, and is the only state
-that is actually settled. The legend under the table says both, and "released"
-is explained as the window expiring with no dispute so the seller may collect
-at any time. Nothing on chain fires on its own.
+that is actually settled. In a row the tone colours the label's text and
+border. The legend above the table shows each tone as a dot and says both,
+and "released" is explained as the window expiring with no dispute so the
+seller may collect at any time. Nothing on chain fires on its own.
 
 ### 6.6 Under the table
 
-The legend (6.5), the source caption (6.1), and a line with the escrow and
-dispute addresses as explorer links plus the network name.
+The source caption (6.1). The legend sits above the table, and the escrow and
+dispute addresses are in the hero, as the address buttons of 5.3.
 
 ---
 
@@ -434,57 +450,66 @@ dispute addresses as explorer links plus the network name.
 
 One textarea, one button, one result. Three result states and no fourth.
 
-- **Label**: "A delivery promise, as a seller would register it".
-- **Textarea**: three rows, 2000 character cap, the judgeable promise as
-  placeholder text in dim. Cmd or Ctrl plus Enter submits.
-- **Button**: `.linter-button`, "Is this judgeable?", disabled while the box
-  is empty or a check is running, label becomes "Checking" while busy. There is
-  a hard 210 second ceiling on the wait; forever is not a state.
-- **Examples**: "try a vague one, a judgeable one", two text buttons that fill
-  the box. The vague one is "Accurate market data.", the judgeable one names
-  three venues and five seconds.
-- **Footnote**: "Nothing you paste here is stored." This is true because the
-  route and the service log the path and status of a request and never its
-  body.
+- **Label**: "Your delivery promise", visually hidden, for screen readers.
+- **Textarea**: three rows, growing to six with the text. The box takes at
+  most 600 characters, and a counter reads against the 500 the contract
+  stores, in accent under 20 or over 500. The placeholder carries the
+  judgeable example: "Paste what your API promises to deliver. For example:
+  prices aggregated from at least three venues, refreshed within five
+  seconds." Cmd or Ctrl plus Enter submits.
+- **Button**: "Is this judgeable?", disabled while the box is empty or a check
+  is running, label becomes "Checking" while busy. There is a hard 210 second
+  ceiling on the wait; forever is not a state.
+- **Footnote**: "Nothing you paste here is stored. It is sent to the judge
+  once and discarded." This is true because the route and the service log the
+  path and status of a request and never its body.
 
-Result box `.linter-result`:
+The result, under the button:
 
 | state | verdict line | then |
 | --- | --- | --- |
-| `.yes` | "Judgeable" | the reason; "A response could be ruled against this. That is what a promise is for." |
-| `.no`, stage 1 | "Not judgeable" | the reason; "Failed the deterministic check **{name}**. No model was asked and nothing was spent." |
-| `.no`, stage 2 | "Not judgeable" | the reason; a rewrite in a `pre` with a copy button that reads "copied" for 1.2 seconds |
-| `.error` | the message | "Could not reach the linter. {detail}" or, on 429, "Too many checks in the last minute. Try again shortly." |
+| judgeable | "Judgeable" | the reason; "A response could be ruled against this." |
+| not judgeable, stage 1 | "Not judgeable" | the reason, which names what is missing |
+| not judgeable, stage 2 | "Not judgeable" | the gate's reason, then the rewrite in a dark box with a Copy button that reads "Copied" for 1.6 seconds |
+| error | the message | "Could not reach the linter. {detail}" or, on 429, "Too many checks in the last minute. Try again shortly." |
 
 Every result ends with a stage line: "Stage 1 of the linter: deterministic,
 free." or "Stage 2 of the linter: the deployed gate's question, put to one
-model. A dry run, not the gate's verdict."
+model. A dry run, not the gate's verdict." **The page does not meet this
+rule.** The ported panel shows no stage line and says "dry run" nowhere, so a
+stage 2 answer on the site does not say it is a dry run, which
+`linter/service.py` says every consumer does. The rule stands until it is met
+or decided away.
 
 In production the route answers 503 "linter not configured" until `LINTER_URL`
 is set, by design, and the panel shows that as the error state rather than
-pretending.
+pretending: "This copy of the site has no linter behind it, so nothing can be
+judged here. The feed and the evaluation do not need one."
 
 ---
 
 ## 8. The case page
 
-**This route is load bearing and a drawer cannot replace it.** Four published
+**This route is load bearing and a drawer cannot replace it.** Five published
 things depend on a case having its own URL: the video script's line that a
 citation is a permalink and the fourteen second shot that opens one cold
 (`docs/SCRIPT.md`, the shot at 0:42 and the row in "What each line rests on"),
-the shot list's blank third tab, and the hosting smoke test that runs
+the shot list's blank third tab, the hosting smoke test that runs
 `curl .../case/RC-2026-0003 | grep -c "not honored"` and expects 1
-(`docs/HOSTING.md`). The last of those also fixes the rendering: the verdict
-words must be in the HTML the server returns, so a case rendered only after a
-client fetch fails the test even when it looks right in a browser. A drawer is
-for scanning the feed; the route is for citing one case to somebody who was
-not on the page. Keep both.
+(`docs/HOSTING.md`), and `scripts/smoke.py`, which fetches the same page and
+fails unless "not honored" is in the text the server returned. The last two
+also fix the rendering: the verdict words must be in the HTML the server
+returns, so a case rendered only after a client fetch fails them even when it
+looks right in a browser. A drawer is for scanning the feed; the route is for
+citing one case to somebody who was not on the page. Keep both.
 
-`/case/RC-YYYY-NNNN` and `/case/p-NNNNNN` are the same page. Metadata title
-is the id. Everything on it is read from the chain when opened, with the same
-snapshot fallback and the same recorded notice as the feed.
+`/case/RC-YYYY-NNNN` and `/case/p-NNNNNN` are the same page. Its metadata
+title is the id, then `| Recourse`. Everything on it is read from the chain
+when opened, with the same snapshot fallback and the same recorded notice as
+the feed.
 
-- **Eyebrow**: "Recourse / case", the first word a link home.
+- **Eyebrow**: "Recourse / case", the first word a link back to the feed on
+  the home page.
 - **Title**: the citation when a case exists, else the payment id.
 - **Subtitle**: "{pid} on studionet", or "never disputed, so there is no case;
   payment {pid} on studionet".
@@ -536,10 +561,44 @@ snapshot fallback and the same recorded notice as the feed.
 ```bash
 cd web && npx tsc --noEmit -p .          # the feed types, part of the gate
 python scripts/check.py                  # house style over every string
+python scripts/test.py                   # the gate, which holds this file's numbers to the code
 ```
 
-Then open `http://localhost:4500` and walk sections 4.1 to 4.9 in order,
-then one row's drawer, then one case page, then the linter with the vague
-example. On a phone width of 320px nothing scrolls sideways. If the chain is
-slow, the feed shows dashes and a sentence, and the rest of the page is already
-there.
+Then open `http://localhost:4500` and walk the page top to bottom against the
+binding sections here, then open one row, then one case page, then the linter
+with a vague promise. On a phone width of 320px nothing scrolls sideways. If
+the chain is slow, the feed shows dashes and a sentence, and the rest of the
+page is already there.
+
+---
+
+## 12. Corrections
+
+Each row is something this file stated about the page that the page had
+stopped doing, found on 2026-09-13 by checking every number and quoted string
+in the binding sections, and the sections beside them, against the code. It
+started from one: the linter's copy button reads "Copied" for 1.6 seconds, and
+this file said 1.2. `tests/direct/test_design.py` now holds the timings, the
+caps, the token table and the contrast figures to the code, so the next change
+to one of those fails the gate; the quoted copy stays a check by hand.
+
+| it said | what is true |
+| --- | --- |
+| a copy button reading "copied" for 1.2 seconds, under a rewrite in a `pre` | "Copy", reading "Copied" for 1.6 seconds, under a rewrite in a dark box |
+| the box labelled "A delivery promise, as a seller would register it" | "Your delivery promise", visually hidden |
+| three rows and a 2000 character cap | three to six rows, 600 characters, and a counter against the 500 the contract stores |
+| two example buttons, a vague promise and a judgeable one | none; the placeholder carries the judgeable example |
+| "That is what a promise is for." after a judgeable result | not shown |
+| "Failed the deterministic check {name}. No model was asked and nothing was spent." after a stage 1 refusal | not shown; the reason names what is missing |
+| a stage line under every result | not shown, so the rule in section 7 is marked unmet |
+| verdict badges at 0.66rem with a 3px radius, and pending in amber | 9.5px with square corners, and pending in muted grey |
+| upheld "shown as 6/8", the chain's count when this was written | a fraction, `N/M`, whatever the chain holds |
+| nothing above the table while live, and captions worded otherwise | the notices and captions now quoted in 6.1 |
+| the state tone as a dot in each row, and the legend under the table | a coloured label in each row, and the legend above the table |
+| an address button in every feed row, its label reading "copied" | the escrow and dispute addresses in the hero, with a COPIED tip for 1.2 seconds; a row's seller address is text |
+| the escrow and dispute addresses in a line under the table | in the hero, as the address buttons of 5.3 |
+| "Nothing else names a colour" | four literals the tokens lack, and the case page's amber notice edge, listed in section 2 |
+| `h1` at `clamp(2rem, 6vw, 3.4rem)`, as the page's heading | the rule in `globals.css`; the hero's `h1` is set inline, `clamp(52px, 6vw, 112px)` |
+| `--muted` "at 5.38:1 is the lightest grey that passes" | 5.38:1 on ground and 5.19:1 on panel, and the dimmest grey that passes |
+| four published things depend on the case route | five, since `scripts/smoke.py` |
+| the case page's title is the id | the id, then the site's name |
