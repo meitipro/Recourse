@@ -132,8 +132,9 @@ cd recourse-skill/mcp && node test/probe.mjs https://recourse-mcp.vercel.app/api
    now false.
 2. Put the three URLs in `README.md` under Install, replacing the local ones,
    and fix every sentence the script listed.
-3. Replace `docs/images/linter.png`, captured idle, with the panel in its NOT
-   JUDGEABLE state on the live site (any vague promise; thirty seconds with
-   the OS screenshot tool). Update the caption.
+3. Work through the script's last section, what the run did not prove, by
+   hand: the bot and the key's spend limit every time, and anything else it
+   names. `docs/images/linter.png` needs nothing: a stage 1 refusal is the
+   same panel locally and live, and that refusal is what it shows.
 4. `git push` on either repository redeploys its projects; the Recourse push
    also runs CI.

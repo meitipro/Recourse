@@ -53,9 +53,10 @@ Ninety seconds. About two hundred words.
 - **The promise linter**, in the hero. Paste `Returns accurate market data.`
   into "Your delivery promise" and press "Is this judgeable?". Stage 1 refuses
   it with no model: NOT JUDGEABLE and the reason, which is the promise payment
-  p-000014 ran on chain. With `ANTHROPIC_API_KEY` behind the linter a rewrite
-  appears as well. Insert as a six second shot after 0:18. Words: *A promise
-  too vague to judge is refused before any money moves.*
+  p-000014 ran on chain. No rewrite follows, key or no key: one is offered only
+  when a promise passes stage 1 and the gate's question says no. Insert as a
+  six second shot after 0:18. Words: *A promise too vague to judge is refused
+  before any money moves.*
 - **The clerk**, the section "Put the judge on the stand", between the feed and
   the evaluation. Needs a model behind the linter. Load case 01, press "Put it
   to the judge", hold on the verdict beside the committed expectation and on
