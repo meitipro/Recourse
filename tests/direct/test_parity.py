@@ -94,8 +94,8 @@ def test_the_agent_and_the_feed_use_the_contract_ids_not_their_own():
     agent = (ROOT / "agent" / "run.py").read_text(encoding="utf-8")
     assert 'pid = paid["result"]' in agent, "the agent must use the id the contract returned"
 
-    route = (ROOT / "web" / "app" / "api" / "evidence" / "route.ts").read_text(encoding="utf-8")
-    assert r"p-\d{6}" in route, "the evidence route must validate the contract's id shape"
+    cite = (ROOT / "web" / "lib" / "cite.ts").read_text(encoding="utf-8")
+    assert "p-${" in cite and 'padStart(6, "0")' in cite, "the case page must turn a citation into the contract's six digit id"
 
     w = World()
     w.register()

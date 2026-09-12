@@ -178,15 +178,13 @@ is somebody else's switch, and the process holds the seller's key. It binds
 `Content-Length` header is checked before it is used to size a read, since a
 caller can name any number.
 
-**The feed's evidence route fronts a rate limited chain.**
-Studio allows about thirty requests a minute for the whole node and this route
-spends one or two per call, so anything automated could exhaust the budget and
-leave every visitor looking at the page's own "chain could not be read" notice.
-The route now refuses past twenty in a rolling minute with a 429 the drawer
-renders as a reason. The limit is global rather than per IP on purpose: the
-budget is a single shared resource, and keying it on an address would key it on
-a header the caller sets. Measured: thirty concurrent requests, nine served and
-twenty one refused.
+**The feed's evidence route is gone.**
+It fronted the rate limited chain for the feed's drawer: Studio allows about
+thirty requests a minute for the whole node, and the route refused past twenty
+in a rolling minute with a 429 the drawer rendered as a reason. The ported feed
+has no drawer and nothing else called the route, so on 2026-09-13 it was
+deleted rather than kept as a surface nobody exercises. The case page reads the
+same evidence on the server.
 
 ## The honest mistake
 

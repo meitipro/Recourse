@@ -83,3 +83,27 @@ def test_the_token_table_is_globals_css_and_its_contrast_figures_follow_from_it(
 
     assert f"{contrast('--dim', '--ground')} on ground, {contrast('--dim', '--panel')} on panel" in DESIGN
     assert f"`--muted`, {contrast('--muted', '--ground')} on ground and {contrast('--muted', '--panel')} on panel" in DESIGN
+
+
+def test_a_verdict_wears_one_colour_wherever_the_page_names_it():
+    """
+    The upheld tile counts not honored verdicts and was green while the badge
+    for the same verdict one screen below was red, and the clerk named honored
+    in a solid accent fill while the table named it green. Same fact, two
+    colours. The badges in the feed's table are the reference.
+    """
+    feed = (ROOT / "web" / "components" / "site" / "FeedPanel.tsx").read_text(encoding="utf-8")
+    clerk = (ROOT / "web" / "components" / "site" / "Clerk.tsx").read_text(encoding="utf-8")
+
+    def badge(verdict: str) -> str:
+        found = re.search(r'verdict === "' + verdict + r'"\) \{\s*return \{ \.\.\.PILL, color: "(#[0-9A-F]{6})"', feed)
+        assert found, f"the feed's {verdict} badge colour was not found"
+        return found.group(1)
+
+    tile = re.search(r'stat3Color: known \? "(#[0-9A-F]{6})"', feed)
+    assert tile and tile.group(1) == badge("not_honored"), "the upheld tile counts not honored verdicts and must wear their colour"
+    disputes = re.search(r'stat2Color: known \? "(#[0-9A-F]{6})"', feed)
+    assert disputes and disputes.group(1) not in {badge("honored"), badge("not_honored")}, "disputes opened mixes states and names none"
+    for verdict, label in (("honored", "Honored"), ("not_honored", "Not honored")):
+        chip = re.search(r'color: "(#[0-9A-F]{6})"[^>]*>' + label + "</span>", clerk)
+        assert chip and chip.group(1) == badge(verdict), f"the clerk's {label} chip is not the colour of the {verdict} badge"

@@ -5,10 +5,10 @@
 > sections 1, 6.1, 6.2, 6.4, 6.5, 7, 8, 9 and 10, still hold. The port was
 > checked against them as rules and not against every number and quoted
 > string in them, and some of those had changed: section 12 lists each, and
-> they now say what the page does. One rule in section 7 the page does not
-> meet, and it is marked where it stands. Its descriptions of layout and copy,
-> section 2's shapes, section 3, the section by section walk in 4, the buttons
-> of 5.1 and the table and drawer of 6.3, describe that earlier build. The
+> they now say what the page does. Where the page broke a rule instead, the
+> page was fixed, and section 12 says which. Its descriptions of layout and
+> copy, section 2's shapes, section 3, the section by section walk in 4, the
+> buttons of 5.1 and the table of 6.3, describe that earlier build. The
 > canvas in `design/Recourse.dc.html` now decides those, and
 > `design/README.md` lists every place the port departed from the canvas and
 > why.
@@ -74,11 +74,10 @@ Model output quoted from chain state is a record and is never normalised.
 ## 2. Tokens
 
 Defined in `web/app/globals.css` on `:root`, where the case page's classes read
-them. The ported sections write the same values as literals and add four the
+them. The ported sections write the same values as literals and add three the
 tokens lack: `#e8b366` for the linter's Not judgeable label and its edge,
-`#151a25` for row rules, `#0b0e15` behind an open row, and `#05191f` for text
-on the clerk's solid accent chip. The case page's recorded notice edge,
-`rgba(251,191,36,0.55)`, is a fifth.
+`#151a25` for row rules, and `#0b0e15` behind an open row. The case page's
+recorded notice edge, `rgba(251,191,36,0.55)`, is a fourth.
 
 ### Surfaces
 
@@ -381,6 +380,10 @@ Four cells, each a mono value over a muted label:
 When the read failed every tile shows a dash. A zero here would be an invented
 number.
 
+Only the upheld tile carries a state colour, the not honored red of the badge
+for the same verdict in the table below it. The other three are text colours:
+a count that mixes disputed and resolved rows names no single state.
+
 ### 6.3 The table
 
 Columns, in order: time, payment, seller, amount, state, verdict, to dispute.
@@ -396,14 +399,6 @@ Columns, in order: time, payment, seller, amount, state, verdict, to dispute.
 - **verdict**: a badge, see 6.4, or muted "not contested".
 - **to dispute**: seconds from payment to the dispute being accepted, or a
   dash.
-
-Clicking a row opens its drawer, which fetches `/api/evidence?pid=` and shows
-the promise, request and response in `pre` blocks, then timing written by the
-chain and the reason given with the verdict when a case exists, then a line on
-the signature: signed by the seller, recorded by the buyer with no seller
-signature, or no signature recorded. If the evidence came from the snapshot the
-drawer says so in the same line. While fetching, the drawer shows three
-skeleton blocks, never a spinner.
 
 ### 6.4 The verdict badge
 
@@ -475,11 +470,12 @@ The result, under the button:
 
 Every result ends with a stage line: "Stage 1 of the linter: deterministic,
 free." or "Stage 2 of the linter: the deployed gate's question, put to one
-model. A dry run, not the gate's verdict." **The page does not meet this
-rule.** The ported panel shows no stage line and says "dry run" nowhere, so a
-stage 2 answer on the site does not say it is a dry run, which
-`linter/service.py` says every consumer does. The rule stands until it is met
-or decided away.
+model. A dry run, not the gate's verdict." The panel shows it under the result
+in the same small type as the footnote. The port dropped it, so for a while a
+stage 2 answer on the site did not say it was a dry run, which
+`linter/service.py` says every consumer does. It was put back on 2026-09-13,
+and `tests/direct/test_linter.py` fails if the panel or the bot stops saying
+it.
 
 In production the route answers 503 "linter not configured" until `LINTER_URL`
 is set, by design, and the panel shows that as the error state rather than
@@ -590,15 +586,22 @@ to one of those fails the gate; the quoted copy stays a check by hand.
 | two example buttons, a vague promise and a judgeable one | none; the placeholder carries the judgeable example |
 | "That is what a promise is for." after a judgeable result | not shown |
 | "Failed the deterministic check {name}. No model was asked and nothing was spent." after a stage 1 refusal | not shown; the reason names what is missing |
-| a stage line under every result | not shown, so the rule in section 7 is marked unmet |
+| a stage line under every result | dropped in the port, and put back in the panel on 2026-09-13 |
 | verdict badges at 0.66rem with a 3px radius, and pending in amber | 9.5px with square corners, and pending in muted grey |
 | upheld "shown as 6/8", the chain's count when this was written | a fraction, `N/M`, whatever the chain holds |
 | nothing above the table while live, and captions worded otherwise | the notices and captions now quoted in 6.1 |
 | the state tone as a dot in each row, and the legend under the table | a coloured label in each row, and the legend above the table |
 | an address button in every feed row, its label reading "copied" | the escrow and dispute addresses in the hero, with a COPIED tip for 1.2 seconds; a row's seller address is text |
 | the escrow and dispute addresses in a line under the table | in the hero, as the address buttons of 5.3 |
-| "Nothing else names a colour" | four literals the tokens lack, and the case page's amber notice edge, listed in section 2 |
+| "Nothing else names a colour" | three literals the tokens lack, and the case page's amber notice edge, listed in section 2 |
 | `h1` at `clamp(2rem, 6vw, 3.4rem)`, as the page's heading | the rule in `globals.css`; the hero's `h1` is set inline, `clamp(52px, 6vw, 112px)` |
 | `--muted` "at 5.38:1 is the lightest grey that passes" | 5.38:1 on ground and 5.19:1 on panel, and the dimmest grey that passes |
 | four published things depend on the case route | five, since `scripts/smoke.py` |
 | the case page's title is the id | the id, then the site's name |
+
+The same check found two places where the page, not this file, broke a binding
+rule, and the page was fixed on 2026-09-13. The stage line in section 7 was
+missing, so a stage 2 answer did not say it was a dry run. And a verdict wore
+two colours: the upheld tile, which counts not honored verdicts, was green,
+and the clerk's Honored chip was a solid accent fill. Each now wears the colour
+of its badge in 6.4, and `tests/direct/test_design.py` holds them to it.

@@ -49,6 +49,16 @@ are chain payments where the canvas showed the eighteen evaluation fixtures,
 and the canvas's component gallery is a design system artboard rather than site
 content, so the header's group carries the clerk and the feed instead.
 
+Three more came out of checking `docs/DESIGN.md` against the code on
+2026-09-13. These were not claims but places where the canvas broke a rule the
+project binds, and the site was changed rather than the rule:
+
+| the canvas drew | the site does | why |
+| --- | --- | --- |
+| the linter's result ending at the verdict, the reason and the rewrite | a line under every result naming the stage, and at stage 2 "A dry run, not the gate's verdict" | Stage 2 asks one model the gate's question and the gate on chain asks a committee. `linter/service.py` promises every consumer says so, and a reader who takes the panel's answer for the gate's is misled by omission |
+| the Upheld tile in green and Disputes opened in red | Upheld in the not honored red of the badge for the same verdict, Disputes opened in text colour | Upheld counts not honored verdicts, which the table one screen below badges red; a count that mixes states names none |
+| the clerk's Honored chip as a solid accent fill | the honored badge's green, outlined | The table names honored green, and the accent is never a state's colour |
+
 ## The clerk
 
 `RecourseClerk.dc.html` is the design's own interactive judge, and it is built.

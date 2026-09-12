@@ -56,7 +56,7 @@ shot, timed, every spoken number one this repository publishes.
 
 ![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten upheld, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
-![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model: not judgeable, because nothing in it is measurable](docs/images/linter.png)
+![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model, as the line under the verdict says: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 
 Measured on studionet, as medians over every dispute on the public record in
 `evidence/snapshot.json`, and printed by the demo for its own run:
@@ -247,7 +247,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 269 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 272 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -257,7 +257,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 269 direct tests cover the contracts through the double, the buyer agent,
+The 272 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

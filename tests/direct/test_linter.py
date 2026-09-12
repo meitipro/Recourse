@@ -116,6 +116,21 @@ def test_the_video_scripts_two_linter_shots_sit_on_either_side_of_stage_one():
         assert precheck(promise).ok, f"{promise!r} no longer reaches stage 2"
 
 
+def test_every_consumer_here_says_a_stage_two_answer_is_a_dry_run_of_the_gate():
+    """
+    linter/service.py promises every consumer says it: stage 2 asks the gate's
+    question of one model, and the gate on chain asks a committee. The site's
+    panel stopped saying so when the design was ported, and nothing failed.
+    These are the two consumers in this repository; the MCP server says it in
+    its own.
+    """
+    panel = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
+    bot = (ROOT / "bot" / "handlers.py").read_text(encoding="utf-8")
+    for name, source in (("the site's linter panel", panel), ("the bot's /promise", bot)):
+        assert "a dry run, not the gate's verdict" in source.lower(), f"{name} no longer says stage 2 is a dry run"
+    assert "stage === 2" in panel, "the panel no longer picks its stage line from the result"
+
+
 def test_stage_two_asks_exactly_the_gate_question_with_the_promise_fenced():
     model = Recording(YES)
     result = lint("Prices aggregated from at least three venues, refreshed within five seconds.", model=model)

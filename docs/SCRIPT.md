@@ -51,9 +51,10 @@ Ninety seconds. About two hundred words.
 ## OPTIONAL shots, and the version without them
 
 - **The promise linter**, in the hero. Paste `Returns accurate market data.`
-  into "Your delivery promise" and press "Is this judgeable?". Stage 1 refuses
-  it with no model: NOT JUDGEABLE and the reason, which is the promise payment
-  p-000014 ran on chain. No rewrite follows, key or no key: one is offered only
+  into the promise box and press "Is this judgeable?". Stage 1 refuses it with
+  no model: NOT JUDGEABLE and the reason, which is the promise payment p-000014
+  ran on chain, then the stage line, "Stage 1 of the linter: deterministic,
+  free." No rewrite follows, key or no key: one is offered only
   when a promise passes stage 1 and the gate's question says no. Insert as a
   six second shot after 0:18. Words: *A promise too vague to judge is refused
   before any money moves.*
@@ -67,8 +68,10 @@ Ninety seconds. About two hundred words.
   limit, and a second call writes the rewrite, so cut from the click to the
   answer. Wait for, top to bottom: NOT JUDGEABLE; the gate's reason, one line
   of at most 120 characters, about the missing freshness limit; a dark box
-  holding the rewrite, with Copy at its top right; the line saying nothing
-  pasted is stored. The gate refused this promise in both of two runs made for
+  holding the rewrite, with Copy at its top right; the stage line, "Stage 2
+  of the linter: the deployed gate's question, put to one model. A dry run,
+  not the gate's verdict."; the line saying nothing pasted is stored. The gate
+  refused this promise in both of two runs made for
   this script, and one of them produced these two lines:
 
       'Refreshed regularly' gives no freshness limit, and 'pricing data' names no field, count or bound.
