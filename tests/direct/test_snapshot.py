@@ -285,6 +285,51 @@ def test_the_readmes_fee_figures_are_the_receipts_the_snapshot_keeps():
     assert "a `gasUsed` of exactly `8000000`" in flat
 
 
+WORDS = (
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+)
+
+
+def spell(n: int) -> str:
+    """A count written the way the copy writes numbers, as the site's spell() does."""
+    return WORDS[n] if 0 <= n < len(WORDS) else str(n)
+
+
+def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
+    """
+    docs/images/feed.png is a photograph of the chain: true the day it is taken,
+    and false the next time a payment lands, with nothing failing. The README
+    showed fourteen payments while the snapshot said nineteen. docs/shots.py
+    writes what the tiles read beside the image, so the picture and its caption
+    are held to the snapshot here. The median tile is left out: it moves only
+    when a dispute does, and the counts catch that.
+
+    When this fails, retake the image with docs/shots.py and rewrite the caption
+    in the same commit, as docs/RUNBOOK.md says.
+    """
+    totals = SNAPSHOT["totals"]
+    shot = json.loads((ROOT / "docs" / "images" / "feed.json").read_text(encoding="utf-8"))
+    read = {label.lower(): value for label, value in shot["tiles"].items()}
+    expected = {
+        "payments": str(totals["payments"]),
+        "disputes opened": str(totals["disputes_opened"]),
+        "upheld": f"{totals['upheld']}/{totals['decided']}",
+    }
+    for label, value in expected.items():
+        assert read.get(label) == value, (
+            f"docs/images/feed.png shows {label} {read.get(label)} and the snapshot says {value}: "
+            "retake it with docs/shots.py against a production build, then rewrite its caption"
+        )
+    caption = re.search(r"!\[([^\]]*)\]\(docs/images/feed\.png\)", README)
+    assert caption, "the README no longer shows the feed image"
+    stated = (
+        f"{spell(totals['payments'])} payments, {spell(totals['disputes_opened'])} disputes opened, "
+        f"{spell(totals['upheld'])} of {spell(totals['decided'])} upheld"
+    )
+    assert stated in " ".join(caption.group(1).split()), f"the feed caption should say {stated!r}"
+
+
 def test_the_evaluation_prose_on_the_site_is_held_to_what_it_describes():
     """
     The evaluation section names the one miss and the two commits that put the

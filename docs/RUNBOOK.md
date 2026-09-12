@@ -87,7 +87,12 @@ p-000014 ran on chain, and waits for the refusal; stage 1 answers that one
 without a model, so this needs no key.
 
 Recapture whenever the chain totals change, and rewrite both captions in the
-same commit to describe what the new images show.
+same commit to describe what the new images show. The script writes what the
+four tiles read to `docs/images/feed.json`, and `tests/direct/test_snapshot.py`
+holds that file and the feed caption to the snapshot's totals, so once
+`scripts/snapshot.py` records a new payment the gate fails until the picture is
+retaken. The picture once said fourteen payments while the snapshot said
+nineteen, and nothing failed.
 
 ## What the numbers should look like
 

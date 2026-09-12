@@ -143,12 +143,13 @@ async def main() -> int:
                 "!document.getElementById('feed').textContent.includes('Reading the chain')",
                 "the feed tiles to carry numbers",
             )
+            # Each tile is a number with its label beneath it.
             tiles = await tab.js(
                 "[...document.querySelectorAll('#feed div')]"
                 ".filter(d => d.style.fontVariantNumeric === 'tabular-nums')"
-                ".slice(0,4).map(d => d.textContent.trim()).join(' ')"
+                ".slice(0,4).map(d => [d.nextElementSibling.textContent.trim(), d.textContent.trim()])"
             )
-            print(f"  feed tiles read: {tiles}")
+            print(f"  feed tiles read: {' '.join(value for _, value in tiles)}")
             await asyncio.sleep(1.5)
             box = await tab.js(
                 "(() => { const r = document.getElementById('feed').getBoundingClientRect();"
@@ -156,6 +157,14 @@ async def main() -> int:
                 " width: r.width, height: r.height }; })()"
             )
             await tab.shot(box, OUT / "feed.png")
+            # A photograph of the chain is true the day it is taken and goes
+            # false with nothing failing. What it shows is written beside it,
+            # so tests/direct/test_snapshot.py can hold it to the snapshot.
+            (OUT / "feed.json").write_text(json.dumps({
+                "captured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "tiles": dict(tiles),
+            }, indent=2) + "\n", encoding="utf-8")
+            print("  wrote feed.json  what the tiles read")
 
             # --- the linter, refusing ---------------------------------------
             await tab.send("Page.navigate", url=SITE)

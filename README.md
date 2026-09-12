@@ -54,7 +54,7 @@ latency and costs nobody anything, and the contested one.
 [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
 shot, timed, every spoken number one this repository publishes.
 
-![The live feed, read from the chain when the page opened: fourteen payments, eight disputes, six of eight upheld, and all three verdicts in the column, each case a citation that links to its own page](docs/images/feed.png)
+![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten upheld, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
 ![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 
@@ -189,6 +189,7 @@ part worth trusting:
 | **A judgment prompt of 1771 to 1961 characters.** | Rebuilding the prompt with the frozen contract's own `build_prompt` over every case gives 1814 to 2004. A test measures it now. |
 | **No consensus on the honest path.** | Reading the honest cycle's receipts: every write, a pay included, is voted on by a committee of five. What the honest path skips is judgment, and every page says so now. |
 | **A clean clone needed only genvm-lint.** | A clean clone in a fresh virtual environment, walked by an agent that had never seen the repository: `scripts/test.py` also needed pytest, which the install line now names. |
+| **The feed image and its caption, stated as fourteen payments** while the snapshot, read from the same chain, said nineteen. | A review before submission of every sentence the chain could make false. A photograph of the chain goes stale with nothing failing, so `docs/shots.py` now writes what the tiles read beside the image, and `tests/direct/test_snapshot.py` fails when the picture or its caption disagrees with the snapshot. |
 | **Four claims on the site, from its design canvas**: a bond sized to the cost of judgment, one call across cards, x402 and any chain, card networks that govern x402, and a median with no name. | Checking each against this repository and a primary source. Each was corrected, and [docs/SOURCES.md](docs/SOURCES.md) holds every outside claim with the page it rests on. |
 
 Design corrections are a different list and further down, under
@@ -246,7 +247,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 260 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 261 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -256,7 +257,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 260 direct tests cover the contracts through the double, the buyer agent,
+The 261 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
