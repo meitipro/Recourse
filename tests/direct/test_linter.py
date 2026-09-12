@@ -93,6 +93,29 @@ def test_a_named_source_counts_as_measurable():
 # --- stage 2 asks the deployed gate's question ------------------------------
 
 
+def test_the_video_scripts_two_linter_shots_sit_on_either_side_of_stage_one():
+    """
+    docs/SCRIPT.md films the linter twice: a promise refused at stage 1, with no
+    model and no rewrite, and one stage 1 lets through for the gate's question
+    to refuse and a rewrite to answer. No test can promise what a model will
+    say at stage 2, but which side of stage 1 each promise falls on is
+    deterministic, and a change to the rules that moved either one would leave
+    the recording waiting for a panel that never comes.
+    """
+    script = " ".join((ROOT / "docs" / "SCRIPT.md").read_text(encoding="utf-8").split())
+    refused = "Returns accurate market data."
+    rewritten = (
+        "Returns pricing data for the requested pair, refreshed regularly.",
+        "Prices are updated every so often from a number of trusted venues.",
+    )
+    for promise in (refused, *rewritten):
+        assert f"`{promise}`" in script, f"the script no longer films {promise!r}"
+    assert precheck(refused).failed_check == "no measurable term"
+    assert lint(refused, model=NoModel())["suggestion"] is None
+    for promise in rewritten:
+        assert precheck(promise).ok, f"{promise!r} no longer reaches stage 2"
+
+
 def test_stage_two_asks_exactly_the_gate_question_with_the_promise_fenced():
     model = Recording(YES)
     result = lint("Prices aggregated from at least three venues, refreshed within five seconds.", model=model)

@@ -57,6 +57,35 @@ Ninety seconds. About two hundred words.
   when a promise passes stage 1 and the gate's question says no. Insert as a
   six second shot after 0:18. Words: *A promise too vague to judge is refused
   before any money moves.*
+- **The rewrite**, in the hero, straight after the refusal, about ten
+  seconds. Needs `ANTHROPIC_API_KEY` behind the linter, so record it on the
+  hosted site once the key is set there. Clear the box, paste
+  `Returns pricing data for the requested pair, refreshed regularly.` and
+  press "Is this judgeable?". Stage 1 lets it through, because "the requested
+  pair" names a field. Stage 2 puts the deployed gate's own question to the
+  model, which refuses it because "refreshed regularly" sets no freshness
+  limit, and a second call writes the rewrite, so cut from the click to the
+  answer. Wait for, top to bottom: NOT JUDGEABLE; the gate's reason, one line
+  of at most 120 characters, about the missing freshness limit; a dark box
+  holding the rewrite, with Copy at its top right; the line saying nothing
+  pasted is stored. The gate refused this promise in both of two runs here,
+  and one of them, through the linter's own code, produced these two lines:
+
+      'Refreshed regularly' gives no freshness limit, and 'pricing data' names no field, count or bound.
+      Each response includes a numeric price for exactly the pair requested, with a timestamp showing that price was refreshed within the 24 hours before the response.
+
+  Opus 5 answered those runs in place of the hosted call, since no key is on
+  this machine, and a model writes both lines, so they change every run: wait
+  for the shape, not the words. Paste it once on the hosted site before
+  recording. If it answers Judgeable there, the second choice is
+  `Prices are updated every so often from a number of trusted venues.`, also
+  refused in both runs here. Words: *A promise can name what it returns and
+  still leave open how fresh it is. The gate's own question catches that
+  before any money moves, and the linter offers a version a judge could rule
+  on.* Without a key, leave this shot out: the refusal above stands on its
+  own, and its words never mention a rewrite. On a site with no key the panel
+  answers this promise with an error line instead of a verdict, so do not
+  paste it there.
 - **The clerk**, the section "Put the judge on the stand", between the feed and
   the evaluation. Needs a model behind the linter. Load case 01, press "Put it
   to the judge", hold on the verdict beside the committed expectation and on
