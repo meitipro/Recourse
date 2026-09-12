@@ -8,7 +8,7 @@ Read only. The chain client runs on a throwaway account that holds nothing, so
 this process cannot sign, pay, dispute or withdraw even by mistake, and
 tests/direct/test_bot.py asserts that against the client object. Free text is
 answered by a model handed the five reads and nothing else. Message text is
-never logged.
+never logged, a failed turn included: that is logged by the name of its error.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from bot.agent import default_chat  # noqa: E402
 from bot.handlers import Context, respond  # noqa: E402
 from bot.records import Unavailable  # noqa: E402
 from bot.state import Bucket, Conversations, Seen, Threads  # noqa: E402
-from bot.telegram import Telegram  # noqa: E402
+from bot.telegram import Telegram, TelegramError  # noqa: E402
 
 
 def reader():
@@ -107,6 +107,32 @@ class LiveDeps:
         return out
 
 
+def failure(error: Exception) -> str:
+    """
+    What the log says about a failed turn. An error raised while a message was
+    being answered can carry what was typed, so it is named by its type alone.
+    The transport's own errors carry Telegram's reason or the network's, never
+    a message, and they are the ones worth reading whole.
+    """
+    if isinstance(error, (TelegramError, OSError)):
+        return f"{type(error).__name__}: {str(error)[:120]}"
+    return type(error).__name__
+
+
+def serve(telegram, me: dict, ctx: Context, pause=time.sleep) -> None:
+    """One poll: every update answered at most once, a failed turn logged by its error's name."""
+    try:
+        for update in telegram.updates():
+            out = respond(update, me, ctx)
+            if out is None:
+                continue
+            telegram.send(out.chat_id, out.text, reply_to=out.reply_to, thread_id=out.thread_id)
+            telegram.log(f"update {update.get('update_id')} chat {out.chat_id} answered")
+    except Exception as error:  # noqa: BLE001
+        telegram.log(f"loop error: {failure(error)}")
+        pause(3)
+
+
 def main() -> int:
     import argparse
 
@@ -137,18 +163,10 @@ def main() -> int:
     print(f"free text: {chat.name if ready else 'off, ' + str(why)}")
     while True:
         try:
-            for update in telegram.updates():
-                out = respond(update, me, ctx)
-                if out is None:
-                    continue
-                telegram.send(out.chat_id, out.text, reply_to=out.reply_to, thread_id=out.thread_id)
-                telegram.log(f"update {update.get('update_id')} chat {out.chat_id} answered")
+            serve(telegram, me, ctx)
         except KeyboardInterrupt:
             print("\n  stopped")
             return 0
-        except Exception as error:  # noqa: BLE001
-            telegram.log(f"loop error: {str(error)[:120]}")
-            time.sleep(3)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,14 @@ import urllib.request
 API = "https://api.telegram.org/bot{token}/{method}"
 
 
+class TelegramError(RuntimeError):
+    """
+    The Bot API refused a call. It carries the method and Telegram's own
+    reason, never a message's text, which is why bot/main.py logs it whole
+    and names every other failure by its type alone.
+    """
+
+
 class Telegram:
     def __init__(self, token: str) -> None:
         if not token or ":" not in token:
@@ -36,7 +44,7 @@ class Telegram:
         except urllib.error.HTTPError as error:
             body = json.loads(error.read().decode("utf-8") or "{}")
         if not body.get("ok"):
-            raise RuntimeError(f"telegram {method}: {body.get('description', 'no description')}")
+            raise TelegramError(f"telegram {method}: {body.get('description', 'no description')}")
         return body["result"]
 
     def me(self) -> dict:

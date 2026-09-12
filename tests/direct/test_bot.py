@@ -161,6 +161,117 @@ def test_a_secret_clears_a_conversation_in_progress():
     assert conversations.get(1) is None
 
 
+class RecordingThreads(Threads):
+    """Thread memory that keeps a copy of every write, so a test can see what ever entered it."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.writes: list[tuple[int, str, str]] = []
+
+    def add(self, chat_id: int, said: str, replied: str) -> None:
+        self.writes.append((chat_id, said, replied))
+        super().add(chat_id, said, replied)
+
+
+def test_a_secret_never_enters_the_thread_memory_or_reaches_a_model():
+    """
+    The boundary keeps six messages and names one exception: a message that
+    looks like a private key or a seed phrase is refused in the turn it
+    arrives and never enters that memory. An empty thread afterwards cannot
+    show it, because a guard that ran after the append and then cleared would
+    leave the same empty thread. So every write to the memory is recorded,
+    and so is every request to the model on either side of the secret.
+    """
+    key = "0x" + "ab" * 32
+    phrase = "abandon ability able about above absent absorb abstract absurd abuse access accident"
+    for secret, hidden in ((f"is this one mine {key}", key[2:]), (f"my phrase is {phrase}", phrase)):
+        conversations, bucket, deps = world()
+        threads = RecordingThreads()
+        chat = ScriptedChat(say("A read only bot for Recourse."), say("Nothing before that is remembered here."))
+        ctx = Context(conversations=conversations, bucket=bucket, deps=deps, threads=threads, seen=Seen(), chat=chat)
+        respond({"update_id": 1, "message": group("@RecourseBot what is this", message_id=1)}, ME, ctx)
+        assert len(threads.history(-100)) == 2
+        refused = respond({"update_id": 2, "message": group(f"@RecourseBot {secret}", message_id=2)}, ME, ctx)
+        assert "compromised" in refused.text and hidden not in refused.text
+        assert not any(hidden in said or hidden in replied for _, said, replied in threads.writes), "the secret entered the thread memory"
+        assert len(chat.requests) == 1, "the refused turn asked no model"
+        assert threads.history(-100) == [], "the chat's memory went with it"
+        respond({"update_id": 3, "message": group("@RecourseBot and the one before it", message_id=3)}, ME, ctx)
+        assert hidden not in json.dumps(chat.requests, default=str), "the secret reached a model"
+        assert "what is this" not in json.dumps(chat.requests[1]["messages"], default=str), "what came before it was cleared"
+        assert deps.calls == []
+
+
+class FakeTelegram:
+    """Stands where bot/telegram.py's Telegram would: one batch of updates, and a log to read."""
+
+    def __init__(self, *updates) -> None:
+        self.batch = list(updates)
+        self.sent: list[tuple[int, str]] = []
+        self.logged: list[str] = []
+
+    def updates(self):
+        batch, self.batch = self.batch, []
+        return batch
+
+    def send(self, chat_id, text, reply_to=None, thread_id=None):
+        self.sent.append((chat_id, text))
+
+    def log(self, message):
+        self.logged.append(message)
+
+
+def test_no_message_text_reaches_the_log_even_when_a_turn_fails():
+    """
+    The boundary says no message text is logged. An answered update is logged
+    by its ids. A failed turn is where text could leak: an error raised while
+    answering can carry what was typed, and the loop used to log the first 120
+    characters of any error. It logs the error's name now, and only the
+    transport's own errors, which carry Telegram's reason or the network's,
+    keep their message.
+    """
+    from bot.main import failure, serve
+    from bot.telegram import TelegramError
+
+    typed = "Prices from three venues, never older than five seconds."
+
+    class Breaking(FakeDeps):
+        def lint(self, promise):
+            raise RuntimeError(f"the linter choked on {promise}")
+
+    conversations, bucket, _ = world()
+    ctx = Context(conversations=conversations, bucket=bucket, deps=Breaking(), threads=Threads(), seen=Seen())
+    private = {"chat": {"id": 11, "type": "private"}, "from": {"id": 11}}
+    telegram = FakeTelegram(
+        {"update_id": 1, "message": {**private, "message_id": 1, "text": "/stats"}},
+        {"update_id": 2, "message": {**private, "message_id": 2, "text": f"/promise {typed}"}},
+    )
+    serve(telegram, ME, ctx, pause=lambda seconds: None)
+    assert telegram.logged == ["update 1 chat 11 answered", "loop error: RuntimeError"]
+    assert len(telegram.sent) == 1
+    assert failure(ValueError(typed)) == "ValueError"
+    assert failure(TelegramError("telegram sendMessage: Bad Request: chat not found")).endswith("chat not found")
+    assert failure(TimeoutError("The read operation timed out")).endswith("timed out")
+
+
+def test_nothing_in_the_bot_writes_a_file():
+    """
+    The boundary says nothing is written to disk and nothing survives a
+    restart. The state is bot/state.py's dictionaries, and this holds all of
+    bot/ to that by naming the ways Python writes a file.
+    """
+    banned = (
+        r"(?<![\w.])open\(", r"\.write_text\(", r"\.write_bytes\(", r"\bjson\.dump\(", r"\bpickle\b",
+        r"\bshelve\b", r"\bsqlite3\b", r"FileHandler", r"\btempfile\b", r"\.mkdir\(", r"\bmakedirs\(",
+        r"\bos\.write\(", r"\bshutil\.(copy|move)", r"\.touch\(",
+    )
+    for path in (ROOT / "bot").glob("*.py"):
+        code = re.sub(r'"""[\s\S]*?"""', "", path.read_text(encoding="utf-8"))
+        code = re.sub(r"^\s*#.*$", "", code, flags=re.M)
+        for pattern in banned:
+            assert not re.search(pattern, code), f"{path.name} matches {pattern}, a way to write a file"
+
+
 # --- commands ---------------------------------------------------------------
 
 

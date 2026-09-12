@@ -6,9 +6,14 @@ figures. It cannot do anything else, structurally.
 
 ## The boundary
 
-Never holds a private key, signs anything, submits a write transaction,
-accepts a seed phrase or key in a message, or stores a message beyond the
-request that produced it.
+Never holds a private key, signs anything or submits a write transaction.
+
+It keeps the last six messages of a chat in memory for ten minutes, three
+asked and three answered, so "and the one before it" resolves. A message
+carrying what looks like a private key or a seed phrase is the one exception:
+it is refused in the turn it arrives, never enters that memory or reaches a
+model, and clears what the chat had in memory with it. Nothing is written to
+disk, nothing survives a restart, and no message text is logged.
 
 - The chain client runs on a throwaway account generated at startup
   (`bot/main.py:reader`): the Python SDK refuses a read without a sender
@@ -18,13 +23,21 @@ request that produced it.
   is not one of the demo's accounts and differs on every start, and scans
   `bot/` for any chain write or key handling.
 - A message containing what looks like a private key or a seed phrase gets one
-  reply: it is now compromised and must be rotated. The rest of the message is
-  not read.
-- State is in memory, keyed by chat id, cleared after ten minutes. A restart
-  losing a half finished `/check` is acceptable.
+  reply: it is now compromised and must be rotated. The check runs before
+  anything else reads the message, so the rest of it is not read.
+  `tests/direct/test_bot.py` records every write to the thread memory and
+  every request to the model on either side of one, and the secret is in
+  neither.
+- State is in memory, keyed by chat id: the half finished `/check` and the
+  thread memory, each gone ten minutes after it was last written. A restart
+  loses both, which is acceptable. `tests/direct/test_bot.py` scans `bot/` for
+  the ways Python writes a file.
 - A token bucket per chat id. Commands that reach a model cost five tokens
   from a bucket of twenty that refills ten a minute.
-- The transport logs update ids and chat ids, never text.
+- The transport logs update ids and chat ids, never text. A turn that fails is
+  logged by the name of its error alone, because an error raised while
+  answering a message can carry what was typed; only the transport's own
+  errors, which carry Telegram's reason or the network's, are logged whole.
 
 ## Commands
 
@@ -66,8 +79,9 @@ one they did not is sent back once, then refused.
   `/command@` it, or replied to. In a direct message it answers everything.
   It never answers one message twice, never answers another bot, and never
   speaks first: a reply is attached to the message it answers.
-- **Thread memory.** The last six messages of the chat, in memory, gone ten
-  minutes after the last one, like the `/check` state.
+- **Thread memory.** The six messages the boundary names, gone ten minutes
+  after the last one, like the `/check` state. In a group it keeps only the
+  messages that named it or replied to it, the ones it answers.
 - **Voice.** Six lines unless asked to expand, plain and technical, no emoji,
   no exclamation, no persona. It says when it does not know and names the
   command that would find out. It never says whether to pay an endpoint,

@@ -15,9 +15,14 @@ Two checks spend model calls, a stage 2 lint and a dry run of the judge, once
 direct and once through the site's clerk, a few cents in all. Nothing here
 writes to the chain.
 
-When every check passes, the last section lists the sentences in this
-repository written for a world with no hosting. They became false the moment
-these checks started passing, and nothing else would say so.
+When every check passes, a section lists the sentences in this repository
+written for a world with no hosting. They became false the moment these checks
+started passing, and nothing else would say so.
+
+The last section is printed whether the checks passed or not. It names what
+this run did not prove and how to prove each by hand, because a script silent
+about where it stops gets read as proving more than it does: a stale sentence,
+one layer up.
 """
 
 from __future__ import annotations
@@ -42,6 +47,12 @@ VAGUE = "Accurate market data."
 #: Passes stage 1, so the answer comes from stage 2: proves the key reached the linter.
 SPECIFIC = "Prices aggregated from at least three venues, refreshed within five seconds."
 VERDICTS = ("honored", "not_honored", "unclear")
+
+#: What a page says when it was served from the recorded snapshot rather than a
+#: read of the chain: the feed's notice, and the case page's.
+RECORDED = "Recorded snapshot, not a live read"
+#: The feed's notice when it did read the chain.
+LIVE = "Chain, reading the escrow contract"
 
 #: Sentences written for a world with no hosted services. True until the
 #: imports land, false the hour they do, and nothing fails when they become so.
@@ -104,15 +115,17 @@ def judged(code: int, body: dict) -> bool:
     return code == 200 and body.get("verdict") in VERDICTS and body.get("recorded_on_chain") is False
 
 
-def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
+def run(site: str, linter: str, mcp: str) -> tuple[list[tuple[str, bool]], list[tuple[str, str]]]:
     lint_url = f"{linter}/api/lint"
     results: list[tuple[str, bool]] = []
+    unread: list[str] = []
 
-    def record(name: str, ok: bool, detail: str, fix: str) -> None:
+    def record(name: str, ok: bool, detail: str, fix: str) -> bool:
         results.append((name, ok))
         print(f"  {'PASS' if ok else 'FAIL'}  {name:48} {detail}")
         if not ok:
             print(f"        fix: {fix}")
+        return ok
 
     code, raw, _ = call("POST", lint_url, {"promise": VAGUE})
     body = parsed(raw)
@@ -125,7 +138,7 @@ def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
 
     code, raw, _ = call("POST", lint_url, {"promise": SPECIFIC})
     body = parsed(raw)
-    record(
+    stage2 = record(
         "linter reaches stage 2, so the key is there",
         code == 200 and body.get("stage") == 2,
         f"HTTP {code} {short(raw)}",
@@ -135,7 +148,7 @@ def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
     case = committed_case()
     code, raw, _ = call("POST", f"{linter}/api/judge", case, timeout=150)
     body = parsed(raw)
-    record(
+    judge = record(
         "linter answers /api/judge, the clerk's judge",
         judged(code, body),
         f"HTTP {code} {short(raw)}",
@@ -158,6 +171,10 @@ def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
         "Include source files outside the root directory is off on recourse-site: the results files and FROZEN.json did not ship, "
         "so the evaluation section is missing and the bond is unnamed. Turn it on and redeploy.",
     )
+    if code == 200 and RECORDED in text:
+        unread.append("the feed came from the recorded snapshot")
+    elif code == 200 and LIVE not in text:
+        unread.append("the feed did not read the chain")
 
     code, raw, _ = call("POST", f"{site}/api/lint", {"promise": "High quality results."})
     body = parsed(raw)
@@ -182,20 +199,24 @@ def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
         fix = "The clerk reached the judge and the judge has no model. " + KEY
     else:
         fix = "The clerk answered without a verdict: read the body above."
-    record("site's clerk reaches the judge", judged(code, body), f"HTTP {code} {short(raw)}", fix)
+    clerk = record("site's clerk reaches the judge", judged(code, body), f"HTTP {code} {short(raw)}", fix)
 
     code, raw, _ = call("GET", f"{site}/case/RC-2026-0003", timeout=60)
+    shown = visible(raw)
     record(
         "site renders a case permalink",
-        code == 200 and "not honored" in visible(raw),
+        code == 200 and "not honored" in shown,
         f"HTTP {code}",
         "The case page did not render p-000003: leave NEXT_PUBLIC_RECOURSE_NETWORK unset or studionet, and check the outside root switch, "
         "which also ships evidence/snapshot.json for when the chain is slow.",
     )
+    if code == 200 and RECORDED in shown:
+        unread.append("the case page came from the recorded snapshot")
 
     probe = ROOT.parent / "recourse-skill" / "mcp" / "test" / "probe.mjs"
     node = shutil.which("node")
-    if node and probe.exists():
+    mcp_ran = bool(node and probe.exists())
+    if mcp_ran:
         try:
             finished = subprocess.run(
                 [node, str(probe), mcp], cwd=probe.parent.parent, capture_output=True, text=True,
@@ -214,7 +235,42 @@ def run(site: str, linter: str, mcp: str) -> list[tuple[str, bool]]:
         )
     else:
         print(f"  SKIP  MCP answers every tool                          run by hand: cd recourse-skill/mcp && node test/probe.mjs {mcp}")
-    return results
+    return results, blind_spots(stage2 or judge or clerk, unread, mcp_ran, mcp)
+
+
+def blind_spots(key_proven: bool, unread: list[str], mcp_ran: bool, mcp: str) -> list[tuple[str, str]]:
+    """
+    What a run did not prove, each with the way to prove it by hand.
+
+    The bot and the key's spend limit are out of reach every run. The key, the
+    site's own read of the chain and the MCP server are listed only when this
+    run left them unproven, because a line calling a proven thing unproven is
+    as stale as the sentences this script hunts.
+    """
+    spots = [
+        (
+            "the bot",
+            "not hosted by any of these three projects, so nothing here reached it, and its host needs a key of its own, "
+            "because it runs the linter in its own process. Once it runs: a plain question in a direct message must get an "
+            "answer rather than the reply that free text has no model, and in a group it must answer only when named.",
+        ),
+        ("the key's spend limit", "no request can see one. Set it, and read it back, in the Anthropic console."),
+    ]
+    if not key_proven:
+        spots.append((
+            "the model key",
+            "nothing above proves it. Only a promise that reaches stage 2, or the clerk returning a verdict, can: "
+            "a vague promise is refused at stage 1 before any model is asked, key or no key.",
+        ))
+    if unread:
+        spots.append((
+            "the site's own read of studionet",
+            f"{' and '.join(unread)}, so this run never saw the server read the chain. Run it again in a minute: "
+            "a page still saying so means the server cannot reach studionet.",
+        ))
+    if not mcp_ran:
+        spots.append(("the MCP server", f"the probe was skipped. Run it by hand: cd recourse-skill/mcp && node test/probe.mjs {mcp}"))
+    return spots
 
 
 def unhosted_sentences() -> list[str]:
@@ -238,18 +294,20 @@ def main() -> int:
     site, linter = args.site.rstrip("/"), args.linter.rstrip("/")
 
     print(f"recourse smoke  site {site}  linter {linter}  mcp {args.mcp}\n")
-    results = run(site, linter, args.mcp)
+    results, spots = run(site, linter, args.mcp)
     passed = sum(1 for _, ok in results if ok)
     print(f"\n{passed} of {len(results)} passed")
-    if passed != len(results):
-        return 1
+    if passed == len(results):
+        stale = unhosted_sentences()
+        if stale:
+            print("\nEverything is live, so these sentences are now false. Fix them before submitting:")
+            for row in stale:
+                print(f"  {row}")
 
-    stale = unhosted_sentences()
-    if stale:
-        print("\nEverything is live, so these sentences are now false. Fix them before submitting:")
-        for row in stale:
-            print(f"  {row}")
-    return 0
+    print("\nNot proven by this run, and how to prove each by hand:")
+    for what, how in spots:
+        print(f"  {what}: {how}")
+    return 0 if passed == len(results) else 1
 
 
 if __name__ == "__main__":

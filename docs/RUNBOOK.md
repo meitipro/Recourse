@@ -2,6 +2,34 @@
 
 Print this. Follow it exactly, three times clean, before recording.
 
+## When: the recording, then the tail
+
+The recording is the step immediately before the tail. It spends payments on
+studionet, so the snapshot and the feed image must both come after it, in that
+order.
+
+The tail, in this order, no step skipped:
+
+1. **Every chain write finishes, the recording's included.** `prepare.py`, the
+   three clean runs and the recording itself, its optional withdraw shot too,
+   all write to studionet, as does any other script that sends a transaction.
+   The imports, `scripts/smoke.py`, the site's clerk and the bot write nothing
+   to it.
+2. `python scripts/snapshot.py`. The record catches up to the chain.
+3. `python scripts/snapshot.py --check`, which must say no drift. Drift means
+   something in step 1 had not finished.
+4. `python docs/shots.py`, as under "The two README images" below, and the feed
+   caption rewritten to what the new image shows. It comes after the snapshot,
+   not merely after the chain writes, because the image and the snapshot must
+   agree.
+5. `python scripts/test.py`, green. Between steps 2 and 4 it fails on purpose
+   whenever the snapshot gained a payment: the feed image and its caption are
+   held to the snapshot.
+6. The hand check: the README's numbers, read against the new snapshot.
+
+Reversing any two of these produces a repository that looks correct and is
+not. Submit after step 6.
+
 ## Before
 
 - [ ] `python scripts/test.py` is green. Style, both contracts linted, direct tests.
@@ -42,10 +70,10 @@ Watch the feed row appear, move to judged, then settle.
 - [ ] The seller's upheld counter incremented.
 - [ ] The buyer's balance came back.
 - [ ] Nothing in the terminal is red.
-- [ ] `python scripts/snapshot.py` run after the last cycle, so
-      `evidence/snapshot.json` holds what was just recorded and
-      `python scripts/test.py` is green with it. Studio's persistence is
-      temporary; the snapshot is what outlives it.
+- [ ] After the last cycle, the tail at the top of this page from step 2: the
+      snapshot, `--check`, the feed image and its caption, the gate, the hand
+      check. Studio's persistence is temporary; the snapshot is what outlives
+      it.
 
 ## Before publishing anything
 
@@ -62,7 +90,7 @@ carry on:
 | it says | what to do |
 | --- | --- |
 | no drift | nothing. The published totals still describe the chain |
-| DRIFT, with the lines that differ | `python scripts/snapshot.py`, then check the totals in `README.md` against it |
+| DRIFT, with the lines that differ | the tail from step 2: `python scripts/snapshot.py`, this check again, the feed image and its caption, the gate, then the totals in `README.md` by hand |
 | chain unreachable | nothing is wrong. Drift cannot be measured without the chain, so it exits zero and says so |
 
 **This is not in `scripts/test.py`, on purpose.** The ten snapshot tests are
