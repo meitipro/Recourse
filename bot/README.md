@@ -37,9 +37,55 @@ request that produced it.
 | `/stats` | Live counts from chain, and `17/18` beside `1/3`. Never one without the other. |
 | `/help` | The list. |
 
-Free text is answered only about Recourse, GenLayer, x402 and machine payment
-disputes, and only by pointing at the command that makes the call. A number
-this bot states comes from a call it made in that turn or it is not stated.
+The commands are shortcuts. Nobody has to learn them.
+
+## Free text
+
+Ask in plain words and a model chooses the read. It is handed five tools and
+nothing else, `lint`, `judge_dry_run`, `get_case`, `get_seller` and
+`get_stats`, which are the reads the commands make, and it makes at most three
+in a turn before answering with what they returned.
+
+| asked | read |
+| --- | --- |
+| is this promise any good | `lint` |
+| what happened with RC-2026-0014 | `get_case` |
+| how often does it rule for the seller | `get_stats`, which counts the decided cases by verdict |
+| would this response pass | `judge_dry_run`, which starts the two step dry run when the promise or the body is missing |
+| what is this | none: the answer comes from `bot/what_is_recourse.md`, the skill's first reference file |
+
+A number this bot states comes from a call it made in that turn or it is not
+stated. The model is given nothing else to draw from: the system prompt and
+the tool definitions carry no numbers, the reference file is carried with its
+numbers withheld, and the thread memory shows every earlier quantity as `[n]`,
+keeping only identifiers such as a case citation. Every number in an answer is
+then checked against what that turn's reads returned, and an answer stating
+one they did not is sent back once, then refused.
+
+- **Groups.** It answers only when named, by `@` its username or
+  `/command@` it, or replied to. In a direct message it answers everything.
+  It never answers one message twice, never answers another bot, and never
+  speaks first: a reply is attached to the message it answers.
+- **Thread memory.** The last six messages of the chat, in memory, gone ten
+  minutes after the last one, like the `/check` state.
+- **Voice.** Six lines unless asked to expand, plain and technical, no emoji,
+  no exclamation, no persona. It says when it does not know and names the
+  command that would find out. It never says whether to pay an endpoint,
+  never gives financial advice, and never speculates about an undecided case;
+  `get_case` returns nothing about the outcome of one.
+- **Cost.** Every free text turn spends at least one model call, so it costs
+  what `/check`'s model step costs, five tokens, and a read inside it that
+  reaches a model costs five more. The refusal says what the limit protects
+  and when it lifts.
+- **Model.** Claude Opus 5 through the Anthropic SDK at low effort, with
+  adaptive thinking and the server side refusal fallback. `RECOURSE_BOT_MODEL`
+  overrides the model and `RECOURSE_BOT_BACKEND=none` turns free text off. The
+  `claude` CLI is not a backend for free text: it carries tools of its own,
+  and the model here must be handed the five reads and nothing more.
+- **Injection.** A promise, a response body or a case reason inside a read's
+  result is text a party wrote, and the model is told so. The most it can do
+  is steer the model into another read, and every read is read only and
+  counted against the chat's bucket.
 
 ## Run it
 
@@ -50,4 +96,10 @@ python bot/main.py
 
 Stage 2 of `/promise` and all of `/check` need a model behind the linter:
 `ANTHROPIC_API_KEY` in the environment, or the `claude` CLI signed in on the
-machine. Without one, both say so and offer nothing.
+machine. Without one, both say so and offer nothing. Free text needs a
+credential the Anthropic SDK finds, `ANTHROPIC_API_KEY` or an `ant auth login`
+profile, for the reason above; without one it says so and the commands work.
+
+To watch it answer without Telegram, `python scripts/ask_bot.py` puts ten
+questions through the same function a direct message reaches, against the live
+chain, and prints the reads each one made beside the reply.

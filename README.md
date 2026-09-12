@@ -246,7 +246,7 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 239 direct tests
+python scripts/test.py         # freeze, house style, both contracts linted, 257 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -256,7 +256,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 239 direct tests cover the contracts through the double, the buyer agent,
+The 257 direct tests cover the contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

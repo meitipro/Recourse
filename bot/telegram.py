@@ -52,11 +52,18 @@ class Telegram:
             self.offset = rows[-1]["update_id"] + 1
         return rows
 
-    def send(self, chat_id: int, text: str) -> None:
+    def send(self, chat_id: int, text: str, reply_to: int | None = None, thread_id: int | None = None) -> None:
         # Telegram caps a message at 4096 characters. Split on paragraphs
-        # rather than truncating a verdict mid sentence.
-        for chunk in _chunks(text, 4000):
-            self._call("sendMessage", {"chat_id": chat_id, "text": chunk, "disable_web_page_preview": True})
+        # rather than truncating a verdict mid sentence. In a group the first
+        # piece is attached to the message it answers, in the same topic, so
+        # the bot never opens a thread of its own.
+        for index, chunk in enumerate(_chunks(text, 4000)):
+            payload: dict = {"chat_id": chat_id, "text": chunk, "disable_web_page_preview": True}
+            if thread_id is not None:
+                payload["message_thread_id"] = thread_id
+            if reply_to is not None and index == 0:
+                payload["reply_parameters"] = {"message_id": reply_to, "allow_sending_without_reply": True}
+            self._call("sendMessage", payload)
 
     def log(self, message: str) -> None:
         sys.stderr.write(f"  bot {message}\n")

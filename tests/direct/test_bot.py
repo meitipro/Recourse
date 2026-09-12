@@ -4,23 +4,27 @@ The bot, without Telegram, a chain or a model.
 The boundary is tested as a property of the process, not a policy: the client
 has no account, the source names no write method, a secret gets one reply and
 nothing else is read. The commands are tested through injected dependencies
-that record what they were asked.
+that record what they were asked, and free text through a model double that
+plays back its turns and records everything it was handed.
 """
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import sys
+from types import SimpleNamespace
 
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+from bot.agent import SYSTEM, TOOLS, ClaudeChat, NoChat, Turn, _turn, mask_quantities, unsourced  # noqa: E402
 from bot.guard import looks_like_secret  # noqa: E402
-from bot.handlers import Unavailable, citation, handle, to_pid  # noqa: E402
-from bot.state import Bucket, Conversations  # noqa: E402
+from bot.handlers import Context, Unavailable, addressed, citation, handle, respond, to_pid  # noqa: E402
+from bot.state import Bucket, Conversations, Seen, Threads  # noqa: E402
 
 
 class FakeDeps:
@@ -39,6 +43,7 @@ class FakeDeps:
         self.lint_result = {"judgeable": False, "reason": "no measurable term here", "failed_check": "no measurable term", "suggestion": None, "stage": 1}
         self.dry = {"verdict": "not_honored", "reason": "stale", "agreed": "yes"}
         self.fail_chain = False
+        self.no_case = False
 
     def addresses(self):
         return {"escrow": "0xESCROW", "dispute": "0xDISPUTE", "explorer": "https://explorer"}
@@ -50,6 +55,8 @@ class FakeDeps:
         if method == "get_payment":
             return dict(self.payment)
         if method == "get_case":
+            if self.no_case:
+                raise Unavailable("case not found")
             return dict(self.case)
         if method == "get_seller":
             return {"address": args[0], "promise": "P", "active": True, "judgeable": True, "registered_at": 1, "total": 7, "upheld": 2, "live": 3, "reviewed": ""}
@@ -59,6 +66,13 @@ class FakeDeps:
             return {"payments": 7, "held": str(9 * 10**18), "bond_amount": str(10**18), "window_seconds": 300}
         if method == "stats":
             return {"cases": 3}
+        if method == "recent_verdicts":
+            rows = [
+                {"pid": "p-000003", "verdict": 2, "verdict_name": "not_honored"},
+                {"pid": "p-000002", "verdict": 1, "verdict_name": "honored"},
+                {"pid": "p-000001", "verdict": 3, "verdict_name": "unclear"},
+            ]
+            return rows[: args[0]]
         raise AssertionError(method)
 
     def lint(self, promise):
@@ -93,8 +107,6 @@ def test_the_chain_reader_is_a_throwaway_that_holds_nothing():
     assert first.account.address != second.account.address
     keys = ROOT / ".accounts.json"
     if keys.exists():
-        import json
-
         from genlayer_py import create_account
 
         demo = {create_account(k).address.lower() for k in json.loads(keys.read_text(encoding="utf-8")).values()}
@@ -250,3 +262,310 @@ def test_ids_and_citations_round_trip():
     assert citation("p-000043", 1788639536) == "RC-2026-0043"
     with pytest.raises(ValueError):
         to_pid("forty three")
+
+
+# --- free text: a model that can only read ----------------------------------
+
+FIVE = ["lint", "judge_dry_run", "get_case", "get_seller", "get_stats"]
+
+
+def ask(name, **arguments):
+    """A model turn that makes one read."""
+    call = f"call_{name}"
+    return Turn(stop="tool_use", content=[{"type": "tool_use", "id": call, "name": name, "input": arguments}], calls=[(call, name, arguments)])
+
+
+def say(text):
+    """A model turn that answers."""
+    return Turn(stop="end_turn", content=[{"type": "text", "text": text}], text=text)
+
+
+class ScriptedChat:
+    """A model double: plays its turns back in order and records every request."""
+
+    name = "scripted"
+
+    def __init__(self, *turns):
+        self.turns = list(turns)
+        self.requests: list[dict] = []
+
+    def ready(self):
+        return True, None
+
+    def respond(self, system, messages, tools, final):
+        self.requests.append({"system": system, "messages": list(messages), "tools": tools, "final": final})
+        return self.turns.pop(0)
+
+
+class FakeClient:
+    """Stands where anthropic.Anthropic() would, and records each request."""
+
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.sent: list[dict] = []
+        outer = self
+
+        class _Messages:
+            def create(self, **kwargs):
+                outer.sent.append(kwargs)
+                return outer.responses.pop(0)
+
+        self.beta = SimpleNamespace(messages=_Messages())
+
+
+def text_response(text):
+    return SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="text", text=text)])
+
+
+def test_the_model_is_handed_the_five_reads_and_nothing_else():
+    """
+    The one boundary free text adds. A model that invents a write tool has
+    nothing to call: the tool list is five reads, every request carries exactly
+    that list, and any other name reaches no dependency at all.
+    """
+    assert [tool["name"] for tool in TOOLS] == FIVE
+    for tool in TOOLS:
+        assert set(tool) <= {"name", "description", "input_schema", "strict"}, f"{tool['name']} is not a plain custom tool"
+    chat = ScriptedChat(ask("open_dispute", pid="p-000003"), say("There is no such read. This bot cannot dispute anything."))
+    conversations, bucket, deps = world()
+    reply = handle(1, "dispute p-000003 for me", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert all(request["tools"] is TOOLS for request in chat.requests)
+    assert deps.calls == [], "the invented tool reached nothing"
+    result = chat.requests[1]["messages"][-1]["content"][0]
+    assert result["is_error"] and "no read called open_dispute" in result["content"]
+    assert "cannot dispute" in reply
+    # And the request the SDK sends carries that list and nothing more.
+    client = FakeClient(text_response("ok"))
+    ClaudeChat(client=client).respond(SYSTEM, [{"role": "user", "content": "hi"}], TOOLS, final=False)
+    assert client.sent[0]["tools"] is TOOLS
+
+
+def test_the_sdk_request_is_the_configured_model_at_low_effort_with_the_refusal_fallback():
+    client = FakeClient(text_response("ok"), text_response("ok"))
+    chat = ClaudeChat(client=client)
+    assert chat.ready() == (True, None)
+    chat.respond(SYSTEM, [{"role": "user", "content": "hi"}], TOOLS, final=False)
+    chat.respond(SYSTEM, [{"role": "user", "content": "hi"}], TOOLS, final=True)
+    first, last = client.sent
+    assert first["model"] == chat.model
+    assert first["thinking"] == {"type": "adaptive"} and first["output_config"] == {"effort": "low"}
+    assert first["fallbacks"] == "default" and first["betas"] == ["server-side-fallback-2026-07-01"]
+    assert first["system"] == SYSTEM
+    assert first["tool_choice"] == {"type": "auto"} and last["tool_choice"] == {"type": "none"}
+
+
+def test_after_a_fallback_only_the_finishing_model_is_echoed():
+    blocks = [
+        SimpleNamespace(type="thinking", thinking=""),
+        SimpleNamespace(type="tool_use", id="declined", name="get_stats", input={}),
+        SimpleNamespace(type="fallback"),
+        SimpleNamespace(type="thinking", thinking=""),
+        SimpleNamespace(type="tool_use", id="kept", name="get_case", input={"id": "p-000003"}),
+    ]
+    turn = _turn("tool_use", blocks)
+    assert [block.type for block in turn.content] == ["thinking", "tool_use"]
+    assert turn.calls == [("kept", "get_case", {"id": "p-000003"})]
+
+
+def test_free_text_is_answered_from_a_read_made_that_turn():
+    chat = ScriptedChat(ask("get_case", id="RC-2026-0003"), say("RC-2026-0003 ruled not_honored: nine hours old. The money moved."))
+    conversations, bucket, deps = world()
+    reply = handle(1, "what happened with RC-2026-0003", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert reply == "RC-2026-0003 ruled not_honored: nine hours old. The money moved."
+    assert ("read", "0xESCROW", "get_payment", ("p-000003",)) in deps.calls
+    result = chat.requests[1]["messages"][-1]["content"][0]
+    assert result["tool_use_id"] == "call_get_case" and '"verdict": "not_honored"' in result["content"]
+
+
+def test_a_number_no_read_returned_is_never_stated():
+    chat = ScriptedChat(say("Recourse has settled 42 disputes."), say("Still 42, from memory."))
+    conversations, bucket, deps = world()
+    reply = handle(1, "how many disputes has it settled", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert "42" not in reply and "/stats" in reply
+    assert "42" in chat.requests[1]["messages"][-1]["content"], "the model was told which number had no read behind it"
+    assert unsourced("payments 7, bond 1.00 GEN", [json.dumps({"payments": 7, "bond": "1.00 GEN"})], "") == []
+    assert unsourced("payments 8", [json.dumps({"payments": 7})], "") == ["8"]
+    assert unsourced("RC-2026-0004 is next", [json.dumps({"citation": "RC-2026-0003"})], "") == ["RC-2026-0004"]
+
+
+def test_three_reads_at_most_then_it_answers_with_what_it_has():
+    chat = ScriptedChat(
+        ask("get_stats"), ask("get_case", id="p-000003"), ask("get_seller", address="0x" + "a" * 40),
+        say("That is what the reads returned."),
+    )
+    conversations, _, deps = world()
+    reply = handle(1, "tell me all of it", conversations, Bucket(capacity=100), deps, threads=Threads(), chat=chat)
+    assert [request["final"] for request in chat.requests] == [False, False, False, True]
+    assert reply == "That is what the reads returned."
+    # Four reads asked for at once: three run, the fourth gets an error.
+    many = Turn(
+        stop="tool_use",
+        content=[{"type": "tool_use", "id": f"c{i}", "name": "get_stats", "input": {}} for i in range(4)],
+        calls=[(f"c{i}", "get_stats", {}) for i in range(4)],
+    )
+    chat = ScriptedChat(many, say("Answered from the reads that ran."))
+    handle(2, "the stats, four times over", conversations, Bucket(capacity=100), deps, threads=Threads(), chat=chat)
+    results = chat.requests[1]["messages"][-1]["content"]
+    assert [result.get("is_error", False) for result in results] == [False, False, False, True]
+    assert chat.requests[1]["final"] is True
+
+
+def test_the_model_is_given_no_number_to_draw_on():
+    assert not re.search(r"\d", SYSTEM.replace("x402", "")), "the system prompt carries a number"
+    assert not re.search(r"\d", json.dumps(TOOLS).replace("x402", "")), "a tool definition carries a number"
+    assert "the missing dispute right" in SYSTEM, "what Recourse is comes from the skill's reference file"
+    remembered = mask_quantities("RC-2026-0003 ruled not_honored, 4.00 GEN back after 83 seconds, over x402.")
+    assert "RC-2026-0003" in remembered and "x402" in remembered
+    assert "4.00" not in remembered and "83" not in remembered and remembered.count("[n]") == 2
+
+
+def test_an_undecided_case_gives_the_model_nothing_to_speculate_from():
+    conversations, bucket, deps = world()
+    deps.payment["status"] = 2
+    deps.no_case = True
+    chat = ScriptedChat(ask("get_case", id="p-000003"), say("p-000003 is still being judged."))
+    reply = handle(1, "is p-000003 decided", conversations, bucket, deps, threads=Threads(), chat=chat)
+    result = json.loads(chat.requests[1]["messages"][-1]["content"][0]["content"])
+    assert result["decided"] is False and "verdict" not in result and "reason" not in result
+    assert reply == "p-000003 is still being judged."
+
+
+def test_thread_memory_is_the_last_six_messages_for_ten_minutes():
+    now = [1000.0]
+    threads = Threads(clock=lambda: now[0])
+    for n in range(4):
+        threads.add(1, f"question {n}", f"answer {n}")
+    history = threads.history(1)
+    assert len(history) == 6 and history[0] == {"role": "user", "content": "question 1"}
+    now[0] += 599
+    assert len(threads.history(1)) == 6
+    now[0] += 2
+    assert threads.history(1) == []
+    # A reply is remembered with its quantities masked, and a secret clears it.
+    conversations, bucket, deps = world()
+    threads = Threads()
+    handle(1, "/stats", conversations, bucket, deps, threads=threads)
+    remembered = threads.history(1)[1]["content"]
+    assert "payments [n]" in remembered and "payments 7" not in remembered
+    handle(1, "0x" + "ef" * 32, conversations, bucket, deps, threads=threads)
+    assert threads.history(1) == [], "a secret clears the thread too"
+
+
+def test_six_lines_unless_asked_to_expand():
+    long = "\n".join(f"line {word}" for word in ("one", "two", "three", "four", "five", "six", "seven", "eight"))
+    chat = ScriptedChat(say(long), say(long))
+    conversations, bucket, deps = world()
+    short = handle(1, "tell me about it", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert len(short.splitlines()) == 6 and short.endswith("Ask me to expand for the rest.")
+    full = handle(1, "expand on that", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert len(full.splitlines()) == 8
+
+
+def test_would_this_response_pass_starts_the_two_step_dry_run():
+    chat = ScriptedChat(ask("judge_dry_run", promise="", response=""), say("Step 1 of 2: send the seller's promise."))
+    conversations, bucket, deps = world()
+    threads = Threads()
+    assert handle(3, "would this response pass", conversations, bucket, deps, threads=threads, chat=chat) == "Step 1 of 2: send the seller's promise."
+    assert conversations.get(3) == {"step": "promise"}
+    assert "response body" in handle(3, "Prices within five seconds.", conversations, bucket, deps, threads=threads, chat=chat)
+    third = handle(3, '{"price": 1, "ts": "old"}', conversations, bucket, deps, threads=threads, chat=chat)
+    assert third.startswith("DRY RUN")
+    assert ("dry_run", "Prices within five seconds.", '{"price": 1, "ts": "old"}') in deps.calls
+
+
+def test_free_text_costs_what_check_costs_and_the_refusal_says_what_it_protects():
+    conversations, deps, threads = Conversations(), FakeDeps(), Threads()
+    bucket = Bucket(capacity=12, per_minute=0.001)
+    chat = ScriptedChat(say("Ask about a case or a seller."), say("Ask about a case or a seller."))
+    assert "Ask about" in handle(1, "hello", conversations, bucket, deps, threads=threads, chat=chat)
+    assert "Ask about" in handle(1, "hello again", conversations, bucket, deps, threads=threads, chat=chat)
+    refused = handle(1, "and again", conversations, bucket, deps, threads=threads, chat=chat)
+    assert refused.startswith("Slow down") and "protects the model budget" in refused and "seconds" in refused
+    assert len(chat.requests) == 2, "the refused turn spent no model call"
+    # A dry run inside a free text turn costs what /check's model step costs, on top.
+    bucket = Bucket(capacity=10, per_minute=0.001)
+    chat = ScriptedChat(ask("judge_dry_run", promise="Prices within five seconds.", response='{"ts": "old"}'), say("DRY RUN: not_honored, stale."))
+    handle(2, "would this pass", conversations, bucket, deps, threads=threads, chat=chat)
+    assert ("dry_run", "Prices within five seconds.", '{"ts": "old"}') in deps.calls
+    assert not bucket.take(2, cost=1), "five for the turn and five for the dry run"
+
+
+def test_without_a_model_free_text_says_so_and_names_the_commands():
+    conversations, bucket, deps = world()
+    reply = handle(1, "how often does it rule for the seller", conversations, bucket, deps, threads=Threads(), chat=NoChat())
+    assert "turned off" in reply and "/stats" in reply and "/case" in reply
+    assert deps.calls == []
+    assert bucket.take(1, cost=bucket.capacity), "saying so cost nothing"
+
+
+# --- groups, and one reply per message ----------------------------------------
+
+ME = {"id": 42, "username": "RecourseBot"}
+
+
+def group(text, **extra):
+    return {"message_id": 5, "chat": {"id": -100, "type": "supergroup"}, "from": {"id": 7, "is_bot": False}, "text": text, **extra}
+
+
+def test_in_a_group_it_answers_only_when_named_or_replied_to():
+    assert addressed({"chat": {"type": "private"}, "text": "how often does it rule for the seller"}, ME) == "how often does it rule for the seller"
+    assert addressed(group("how often does it rule for the seller"), ME) is None
+    assert addressed(group("/stats"), ME) is None
+    assert addressed(group("@recoursebot what is this"), ME) == "what is this"
+    assert addressed(group("/stats@RecourseBot"), ME) == "/stats"
+    assert addressed(group("/stats@OtherBot"), ME) is None
+    assert addressed(group("@RecourseBotFan hello"), ME) is None
+    assert addressed(group("and the one before it", reply_to_message={"from": {"id": 42}}), ME) == "and the one before it"
+    assert addressed(group("thanks", reply_to_message={"from": {"id": 9}}), ME) is None
+    assert addressed(group("what is this", entities=[{"type": "text_mention", "user": {"id": 42}}]), ME) == "what is this"
+
+
+def test_one_message_gets_one_reply_and_the_bot_never_speaks_first():
+    conversations, bucket, deps = world()
+    ctx = Context(conversations=conversations, bucket=bucket, deps=deps, threads=Threads(), seen=Seen())
+    update = {"update_id": 1, "message": group("/stats@RecourseBot")}
+    first = respond(update, ME, ctx)
+    assert first is not None and first.reply_to == 5 and "payments 7" in first.text
+    assert respond(update, ME, ctx) is None, "a message delivered twice is answered once"
+    from_a_bot = group("@RecourseBot hi", **{"from": {"id": 8, "is_bot": True}, "message_id": 6})
+    assert respond({"update_id": 2, "message": from_a_bot}, ME, ctx) is None, "another bot is never answered"
+    assert respond({"update_id": 3}, ME, ctx) is None, "an update with no message is not a prompt to speak"
+    direct = respond({"update_id": 4, "message": {"message_id": 9, "chat": {"id": 11, "type": "private"}, "from": {"id": 11}, "text": "/stats"}}, ME, ctx)
+    assert direct is not None and direct.reply_to is None
+    # The only place a message is sent is the reply to an update.
+    main = (ROOT / "bot" / "main.py").read_text(encoding="utf-8")
+    assert main.count(".send(") == 1 and "out = respond(update" in main
+
+
+def test_the_reference_the_bot_explains_from_is_the_skills_own():
+    ours = (ROOT / "bot" / "what_is_recourse.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    theirs = ROOT.parent / "recourse-skill" / "reference" / "01-what-is-recourse.md"
+    if not theirs.exists():
+        pytest.skip("the skill repository is not checked out beside this one")
+    assert ours == theirs.read_text(encoding="utf-8").replace("\r\n", "\n")
+
+
+def test_a_missing_credential_is_said_before_any_charge_and_never_crashes_a_turn(monkeypatch):
+    """
+    The SDK builds a client with no credential and fails only when a request
+    is sent. The first live run of ten questions found that by charging the
+    chat and then crashing the turn with no reply at all.
+    """
+    import anthropic
+
+    bare = SimpleNamespace(api_key=None, auth_token=None, credentials=None)
+    monkeypatch.setattr(anthropic, "Anthropic", lambda *args, **kwargs: bare)
+    ready, why = ClaudeChat().ready()
+    assert ready is False and "no Anthropic credential" in why
+    conversations, bucket, deps = world()
+    reply = handle(1, "how often does it rule for the seller", conversations, bucket, deps, threads=Threads(), chat=ClaudeChat())
+    assert "no Anthropic credential" in reply and "/stats" in reply
+    assert bucket.take(1, cost=bucket.capacity), "saying so cost nothing"
+
+    class Unauthenticated:
+        def create(self, **kwargs):
+            raise TypeError('"Could not resolve authentication method. Expected one of api_key, auth_token, or credentials to be set."')
+
+    chat = ClaudeChat(client=SimpleNamespace(beta=SimpleNamespace(messages=Unauthenticated())))
+    reply = handle(2, "how often does it rule for the seller", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert "no Anthropic credential" in reply, "a request that cannot authenticate is a reply, not a crash"

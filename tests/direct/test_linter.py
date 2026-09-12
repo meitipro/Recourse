@@ -312,3 +312,23 @@ def test_the_promise_limit_a_reader_sees_is_the_contracts():
     assert f"const MAX_PROMISE = {limit};" in _route_source("lint")
     hero = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
     assert f"/ {limit}`" in hero, "the hero's counter names a limit the contract does not have"
+
+
+def test_a_missing_credential_is_model_unavailable_not_a_crash(monkeypatch):
+    """
+    The SDK builds a client with no credential and fails only on a request,
+    with a TypeError. Stage 2 must report that as no model, the state every
+    consumer already knows how to show.
+    """
+    import anthropic
+
+    from linter.service import ClaudeModel
+
+    class Bare:
+        api_key = None
+        auth_token = None
+        credentials = None
+
+    monkeypatch.setattr(anthropic, "Anthropic", lambda *args, **kwargs: Bare())
+    with pytest.raises(ModelUnavailable, match="no Anthropic credential"):
+        ClaudeModel().ask("Returns the spot price within five seconds.")

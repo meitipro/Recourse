@@ -77,14 +77,18 @@ class ClaudeModel:
             except ImportError as error:
                 raise ModelUnavailable("the anthropic package is not installed") from error
             try:
-                self._client = anthropic.Anthropic()
+                client = anthropic.Anthropic()
             except (TypeError, anthropic.AnthropicError) as error:
-                # The SDK refuses to construct a client with no credential at
-                # all, before any request. That is the common case on a fresh
-                # machine and it is reported as what it is.
                 raise ModelUnavailable(
                     "no Anthropic credential is configured: set ANTHROPIC_API_KEY"
                 ) from error
+            # The SDK in use builds a client with no credential at all and
+            # fails only when a request is sent, with a TypeError rather than
+            # an API error. Ask it what it resolved, so a fresh machine is
+            # reported as what it is instead of as a crash on the first call.
+            if not any(getattr(client, name, None) for name in ("api_key", "auth_token", "credentials")):
+                raise ModelUnavailable("no Anthropic credential is configured: set ANTHROPIC_API_KEY")
+            self._client = client
         return self._client
 
     def ask(self, prompt: str) -> str:
@@ -100,6 +104,11 @@ class ClaudeModel:
                 output_config={"effort": "low"},
                 messages=[{"role": "user", "content": prompt}],
             )
+        except TypeError as error:
+            if "authentication" not in str(error).lower():
+                raise
+            self.last_error = "no Anthropic credential is configured"
+            raise ModelUnavailable(self.last_error) from error
         except anthropic.AuthenticationError as error:
             self.last_error = "no valid Anthropic credential is configured"
             raise ModelUnavailable(self.last_error) from error

@@ -4,10 +4,11 @@ Run the bot.
 
     TELEGRAM_BOT_TOKEN=123:abc python bot/main.py
 
-Read only. The chain client is created without an account, so this process
-cannot sign, pay, dispute or withdraw even by mistake, and
-tests/direct/test_bot.py asserts that against the client object. Message text
-is never logged.
+Read only. The chain client runs on a throwaway account that holds nothing, so
+this process cannot sign, pay, dispute or withdraw even by mistake, and
+tests/direct/test_bot.py asserts that against the client object. Free text is
+answered by a model handed the five reads and nothing else. Message text is
+never logged.
 """
 
 from __future__ import annotations
@@ -25,8 +26,10 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from bot.handlers import Unavailable, handle  # noqa: E402
-from bot.state import Bucket, Conversations  # noqa: E402
+from bot.agent import default_chat  # noqa: E402
+from bot.handlers import Context, respond  # noqa: E402
+from bot.records import Unavailable  # noqa: E402
+from bot.state import Bucket, Conversations, Seen, Threads  # noqa: E402
 from bot.telegram import Telegram  # noqa: E402
 
 
@@ -120,22 +123,26 @@ def main() -> int:
         return 2
     telegram = Telegram(token)
     me = telegram.me()
-    deps = LiveDeps()
-    conversations = Conversations()
-    bucket = Bucket()
+    chat = default_chat()
+    ctx = Context(
+        conversations=Conversations(),
+        bucket=Bucket(),
+        deps=LiveDeps(),
+        threads=Threads(),
+        seen=Seen(),
+        chat=chat,
+    )
+    ready, why = chat.ready()
     print(f"bot @{me.get('username')} polling {network}. Read only, no key, nothing logged but ids.")
+    print(f"free text: {chat.name if ready else 'off, ' + str(why)}")
     while True:
         try:
             for update in telegram.updates():
-                message = update.get("message") or {}
-                chat = message.get("chat") or {}
-                chat_id = chat.get("id")
-                text = message.get("text")
-                if chat_id is None or not isinstance(text, str):
+                out = respond(update, me, ctx)
+                if out is None:
                     continue
-                reply = handle(chat_id, text, conversations, bucket, deps)
-                telegram.send(chat_id, reply)
-                telegram.log(f"update {update.get('update_id')} chat {chat_id} answered")
+                telegram.send(out.chat_id, out.text, reply_to=out.reply_to, thread_id=out.thread_id)
+                telegram.log(f"update {update.get('update_id')} chat {out.chat_id} answered")
         except KeyboardInterrupt:
             print("\n  stopped")
             return 0
