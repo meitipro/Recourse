@@ -13,7 +13,7 @@ body = pathlib.Path("out-nested-1.jsx").read_text(encoding="utf-8").rstrip()
 # per mode.
 body = body.replace("Time{v.sortGlyph}", "{v.colTime}{v.sortGlyph}")
 
-# The citation is the permalink a reader cites and the video opens cold, so it
+# The citation is the permalink a reader cites and opens cold, so it
 # sits in the row beside the seller rather than only inside the drawer.
 CITE = ("""{row.citation ? (<Link href={`/case/${row.citation}`} onClick={(e) => e.stopPropagation()} """
         """style={{ color: "#22D3EE", borderBottom: "1px solid transparent" }}>{row.citation}</Link>) """

@@ -51,8 +51,9 @@ An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
 
-[docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
-shot, timed, every spoken number one this repository publishes.
+`demo.py` prints the buyer agent's own lines as each step happens: the honest
+payment accepted and left to its window, the stale one caught and disputed with
+a bond, the verdict when it lands and the refund when it arrives.
 
 ![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
@@ -690,6 +691,10 @@ names the URLs the linter and the MCP server will have.
 **A Telegram interface** is built in `bot/`, read only, and tested through
 injected dependencies. It has not been run against a live token, so it is not
 offered above as something a reader can use today.
+
+**A video.** [docs/SCRIPT.md](docs/SCRIPT.md) is a ninety second script for one:
+shot by shot, timed, every spoken number one this repository publishes, and
+`scripts/record.py` runs it as one command. It was not filmed.
 
 **A second network.** The freeze record, every script and the evaluation
 report are keyed by network because the freeze is over the bytes rather than

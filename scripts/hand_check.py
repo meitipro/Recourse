@@ -206,7 +206,7 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
     (r"price it served was nine hours old|the price was nine hours old|on the nine hour old price", r"nine", 0,
      "evidence/snapshot.json", lambda s: s.stale("p-000014")),
     (r"nine hour|nine hours", r"nine", 0, "seller/main.py", lambda s: "STALE_HOURS = " + literal("seller/main.py", r"STALE_HOURS = (\d+)")),
-    (r"ninety second recording script", r"ninety", 0, "docs/SCRIPT.md", lambda s: f"its last shot ends at {s.script_end}"),
+    (r"ninety second script for one", r"ninety", 0, "docs/SCRIPT.md", lambda s: f"its last shot ends at {s.script_end}"),
     (r"read from the chain when the page opened", r"nineteen", 0, "evidence/snapshot.json",
      lambda s: f"totals.payments = {s.totals['payments']}; docs/images/feed.json shows {s.feed.get('Payments')}"),
     (r"read from the chain when the page opened", r"ten", 0, "evidence/snapshot.json",
