@@ -8,6 +8,14 @@ The recording is the step immediately before the tail. It spends payments on
 studionet, so the snapshot and the feed image must both come after it, in that
 order.
 
+`python scripts/record.py` drives the take from Terminal A in
+`docs/SCRIPT.md`'s order: it prints each shot's label, runs what the shot runs,
+opens the stopwatch beside itself when the dispute line prints, and waits for a
+key at every switch to a browser tab. `--dry-run` walks the same sequence
+without running anything or writing to the chain. It stops at the first shot
+whose line never prints, names the shot and what SCRIPT.md expects there, and
+retries nothing.
+
 The tail, in this order, no step skipped:
 
 1. **Every chain write finishes, the recording's included.** `prepare.py`, the
