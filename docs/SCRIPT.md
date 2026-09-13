@@ -123,8 +123,14 @@ the first frame.
    beyond `python scripts/prepare.py` having been run once today and
    `python scripts/verify.py` having said the deployment matches. Large font.
 3. **Browser tab 1, the site**, not yet loaded. Load it as recording starts so
-   the lane's first CONTESTED lands inside the opening shot. Local:
-   `npm run dev` in `web/` already running on 4500. Hosted: the live URL.
+   the lane's first CONTESTED lands inside the opening shot. Local: a
+   production build on 4500, so no development indicator lands in frame, with
+   `LINTER_URL` set, because without it a production build answers the linter
+   panel with a 503. In `web/`, `npx next build`, then in bash
+   `LINTER_URL=http://127.0.0.1:4503/lint npx next start -p 4500`, or in
+   PowerShell `$env:LINTER_URL="http://127.0.0.1:4503/lint"; npx next start -p 4500`.
+   Stop `npm run dev` first: both use port 4500, and building while it runs
+   corrupts `web/.next`, after which every route fails. Hosted: the live URL.
 4. **Browser tab 2, the feed** (`#feed`), loaded, showing the rows from the real
    run so the table is not empty at 1:04. It does not refresh by itself, since
    the feed reads the chain once, when the page loads: reload it at 1:04,
