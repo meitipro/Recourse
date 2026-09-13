@@ -470,8 +470,8 @@ class Take:
         moved = insert.placed != insert.filmed
         if not getattr(self.args, insert.flag):
             if self.dry:
-                where = f"filmed here and placed after {start(insert.placed)} in the edit" if moved else "goes here"
-                field("OPTIONAL", f"{insert.name} is {where}, as SCRIPT.md says ({insert.filming}). Not in this take: pass --{insert.flag} to include it")
+                where = f"is filmed here and placed after {start(insert.placed)} in the edit" if moved else "goes here"
+                field("OPTIONAL", f"{insert.name} {where}, as SCRIPT.md says ({insert.filming}). Not in this take: pass --{insert.flag} to include it")
             return
         banner(f"OPTIONAL, {insert.placement}: {insert.name}")
         if moved:
