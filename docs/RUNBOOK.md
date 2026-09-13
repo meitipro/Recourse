@@ -33,7 +33,10 @@ The tail, in this order, no step skipped:
 5. `python scripts/test.py`, green. Between steps 2 and 4 it fails on purpose
    whenever the snapshot gained a payment: the feed image and its caption are
    held to the snapshot.
-6. The hand check: the README's numbers, read against the new snapshot.
+6. The hand check: `python scripts/hand_check.py`, then walk
+   `docs/HAND-CHECK.md` by hand: every README number beside the file behind
+   it, every link with what it answered, and the order a stranger reads them
+   in. The script reads and never fails; the ticking is by hand.
 
 Reversing any two of these produces a repository that looks correct and is
 not. Submit after step 6.
