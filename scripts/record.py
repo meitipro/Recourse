@@ -16,8 +16,10 @@ does.
 It drives what SCRIPT.md lists and nothing else. Every label, instruction and
 spoken line printed here is read out of SCRIPT.md, and the plan below is
 checked against SCRIPT.md's own table on every run, dry or not, so a shot the
-script adds, drops, reorders or rewords stops this before anything starts.
-Where the two disagree SCRIPT.md is right, and this file is the one to change.
+script adds, drops, reorders or rewords stops this before anything starts. A
+shot whose row says to film it out of order, like the case page, is filmed
+where its row says. Where the two disagree SCRIPT.md is right, and this file is
+the one to change.
 
 It never takes a screenshot or records anything, never touches docs/images,
 and never runs an OPTIONAL shot without its flag. A step that fails stops the
@@ -25,8 +27,8 @@ take, naming the shot and what SCRIPT.md expects there. Nothing is retried.
 
 --dry-run runs nothing and writes nothing to the chain. It prints every shot,
 every command, every line it would wait for and every pause. In a terminal it
-also waits at each pause, so the three rehearsals SCRIPT.md asks for can be
-walked with it.
+also waits at each pause, so it is the rehearsal SCRIPT.md asks for three of,
+before one real run and the take.
 """
 
 from __future__ import annotations
@@ -129,6 +131,11 @@ def plain(text: str) -> str:
     return " ".join(re.sub(r"\*\*|\*|`", "", text).split())
 
 
+def start(time_range: str) -> str:
+    """Where a shot starts: "0:42" for "0:42 to 0:56"."""
+    return time_range.split(" to ")[0]
+
+
 class Shot(typing.NamedTuple):
     time: str
     title: str
@@ -219,11 +226,13 @@ PLAN: list[tuple[str, list[Step]]] = [
     ]),
     ("0:18 to 0:30", [
         Step("expect", 'the heading "the honest path"', "the honest path", equals("the honest path")),
-        Step("expect", 'a line starting "check"', "check ok", starts("check")),
-        Step("expect", 'a line starting "payment p-"', "payment p-000NNN",
-             lambda line: re.match(r"payment\s+p-\d{6}", line) is not None, "pid"),
-        Step("expect", 'a line starting "outcome"', "outcome", starts("outcome"), "window"),
-        Step("expect", 'a line starting "signature"', "signature verified", starts("signature")),
+        Step("expect", 'a line starting "paid" with the payment id', "payment p-000NNN",
+             lambda line: re.match(r"paid\s.*payment p-\d{6}", line) is not None, "pid"),
+        Step("expect", 'a line starting "recorded"', "recorded evidence frozen", starts("recorded")),
+        Step("expect", 'a line starting "check" with "pass" in it', "check pass: ok", starts("check", "pass")),
+        Step("expect", 'a line starting "outcome"', "outcome accepted, letting the window expire", starts("outcome")),
+        Step("expect", 'a line starting "seller may withdraw after"', "seller may withdraw after",
+             starts("seller may withdraw after"), "window"),
     ]),
     ("0:30 to 0:36", [
         Step("expect", 'the line "The same endpoint switches to stale and still returns 200."',
@@ -241,14 +250,15 @@ PLAN: list[tuple[str, list[Step]]] = [
     ("0:56 to 1:04", [
         Step("expect", 'a line starting "verdict"', "verdict", starts("verdict")),
         Step("expect", 'a line starting "reason"', "reason", starts("reason")),
+        Step("expect", 'a line starting "dispute to verdict"', "dispute to verdict", starts("dispute to verdict")),
     ]),
     ("1:04 to 1:12", [
         Step("expect", 'a line starting "dispute to money back"', "dispute to money back",
              starts("dispute to money back")),
         Step("expect", 'a line starting "refund" with "returned" in it', "refund", starts("refund", "returned")),
-        Step("stopwatch_stop", "Terminal B", "Stop the stopwatch"),
+        Step("stopwatch_stop", "Terminal B", "stops by itself at that refund line"),
         Step("finished", "demo.py finishes and exits 0"),
-        Step("pause", "browser tab 2, the feed", "Browser, section 05"),
+        Step("pause", "browser tab 2, the feed, reloaded", "Browser, section 05"),
     ]),
     ("1:12 to 1:18", [
         Step("window", "the honest payment's window", "window (300 s) to have closed"),
@@ -271,25 +281,37 @@ PLAN: list[tuple[str, list[Step]]] = [
 #: Table rows SCRIPT.md marks OPTIONAL, and the flag that includes each.
 OPTIONAL_ROWS = {"1:12 to 1:18": "withdraw"}
 
+#: Shots SCRIPT.md films out of the table's order: the shot each is filmed
+#: after, and the words in its row that say so.
+FILMED_AFTER = {"0:42 to 0:56": ("1:04 to 1:12", "filmed after the feed at 1:04")}
+
 #: Shot list items SCRIPT.md marks OPTIONAL, and the flags that include them.
-SETUP_GATES = {7: ("withdraw",), 8: ("linter", "clerk")}
+SETUP_GATES = {7: ("withdraw",), 8: ("linter", "rewrite", "clerk")}
 
 
 class Insert(typing.NamedTuple):
-    after: str
+    #: The shot it follows in the edit, and the shot it is filmed after. A
+    #: browser shot is never filmed while demo.py runs, since the demo does not
+    #: wait for it.
+    placed: str
+    filmed: str
     flag: str
     name: str
-    #: The words in SCRIPT.md's bullet that put the shot where this puts it.
+    #: The words in SCRIPT.md's bullet that say where it goes and when it is filmed.
     placement: str
+    filming: str
     where: str
 
 
 INSERTS = [
-    Insert("0:18 to 0:30", "linter", "The promise linter", "Insert as a six second shot after 0:18",
+    Insert("0:18 to 0:30", "0:00 to 0:10", "linter", "The promise linter",
+           "Insert as a six second shot after 0:18", "film it straight after the opening shot",
            "browser tab 1, the site's hero"),
-    Insert("0:18 to 0:30", "rewrite", "The rewrite", "straight after the refusal",
+    Insert("0:18 to 0:30", "0:00 to 0:10", "rewrite", "The rewrite",
+           "straight after the refusal", "straight after the refusal",
            "browser, the hero of a site with a key behind its linter"),
-    Insert("1:12 to 1:18", "clerk", "The clerk", "It replaces the withdraw shot at 1:12",
+    Insert("1:12 to 1:18", "1:12 to 1:18", "clerk", "The clerk",
+           "filmed at 1:12, after the withdraw shot", "filmed at 1:12, after the withdraw shot",
            "browser tab 1, the clerk section"),
 ]
 
@@ -311,6 +333,12 @@ def check_plan(shots: list[Shot], optional: dict[str, str], setup: list[str]) ->
                     f"docs/SCRIPT.md's shot at {time_range} no longer says {step.anchor!r}, "
                     f"which record.py's {step.kind} step there rests on. {fix}"
                 )
+    by_time = {shot.time: shot for shot in shots}
+    for time_range, (after, phrase) in FILMED_AFTER.items():
+        if phrase not in by_time[time_range].on_screen:
+            raise SystemExit(
+                f"docs/SCRIPT.md's shot at {time_range} no longer says {phrase!r}, which is why record.py films it after {after}. {fix}"
+            )
     marked = {shot.time for shot in shots if shot.optional}
     if marked != set(OPTIONAL_ROWS):
         raise SystemExit(f"docs/SCRIPT.md marks {sorted(marked)} OPTIONAL and record.py gates {sorted(OPTIONAL_ROWS)}. {fix}")
@@ -318,8 +346,9 @@ def check_plan(shots: list[Shot], optional: dict[str, str], setup: list[str]) ->
         if ("OPTIONAL" in item) != (number in SETUP_GATES):
             raise SystemExit(f"docs/SCRIPT.md's shot list item {number} and record.py disagree about whether it is OPTIONAL. {fix}")
     for insert in INSERTS:
-        if insert.placement not in optional.get(insert.name, ""):
-            raise SystemExit(f"docs/SCRIPT.md's OPTIONAL {insert.name!r} no longer says {insert.placement!r}. {fix}")
+        for words in (insert.placement, insert.filming):
+            if words not in optional.get(insert.name, ""):
+                raise SystemExit(f"docs/SCRIPT.md's OPTIONAL {insert.name!r} no longer says {words!r}. {fix}")
     live = optional.get("The live site", "")
     if HOSTED_SITE not in live or LOCAL_SITE not in live:
         raise SystemExit(f"docs/SCRIPT.md's live site item no longer names {HOSTED_SITE} and {LOCAL_SITE}. {fix}")
@@ -388,8 +417,15 @@ class Take:
             field("Terminal B", f"opens at 0:36 in {stopwatch_mechanism()}")
             field("the site", self.site)
         self.before()
+        later: dict[str, list[tuple[Shot, list[Step]]]] = {}
         for time_range, steps in PLAN:
             shot = self.shots[time_range]
+            if time_range in FILMED_AFTER:
+                after, _ = FILMED_AFTER[time_range]
+                later.setdefault(after, []).append((shot, steps))
+                if self.dry:
+                    say("", f"  {shot.time}  filmed later: SCRIPT.md films it after {start(after)} and places it here in the edit")
+                continue
             self.shot = shot
             flag = OPTIONAL_ROWS.get(time_range)
             included = flag is None or getattr(self.args, flag)
@@ -397,8 +433,11 @@ class Take:
                 self.play(shot, steps, skipped="" if included else flag)
             else:
                 say(f"  {shot.time}  OPTIONAL, not in this take")
+            for held, held_steps in later.pop(time_range, []):
+                self.shot = held
+                self.play(held, held_steps, filmed=f"now, after {start(time_range)}, and placed at {start(held.time)} in the edit")
             for insert in INSERTS:
-                if insert.after == time_range:
+                if insert.filmed == time_range:
                     self.insert(insert)
         self.after()
 
@@ -411,12 +450,14 @@ class Take:
                 continue
             field(f"{number}.", item)
             if number == 1:
-                field("", f"record.py opens Terminal B itself when the dispute line prints, in {stopwatch_mechanism()}.")
+                field("", f"On this machine it opens in {stopwatch_mechanism()}.")
         if not self.dry:
             self.pause("the screen recorder", "Start recording the screen now. The take begins at 0:00.")
 
-    def play(self, shot: Shot, steps: list[Step], skipped: str = "") -> None:
-        banner(f"{shot.time}   {'OPTIONAL: ' if shot.optional else ''}{shot.title}", shot.time.split(" to ")[0])
+    def play(self, shot: Shot, steps: list[Step], skipped: str = "", filmed: str = "") -> None:
+        banner(f"{shot.time}   {'OPTIONAL: ' if shot.optional else ''}{shot.title}", start(shot.time))
+        if filmed:
+            field("filmed", filmed)
         if self.dry:
             field("on screen", shot.on_screen)
             field("read aloud", shot.words)
@@ -426,18 +467,22 @@ class Take:
             getattr(self, "step_" + step.kind)(shot, step)
 
     def insert(self, insert: Insert) -> None:
+        moved = insert.placed != insert.filmed
         if not getattr(self.args, insert.flag):
             if self.dry:
-                field("OPTIONAL", f"{insert.name}, which SCRIPT.md places here ({insert.placement}), is not in this take: pass --{insert.flag} to include it")
+                where = f"filmed here and placed after {start(insert.placed)} in the edit" if moved else "goes here"
+                field("OPTIONAL", f"{insert.name} is {where}, as SCRIPT.md says ({insert.filming}). Not in this take: pass --{insert.flag} to include it")
             return
         banner(f"OPTIONAL, {insert.placement}: {insert.name}")
+        if moved:
+            field("filmed", f"now, after {start(insert.filmed)}, and placed after {start(insert.placed)} in the edit")
         self.pause(insert.where, self.optional[insert.name])
 
     def after(self) -> None:
         banner("the take is done: stop recording the screen")
         field("then", self.tail)
         if self.dry:
-            field("dry run", "Every shot above was printed and nothing ran or was written to the chain. SCRIPT.md asks for three clean rehearsals before the take.")
+            field("dry run", "Every shot above was printed and nothing ran or was written to the chain. SCRIPT.md asks for three of these, then one real run, then the take.")
 
     # --- steps ----------------------------------------------------------------
 
@@ -470,9 +515,9 @@ class Take:
                 self.fail(shot, f"record.py waited for {step.what}, and {self.running} ended, exit {code}, without printing it")
             if step.match and step.match(line):
                 if step.capture == "pid":
-                    self.pid = re.match(r"payment\s+(p-\d{6})", line).group(1)
+                    self.pid = re.search(r"payment (p-\d{6})", line).group(1)
                 elif step.capture == "window":
-                    found = re.search(r"window ends (\d+)", line)
+                    found = re.search(r"withdraw after (\d+)", line)
                     self.window_ends = int(found.group(1)) if found else 0
                 return
 
@@ -539,6 +584,9 @@ class Take:
     def watch(self, line: str) -> None:
         """Terminal B follows the lines themselves, so a pause never delays it."""
         if not self.stopwatch and line.startswith("disputed") and "bond" in line:
+            # A stop file left by an earlier take under the same process id
+            # would stop the new stopwatch at 00:00.
+            self.stop_file.unlink(missing_ok=True)
             try:
                 self.stopwatch = open_stopwatch(self.stop_file)
             except Exception as error:  # noqa: BLE001 - the 0:36 step reports it

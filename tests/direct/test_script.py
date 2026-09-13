@@ -45,6 +45,8 @@ def test_every_number_the_video_shows_or_says_is_the_one_its_source_holds():
     bond = int(FROZEN["bond_wei"]) // GEN
     on_screen = {
         "the stale price's age": (shown(r"stale: (\d+)s old"), (stale_hours * 3600,)),
+        "the age a second over": (shown(r"The age reads (\d+)s instead"), (stale_hours * 3600 + 1,)),
+        "the honest payment": (shown(r"paid (\d+) GEN, payment"), (amount,)),
         "the bond posted": (shown(r"bond (\d+) GEN posted"), (bond,)),
         "the refund, payment and bond": (shown(r"refund (\d+) GEN returned"), (amount + bond,)),
         "the settlement window": (shown(r"window \((\d+) s\)"), (FROZEN["window_seconds"],)),

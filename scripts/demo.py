@@ -4,13 +4,16 @@ The whole demo, both paths, one command.
 
     python scripts/demo.py                 both paths
     python scripts/demo.py --contested     the contested path only
-    python scripts/demo.py --window 60     a shorter window, for the honest path
+    python scripts/demo.py --honest        the honest path only
 
 Starts the seller endpoint, runs the honest path, switches the endpoint to stale,
-runs the contested path, and prints the elapsed times. Nothing here is staged:
-every number comes back from the chain.
+and runs the contested path. The buyer agent's own lines are on screen as each
+step happens, so the verdict appears when it lands and the money when it
+arrives, never all at once at the end. Nothing here is staged: every number
+comes back from the chain.
 
-Follow this three times clean before recording anything.
+The recording runs this through scripts/record.py, and docs/SCRIPT.md says how
+to rehearse it: three dry runs of record.py, one real run, then the take.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -61,15 +65,28 @@ def rule(title: str) -> None:
 
 
 def agent(*flags: str) -> dict:
-    """Run the buyer agent and return its machine readable report."""
-    command = [sys.executable, "agent/run.py", "--json", *flags]
-    result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
-    sys.stderr.write(result.stderr)
-    try:
-        return json.loads(result.stdout)
-    except ValueError:
-        print(result.stdout[-2000:])
-        raise SystemExit("the agent produced no report")
+    """
+    Run the buyer agent with its lines on screen as they happen, and return its
+    report. It used to run under --json with its output captured, so the
+    contested path showed nothing for two minutes and then everything at once,
+    and the dispute line the recording starts its stopwatch on never showed at
+    all. The report now comes back through a file. --json is still there for
+    scripts/rail.py, which wants the report alone.
+    """
+    with tempfile.TemporaryDirectory(prefix="recourse-demo-") as scratch:
+        report = pathlib.Path(scratch) / "report.json"
+        command = [sys.executable, "-u", "agent/run.py", "--report", str(report), *flags]
+        process = subprocess.Popen(
+            command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, encoding="utf-8", errors="replace",
+        )
+        assert process.stdout is not None
+        for line in process.stdout:
+            print("  " + line.rstrip(), flush=True)
+        code = process.wait()
+        if not report.exists():
+            raise SystemExit(f"the agent exited {code} without a report")
+        return json.loads(report.read_text(encoding="utf-8"))
 
 
 def main() -> int:
@@ -107,16 +124,11 @@ def main() -> int:
         print("endpoint  http://localhost:4501, mode correct")
 
     try:
-        honest = None
         if not args.contested:
             rule("the honest path")
             print("The seller serves a good response. The agent checks it, accepts it, and")
             print("lets the window expire. No judgment runs and nobody pays anything extra.\n")
-            honest = agent("--mode", "correct", "--no-dispute")
-            print(f"  check      {honest['check']['reason']}")
-            print(f"  payment    {honest['pid']}, {honest['response']}")
-            print(f"  outcome    {honest['outcome']}, window ends {honest['window_ends']}")
-            print(f"  signature  {'verified' if honest.get('signature_valid') else 'absent'}")
+            agent("--mode", "correct", "--no-dispute")
 
         contested = None
         if not args.honest:
@@ -124,25 +136,16 @@ def main() -> int:
             print("The same endpoint switches to stale and still returns 200. The agent")
             print("detects it, posts a bond and opens a case. No human is involved.\n")
             contested = agent("--mode", "stale")
-            print(f"  check      {contested['check']['reason']}")
-            print(f"  verdict    {contested['verdict']}")
-            if contested.get("reason"):
-                print(f"  reason     {contested['reason']}")
-            print(f"  dispute to verdict     {contested['seconds_dispute_to_settlement']}s")
-            print(f"  dispute to money back  {contested.get('seconds_dispute_to_refund', 0)}s")
-            print(f"  payment to settlement  {contested['seconds_payment_to_settlement']}s")
-            before = int(contested["balance_before"]) / GEN
-            after = int(contested["balance_after"]) / GEN
             refund = int(contested.get("refund_expected", 0)) / GEN
             landed = contested.get("refund_landed")
-            print(f"  buyer balance          {before:.2f} -> {after:.2f} GEN")
             if refund:
                 # Read from the chain after the settlement message landed, not
                 # inferred from the settlement table. The verdict landing and
                 # the money landing are two different transactions.
                 print(
                     f"  refund                 {refund:.0f} GEN "
-                    + ("returned, balance is net zero" if landed else "NOT YET LANDED")
+                    + ("returned, balance is net zero" if landed else "NOT YET LANDED"),
+                    flush=True,
                 )
 
         rule("result")

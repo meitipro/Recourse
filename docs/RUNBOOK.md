@@ -1,6 +1,7 @@
 # Demo runbook
 
-Print this. Follow it exactly, three times clean, before recording.
+Print this. Walk the take with `python scripts/record.py --dry-run` three
+times, run it once for real, then record, as `docs/SCRIPT.md` says.
 
 ## When: the recording, then the tail
 
@@ -8,8 +9,8 @@ The recording is the step immediately before the tail. It spends payments on
 studionet, so the snapshot and the feed image must both come after it, in that
 order.
 
-`python scripts/record.py` drives the take from Terminal A in
-`docs/SCRIPT.md`'s order: it prints each shot's label, runs what the shot runs,
+`python scripts/record.py` drives the take from Terminal A in the order
+`docs/SCRIPT.md` films it: it prints each shot's label, runs what the shot runs,
 opens the stopwatch beside itself when the dispute line prints, and waits for a
 key at every switch to a browser tab. `--dry-run` walks the same sequence
 without running anything or writing to the chain. It stops at the first shot
@@ -19,7 +20,7 @@ retries nothing.
 The tail, in this order, no step skipped:
 
 1. **Every chain write finishes, the recording's included.** `prepare.py`, the
-   three clean runs and the recording itself, its optional withdraw shot too,
+   one real run and the recording itself, its optional withdraw shot too,
    all write to studionet, as does any other script that sends a transaction.
    The imports, `scripts/smoke.py`, the site's clerk and the bot write nothing
    to it.
@@ -62,8 +63,8 @@ python scripts/prepare.py         # 1  funded accounts, seller registered on the
 python scripts/demo.py            # 2  both paths, one command
 ```
 
-`demo.py` does the whole sequence and prints the timings. To drive it by hand
-instead, for a slower and more legible recording:
+`demo.py` does the whole sequence, with the buyer agent's lines on screen as
+each step happens. To drive it by hand instead:
 
 ```bash
 python seller/main.py                                    # terminal 1

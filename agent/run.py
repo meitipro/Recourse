@@ -125,7 +125,16 @@ def read_promise_bounds(promise: str) -> tuple[int, int]:
 def out(payload: dict, as_json: bool, line: str = "") -> None:
     if as_json:
         return
-    print(line)
+    print(line, flush=True)
+
+
+def finish(report: dict, args: argparse.Namespace, code: int) -> int:
+    """The report goes to a file, to stdout, or both, whichever was asked for."""
+    if args.report:
+        pathlib.Path(args.report).write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+    return code
 
 
 def main() -> int:
@@ -133,6 +142,10 @@ def main() -> int:
     parser.add_argument("--mode", default="", choices=["", "correct", "stale", "hollow", "substituted"])
     parser.add_argument("--no-dispute", action="store_true", help="pay and accept, for the honest path")
     parser.add_argument("--json", action="store_true", help="machine readable output")
+    parser.add_argument(
+        "--report", default="",
+        help="also write the machine readable report to this file, keeping the live lines on screen",
+    )
     parser.add_argument("--endpoint", default="http://localhost:4501")
     parser.add_argument("--pair", default="ETH-USD")
     parser.add_argument("--amount", type=int, default=4, help="payment in whole GEN")
@@ -258,9 +271,7 @@ def main() -> int:
             f"outcome          {report['outcome']}, letting the window expire",
         )
         out(report, args.json, f"                 seller may withdraw after {row['window_ends']}")
-        if args.json:
-            print(json.dumps(report, indent=2, sort_keys=True))
-        return 0
+        return finish(report, args, 0)
 
     # 6b - contest. A bond, and a case neither party judges.
     bond = int(deployment["bond_wei"])
@@ -295,6 +306,18 @@ def main() -> int:
             case_reason = ""
     report["reason"] = case_reason
 
+    # The verdict is printed the moment it lands. The money follows on
+    # finality, about half a minute later, and is printed when it arrives, so a
+    # terminal watching this never shows the two as one event.
+    out(report, args.json, "")
+    out(report, args.json, f"verdict          {name}")
+    if case_reason:
+        out(report, args.json, f"reason           {case_reason}")
+    out(report, args.json, f"dispute to verdict      {elapsed:.0f}s")
+    out(report, args.json, f"payment to settlement   {total:.0f}s")
+    if not settled:
+        out(report, args.json, f"  still {STATUS.get(int(row.get('status', 0)), '?')} after {args.timeout}s")
+
     # 8 - the money. Balances are read from the chain, never assumed from the
     # settlement table.
     #
@@ -318,13 +341,7 @@ def main() -> int:
     report["seconds_verdict_to_refund"] = refund_seconds
     report["seconds_dispute_to_refund"] = round(time.time() - contested_at, 1)
 
-    out(report, args.json, "")
-    out(report, args.json, f"verdict          {name}")
-    if case_reason:
-        out(report, args.json, f"reason           {case_reason}")
-    out(report, args.json, f"dispute to verdict      {elapsed:.0f}s")
     out(report, args.json, f"dispute to money back   {report['seconds_dispute_to_refund']:.0f}s")
-    out(report, args.json, f"payment to settlement   {total:.0f}s")
     out(
         report,
         args.json,
@@ -337,12 +354,7 @@ def main() -> int:
             else ""
         ),
     )
-    if not settled:
-        out(report, args.json, f"  still {STATUS.get(int(row.get('status', 0)), '?')} after {args.timeout}s")
-
-    if args.json:
-        print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if settled or args.no_dispute else 1
+    return finish(report, args, 0 if settled or args.no_dispute else 1)
 
 
 if __name__ == "__main__":
