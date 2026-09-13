@@ -1,9 +1,9 @@
 {
-  "captured_at": "2026-09-12T23:43:16Z",
+  "captured_at": "2026-09-13T00:13:44Z",
   "tiles": {
     "Payments": "19",
     "Disputes opened": "10",
-    "Upheld": "8/10",
+    "Not honored": "8/10",
     "Median pay to dispute": "23s"
   }
 }

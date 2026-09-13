@@ -101,7 +101,7 @@ def test_a_verdict_wears_one_colour_wherever_the_page_names_it():
         return found.group(1)
 
     tile = re.search(r'stat3Color: known \? "(#[0-9A-F]{6})"', feed)
-    assert tile and tile.group(1) == badge("not_honored"), "the upheld tile counts not honored verdicts and must wear their colour"
+    assert tile and tile.group(1) == badge("not_honored"), "the not honored tile must wear the not honored badge's colour"
     disputes = re.search(r'stat2Color: known \? "(#[0-9A-F]{6})"', feed)
     assert disputes and disputes.group(1) not in {badge("honored"), badge("not_honored")}, "disputes opened mixes states and names none"
     for verdict, label in (("honored", "Honored"), ("not_honored", "Not honored")):

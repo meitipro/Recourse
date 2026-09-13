@@ -40,7 +40,7 @@ to make elsewhere:
 | the canvas said | the site says | why |
 | --- | --- | --- |
 | "Verdict and money land in the same transaction" | the verdict is written, and the settlement it implies moves when that transaction finalizes, about half a minute later | Two transactions, deliberately. Paying out on acceptance would let a successful appeal arrive after the money had gone. This is one of the three things the project got wrong first and fixed |
-| "End to end: under one minute" | "Dispute to money back: about 90 seconds" | The verdict is inside a minute; the money is not. The README publishes the ninety second number as the honest one |
+| "End to end: under one minute" | "Dispute to money back, median", read from the snapshot: the median over the not honored cases on the record | The verdict lands inside a minute and the money follows on finality, so one end to end figure under a minute would be false. The site states the snapshot's median and types no number |
 | "Judgment costs about one dollar per case" | one adjudication is ten model calls, and studionet charges nothing for them | That dollar figure was inherited from a differently shaped contract, was never measured here, and had already been removed from the README once |
 | "Settlement window: a few minutes" | the window read from `contracts/FROZEN.json` | Every number on the page is read, never typed |
 
@@ -56,7 +56,7 @@ project binds, and the site was changed rather than the rule:
 | the canvas drew | the site does | why |
 | --- | --- | --- |
 | the linter's result ending at the verdict, the reason and the rewrite | a line under every result naming the stage, and at stage 2 "A dry run, not the gate's verdict" | Stage 2 asks one model the gate's question and the gate on chain asks a committee. `linter/service.py` promises every consumer says so, and a reader who takes the panel's answer for the gate's is misled by omission |
-| the Upheld tile in green and Disputes opened in red | Upheld in the not honored red of the badge for the same verdict, Disputes opened in text colour | Upheld counts not honored verdicts, which the table one screen below badges red; a count that mixes states names none |
+| the Upheld tile in green and Disputes opened in red | the tile labelled Not honored, in the red of the badge for the same verdict, and Disputes opened in text colour | The tile counts not honored verdicts, which the table one screen below badges red, and "Upheld" without "against the seller" read as the seller upheld; a count that mixes states names none |
 | the clerk's Honored chip as a solid accent fill | the honored badge's green, outlined | The table names honored green, and the accent is never a state's colour |
 
 ## The clerk

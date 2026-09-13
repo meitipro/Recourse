@@ -314,7 +314,7 @@ def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
     expected = {
         "payments": str(totals["payments"]),
         "disputes opened": str(totals["disputes_opened"]),
-        "upheld": f"{totals['upheld']}/{totals['decided']}",
+        "not honored": f"{totals['upheld']}/{totals['decided']}",
     }
     for label, value in expected.items():
         assert read.get(label) == value, (
@@ -325,7 +325,7 @@ def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
     assert caption, "the README no longer shows the feed image"
     stated = (
         f"{spell(totals['payments'])} payments, {spell(totals['disputes_opened'])} disputes opened, "
-        f"{spell(totals['upheld'])} of {spell(totals['decided'])} upheld"
+        f"{spell(totals['upheld'])} of {spell(totals['decided'])} not honored"
     )
     assert stated in " ".join(caption.group(1).split()), f"the feed caption should say {stated!r}"
 

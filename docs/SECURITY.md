@@ -67,7 +67,7 @@ promise, the request and the response are all capped; `sig` was not, and the
 seller is the only party whose signature is kept, so the seller was the only
 party who could use it. The blast radius was small, because `recent_rows`
 returns whether a signature exists rather than the signature, so the damage
-stopped at the seller's own evidence drawer. It is capped at `MAX_SIG`, 200
+stopped at a read of that one payment. It is capped at `MAX_SIG`, 200
 characters against a real signature's 130, and the refusal is
 [on chain](https://explorer-studio.genlayer.com/tx/0xd1bbbb95b90559666daec6d68da7194814ad85cbed8ebffff6a1b8e6d40279db).
 Tests: `test_a_signature_over_the_cap_is_rejected`,
@@ -77,8 +77,8 @@ can be stored".
 ## The malicious buyer
 
 **Disputes every payment to extract refunds.**
-The bond is sized to the cost of judgment and is forfeited to the seller on an
-honored verdict, so the strategy loses money. `open_dispute` requires the value to
+The bond is a fixed amount, forfeited to the seller on an honored verdict, so
+the strategy loses money. `open_dispute` requires the value to
 equal `bond_amount` exactly, not merely to reach it.
 Tests: `test_dispute_is_rejected_with_the_wrong_bond`,
 `test_honored_sends_the_payment_and_the_bond_to_the_seller`.
@@ -90,8 +90,9 @@ seller on evidence the seller never sent.
 
 **Backdates the call time to make a fresh response look stale.**
 Impossible, and this is why the timing block is written by the escrow rather than
-carried in the request. Six of the eighteen cases turn on freshness, and nothing
-in a promise, a request or a response says when the response was observed. If the
+carried in the request. Six of the eighteen cases turn on freshness: in 01, 02,
+06, 07, 09 and 15 every other term is met, so the timestamp decides. Nothing in
+a promise, a request or a response says when the response was observed. If the
 buyer supplied that reference the buyer would be setting the boundary they are
 judged against. `open_dispute` builds the timing string from `created_at` and
 `responded_at`, both written by the chain from the transaction datetime.
@@ -216,7 +217,7 @@ the suite would catch the code being wrong.
 
 `scripts/mutate.py` settles that. It copies both contracts and everything the
 suite imports to a scratch directory, deletes one defence at a time, and records
-which test went red. **30 of 30 are caught**, listed with their catching test in
+which test went red. **32 of 32 are caught**, listed with their catching test in
 [MUTATIONS.md](MUTATIONS.md). The generator will not write that table if anything
 escapes: a document listing defences it could not verify reads as coverage and is
 worse than no document.
@@ -233,17 +234,21 @@ number was published before it was caught. Requiring each kill to name the test
 that produced it is what exposed it, and the runner now also refuses to start
 unless the unmutated suite is green.
 
-## Three limits, stated rather than apologised for
+## Two limits, and one that was closed
 
-**A dispute that never returns a verdict holds the money.** If the judgment
-contract cannot reach consensus at all, the payment stays DISPUTED and the
-amount and bond stay held. There is no timeout that releases them, and there
-should not be a naive one: anything a buyer could trigger to reclaim before a
-verdict lands would be a way to contest, wait, and take the money back if the
-verdict looked like going the other way. The right fix is a release that only
-the passage of a long window plus the absence of a case row can trigger, and it
-is not in this version. What is in this version is that the money is stuck
-rather than misdirected, and `held` still agrees with what was taken in.
+**A dispute that never returns a verdict does not hold the money forever.** An
+earlier version of this file listed it as a limit, and `reclaim` closed it. If
+the judgment contract cannot reach consensus, the payment stays DISPUTED until
+its dispute window ends, and then either party may unwind it with the unclear
+split: the payment stands with the seller and the bond goes back to the buyer.
+Nothing earlier can trigger it, so a buyer cannot contest, wait, and take the
+money back while a verdict could still land, and waiting out the clock gets the
+buyer exactly what dropping the dispute would have. A verdict that arrives late
+finds the payment RESOLVED and is refused by `settle`'s own status check, so
+nothing pays twice.
+Tests: `test_a_dispute_that_never_decides_can_be_unwound_by_either_party`,
+`test_reclaim_is_refused_while_the_judgment_could_still_land`,
+`test_reclaim_is_refused_by_a_stranger_and_on_an_undisputed_payment`.
 
 **A payout to an ordinary account does not land on Studio.** Measured on this
 network: a value message delivered to an address with no contract code is refused

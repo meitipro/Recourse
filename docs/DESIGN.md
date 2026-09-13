@@ -370,8 +370,9 @@ Four cells, each a mono value over a muted label:
 1. **payments**: the contract's own count, not the row count. The row count
    stands in only when the contract returned none.
 2. **disputes opened**: rows with status disputed or resolved.
-3. **upheld**: `not_honored / resolved`, shown as a fraction, `N/M`, never as
-   a percentage.
+3. **not honored**: `not_honored / resolved`, shown as a fraction, `N/M`,
+   never as a percentage. Labelled Upheld until 2026-09-13, which without
+   "against the seller" read as the seller being upheld.
 4. **median pay to dispute**: the median of `decided_at - created_at` over
    resolved rows, in seconds. Not "median settlement": a case's `opened_at`
    and `decided_at` are one message's fixed datetime, so chain timestamps
@@ -380,9 +381,10 @@ Four cells, each a mono value over a muted label:
 When the read failed every tile shows a dash. A zero here would be an invented
 number.
 
-Only the upheld tile carries a state colour, the not honored red of the badge
-for the same verdict in the table below it. The other three are text colours:
-a count that mixes disputed and resolved rows names no single state.
+Only the not honored tile carries a state colour: the red of the badge for the
+same verdict in the table below it, under the same words. The other three are
+text colours, since a count that mixes disputed and resolved rows names no
+single state.
 
 ### 6.3 The table
 
@@ -602,6 +604,7 @@ to one of those fails the gate; the quoted copy stays a check by hand.
 The same check found two places where the page, not this file, broke a binding
 rule, and the page was fixed on 2026-09-13. The stage line in section 7 was
 missing, so a stage 2 answer did not say it was a dry run. And a verdict wore
-two colours: the upheld tile, which counts not honored verdicts, was green,
-and the clerk's Honored chip was a solid accent fill. Each now wears the colour
-of its badge in 6.4, and `tests/direct/test_design.py` holds them to it.
+two colours: the tile counting not honored verdicts was green, and the clerk's
+Honored chip was a solid accent fill. Each now wears the colour of its badge in
+6.4, the tile carries the verdict's own name instead of Upheld, and
+`tests/direct/test_design.py` holds the colours to the badges.

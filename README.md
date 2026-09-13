@@ -54,7 +54,7 @@ latency and costs nobody anything, and the contested one.
 [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
 shot, timed, every spoken number one this repository publishes.
 
-![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten upheld, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
+![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
 ![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model, as the line under the verdict says: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 

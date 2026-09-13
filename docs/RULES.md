@@ -141,7 +141,7 @@ number was published in this repository before it was caught.
 
 Requiring each kill to name the test that produced it is what exposed it. The
 runner now refuses to start unless the unmutated suite is green, refuses to write
-its table if anything escapes, and covers 30 defences across both contracts.
+its table if anything escapes, and covers 32 defences across both contracts.
 Every row and its catching test is in [MUTATIONS.md](MUTATIONS.md).
 
 It found two genuine gaps on the way: a validator that would accept a verdict
@@ -159,7 +159,8 @@ Anybody reviewing GenLayer contracts has `genlayer-test` installed, so
 `pytest tests/` collects the integration file. It is gated behind an explicit
 `RECOURSE_INTEGRATION=1`, not a probe: the transport failures here are
 intermittent, so a probe would answer correctly most of the time, which is worse
-than no gate. A reviewer gets **146 passed, 1 skipped, in under a second**.
+than no gate. A reviewer gets **272 passed, 1 skipped**, in seconds, and
+`scripts/test.py` fails when this line and what pytest collects disagree.
 
 **20 - Generate anything the repo offers to be copied.**
 Nothing here is offered to be copied, but the feed does re-implement the status

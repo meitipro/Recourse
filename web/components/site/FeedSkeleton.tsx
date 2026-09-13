@@ -28,7 +28,7 @@ const BAR: React.CSSProperties = {
   animation: "rc-shimmer 1.5s ease-in-out infinite",
 };
 
-const TILES = ["Payments", "Disputes opened", "Upheld", "Median pay to dispute"];
+const TILES = ["Payments", "Disputes opened", "Not honored", "Median pay to dispute"];
 
 export default function FeedSkeleton() {
   return (

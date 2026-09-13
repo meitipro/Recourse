@@ -63,7 +63,20 @@ def readme_states_the_test_count(python: str) -> bool:
     if stated != {found.group(1)}:
         print(f"--- README states {sorted(stated)} direct tests, pytest collects {found.group(1)}")
         return False
-    print(f"README and pytest agree: {found.group(1)} direct tests")
+    # docs/RULES.md tells a reviewer what pytest prints for the whole suite: every
+    # direct test passing and each integration test skipped. It said 146 while
+    # the suite was 272, because nothing here read it.
+    integration = subprocess.run(
+        [python, "-m", "pytest", "tests/integration/", "--collect-only", "-q", "-p", "no:gltest", "-p", "no:gltest_direct"],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    skipped = re.search(r"(\d+) tests? collected", integration.stdout)
+    rules = re.search(r"(\d+) passed, (\d+) skipped", (ROOT / "docs" / "RULES.md").read_text(encoding="utf-8"))
+    if not skipped or not rules or rules.groups() != (found.group(1), skipped.group(1)):
+        print(f"--- docs/RULES.md states {rules.groups() if rules else 'no count'}, pytest collects "
+              f"{found.group(1)} direct and {skipped.group(1) if skipped else 'no'} integration tests")
+        return False
+    print(f"README, docs/RULES.md and pytest agree: {found.group(1)} direct tests, {skipped.group(1)} skipped")
     return True
 
 

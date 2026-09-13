@@ -186,7 +186,7 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
     stat4Color: known ? "#AEB9C8" : "#7C8798",
     label1: "Payments",
     label2: "Disputes opened",
-    label3: "Upheld",
+    label3: "Not honored",
     label4: "Median pay to dispute",
     noticeBox: {
       display: "flex",

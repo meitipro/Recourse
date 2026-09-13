@@ -90,7 +90,7 @@ The demo sentence:
 ## Commands
 
     python scripts/test.py                  everything: style, lint, tests
-    python scripts/mutate.py --table docs/MUTATIONS.md   30 defences, verified
+    python scripts/mutate.py --table docs/MUTATIONS.md   32 defences, verified
     python scripts/verify.py                deployed bytes diffed AND linted
     python scripts/evidence.py              refusals on chain, hashes recorded
     python scripts/deploy.py                redeploy and rewire, one command
