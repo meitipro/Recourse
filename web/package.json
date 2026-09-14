@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "genlayer-js": "1.1.8",
-    "next": "15.1.6",
+    "next": "15.1.12",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
@@ -18,9 +18,9 @@
     "@fontsource-variable/source-serif-4": "^5.0.0",
     "@fontsource-variable/work-sans": "^5.0.0",
     "@fontsource/geist-mono": "^5.0.0",
-    "typescript": "^5.7.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
   }
 }
