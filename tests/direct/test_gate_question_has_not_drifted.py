@@ -2,10 +2,11 @@
 The linter asks the deployed gate's question, and this is what holds it to that.
 
 The contracts are frozen, so the question cannot be moved into a shared module
-and imported. This test reads contracts/dispute.py as text, rebuilds the
-question from the AST of check_promise with the fenced promise as a placeholder,
-and asserts it is character identical to linter/question.py. Either side
-changing fails here, which is the same guarantee an import would have given.
+and imported. This test reads the dispute contract as text, once per pair,
+rebuilds the question from the AST of check_promise with the fenced promise as
+a placeholder, and asserts it is character identical to linter/question.py.
+Either side changing fails here, which is the same guarantee an import would
+have given.
 """
 
 from __future__ import annotations
@@ -18,9 +19,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests" / "direct"))
 
+import harness  # noqa: E402
 from linter.question import GATE_QUESTION, build_gate_question, fence  # noqa: E402
-
-CONTRACT = ROOT / "contracts" / "dispute.py"
 
 
 def question_in_the_contract() -> str:
@@ -32,7 +32,7 @@ def question_in_the_contract() -> str:
     literal spans a dozen lines with a call in the middle, and a regex loose
     enough to find it would be loose enough to find the wrong thing.
     """
-    tree = ast.parse(CONTRACT.read_text(encoding="utf-8"))
+    tree = ast.parse(harness.contract_path("dispute").read_text(encoding="utf-8"))
     gate = next(
         node for node in ast.walk(tree)
         if isinstance(node, ast.FunctionDef) and node.name == "check_promise"

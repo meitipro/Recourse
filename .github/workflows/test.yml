@@ -6,11 +6,12 @@ on:
   pull_request:
 
 # Two jobs on purpose. `direct` is everything that needs nothing but Python and
-# Node: the freeze and house style checks, the 231 direct tests through the
-# test double, and the feed's types. It gates on its own. `lint` puts both
-# frozen contracts through genvm-lint, which on a cold runner has to fetch a
-# 134 MB GenVM runner into its cache, so it is separate: a runner that cannot
-# get the linter fails visibly here and does not take the direct tests with it.
+# Node: the freeze and house style checks, the direct tests through the test
+# double, and the feed's types. It gates on its own. `lint` puts both pairs of
+# contracts through genvm-lint, which on a cold runner has to fetch the 325 MB
+# GenVM v0.6.0-rc5 runner bundle into its cache, so it is separate: a runner
+# that cannot get the linter fails visibly here and does not take the direct
+# tests with it.
 jobs:
   direct:
     name: freeze, house style, direct tests, feed types
@@ -27,7 +28,7 @@ jobs:
       - name: python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install genlayer_py pytest -r requirements.txt
+          pip install pytest -r requirements.txt
 
       - uses: actions/setup-node@v4
         with:
@@ -43,7 +44,7 @@ jobs:
         run: python scripts/test.py --no-lint
 
   lint:
-    name: genvm-lint over both frozen contracts
+    name: genvm-lint over both pairs of contracts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,15 +53,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      # The runner archive is what makes a cold lint slow. Keyed on the linter
-      # version so a new release refetches once.
+      # The runner bundle is what makes a cold lint slow. Keyed on the linter
+      # version and the GenVM release scripts/test.py pins, so either changing
+      # refetches once. That one release carries both runtimes: the frozen
+      # pair's, py-genlayer:1jb45, and the ported pair's, py-genlayer:5jycge4q.
       - uses: actions/cache@v4
         with:
           path: ~/.cache/genvm-linter
-          key: genvm-linter-0.11.0-${{ runner.os }}
+          key: genvm-linter-0.11.1rc2-genvm-v0.6.0-rc5-${{ runner.os }}
 
       - name: the linter
-        run: pip install genvm-linter==0.11.0
+        run: pip install genvm-linter==0.11.1rc2
 
-      - name: lint and validate the frozen contracts
+      - name: lint and validate both pairs
         run: python scripts/test.py --only-lint

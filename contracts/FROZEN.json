@@ -2,6 +2,7 @@
   "frozen_at_commit": "ccc470a",
   "frozen_on": "2026-09-06",
   "first_deployed_on": "studionet",
+  "runtime": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6",
   "hash_of": "sha256 of the file with line endings normalised to LF. That is what was deployed: scripts/deploy.py reads the file with universal newlines, so the bytes on chain are LF whatever a Windows checkout with autocrlf put on disk.",
   "why": "Every published number is tied to this pair of addresses. verify.py lints the deployed bytes against these files, RESULTS.md and HELD-OUT.md name the instance they were measured on, and the refusal and rail transactions in the README were recorded against these contracts. A redeploy invalidates all of it and costs 63 consensus transactions to restore.",
   "if_a_change_is_genuinely_required": [
@@ -22,6 +23,23 @@
   },
   "window_seconds": 300,
   "bond_wei": "1000000000000000000",
+  "v06": {
+    "ported_on": "2026-09-14",
+    "runtime": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng",
+    "why": "Studio Next runs this runtime. The first pair's runtime finishes invalid_contract runner malformed there whatever the file's first line says, and this runtime's standard library renamed four of the APIs the first pair calls.",
+    "escrow": {
+      "path": "contracts/v06/escrow.py",
+      "sha256": "8edc65d12e9b3d3aac8c6102ff71ace53cf9b65b55bae60d4ceb117050c2030f",
+      "bytes": 28626
+    },
+    "dispute": {
+      "path": "contracts/v06/dispute.py",
+      "sha256": "a1f824dbd7f1cd1305a0ad20fd445e5457a4d7018aa6a4a6330f3b9decba82a7",
+      "bytes": 21450
+    },
+    "diff": "contracts/v06/PORT.diff",
+    "diff_is": "The whole difference from the first pair: the runtime header, two imports, and four API names (gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe, gl.message_raw). The logic, the prompt and every string are the first pair's. scripts/port.py generates both files and the diff from the first pair, and the gate regenerates them on every run."
+  },
   "deployments": {
     "studionet": {
       "chain_id": 61999,
@@ -33,6 +51,6 @@
       "frozen_at_commit": "ccc470a"
     }
   },
-  "deployments_note": "The freeze is over the contract BYTES, not over a network. Every entry here is the same two files deployed somewhere, and adding one extends the record rather than breaking it. Each network's evaluation is published in its own column.",
-  "deployments_status": "studionet is the only deployment, and the only network anything in this repository runs against. The map above supports more entries because the freeze is over the contract bytes rather than over a network: a second entry would extend this record without changing either hash. None is planned, and every script refuses a network that has no entry here, by name."
+  "deployments_note": "Each deployment runs one of the two pairs recorded above and names it in `pair`; an entry that names none runs the first. The two pairs are the same logic, the same prompt and the same strings, with a published diff that touches only API names, under two runtimes, and both pairs of hashes are recorded here. Each network's evaluation is published in its own column.",
+  "deployments_status": "studionet is the only deployment so far. Studio Next runs the v06 pair and gets its entry when python scripts/deploy.py --network studio-next runs. Every script refuses a network that has no entry here, by name."
 }

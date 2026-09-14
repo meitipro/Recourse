@@ -6,11 +6,13 @@ Everything that can fail without the chain.
     python scripts/test.py --no-lint     # without genvm-lint: CI's direct job
     python scripts/test.py --only-lint   # genvm-lint alone: CI's lint job
 
-Freeze and house style, then both contracts through the linter, then the
-direct tests, then the feed's types when web/node_modules exists.
+Freeze and house style, then both pairs of contracts through the linter, then
+the direct tests, then the feed's types when web/node_modules exists.
 
 House style and the direct tests need no network. The contract lint step does
-on a cold cache: genvm-lint fetches a 134MB runner the first time. Use --no-lint
+on a cold cache: genvm-lint fetches the GenVM v0.6.0-rc5 runner bundle, 325 MB,
+the first time. That one bundle carries both runtimes, the frozen pair's and
+the ported pair's, so one linter version checks all four files. Use --no-lint
 for a genuinely offline run. CI splits the two for the same reason.
 
 The direct tests are run with the gltest plugins disabled. genlayer-test is
@@ -25,10 +27,32 @@ from __future__ import annotations
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+#: The contracts the linter checks: the frozen pair and the ported pair.
+CONTRACT_FILES = (
+    "contracts/escrow.py",
+    "contracts/dispute.py",
+    "contracts/v06/escrow.py",
+    "contracts/v06/dispute.py",
+)
+
+#: The GenVM release the linter loads both runtimes from. Pinned so a new
+#: prerelease cannot change what "validated" means between two runs.
+GENVM_VERSION = "v0.6.0-rc5"
+
+
+def linter() -> str:
+    """genvm-lint beside this interpreter first, so a virtual environment's own copy wins."""
+    folder = pathlib.Path(sys.executable).parent
+    for name in ("genvm-lint.exe", "genvm-lint"):
+        if (folder / name).exists():
+            return str(folder / name)
+    return shutil.which("genvm-lint") or "genvm-lint"
 
 
 def run(label: str, command: list[str], env: dict | None = None) -> bool:
@@ -86,14 +110,15 @@ def main() -> int:
     python = sys.executable
     # The linter prints a tick and dies on it under the ansi codepage Windows
     # gives a child process, reporting a passing contract as failed.
-    lint_env = {"PYTHONIOENCODING": "utf-8"}
+    lint_env = {"PYTHONIOENCODING": "utf-8", "GENVM_VERSION": GENVM_VERSION}
+    tool = linter()
 
-    steps = [
-        ("house style", [python, "scripts/check.py"], None),
-        ("lint escrow", ["genvm-lint", "lint", "contracts/escrow.py"], lint_env),
-        ("lint dispute", ["genvm-lint", "lint", "contracts/dispute.py"], lint_env),
-        ("validate escrow", ["genvm-lint", "validate", "contracts/escrow.py"], lint_env),
-        ("validate dispute", ["genvm-lint", "validate", "contracts/dispute.py"], lint_env),
+    steps = [("house style", [python, "scripts/check.py"], None)]
+    for verb in ("lint", "validate"):
+        for path in CONTRACT_FILES:
+            label = f"{verb} {path.removeprefix('contracts/').removesuffix('.py')}"
+            steps.append((label, [tool, verb, path], lint_env))
+    steps.append(
         (
             "direct tests",
             [
@@ -101,8 +126,8 @@ def main() -> int:
                 "-p", "no:gltest", "-p", "no:gltest_direct",
             ],
             None,
-        ),
-    ]
+        )
+    )
 
     if skip_lint:
         steps = [step for step in steps if not step[0].startswith(("lint ", "validate "))]

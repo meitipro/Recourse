@@ -340,6 +340,13 @@ class _Nondet:
         return answer
 
 
+class _Namespace:
+    """A bare attribute holder, for the names the ported pair reaches through a module."""
+
+    def __init__(self, **names: typing.Any) -> None:
+        self.__dict__.update(names)
+
+
 class GL:
     """The `gl` namespace, assembled."""
 
@@ -355,6 +362,15 @@ class GL:
         self.nondet = _Nondet()
         self.evm = _Evm(self.bus)
         self.Contract = Contract
+        # The names the ported pair (contracts/v06/) uses for the same things
+        # under the runtime Studio Next runs. Each is the object above under
+        # its new name, never a second implementation, so both pairs run
+        # against one double: run_nondet is run_nondet_unsafe, message.raw is
+        # message_raw (the same dict, so a test that moves the clock moves it
+        # for both), and contract.get_at is get_contract_at.
+        self.vm.run_nondet = self.vm.run_nondet_unsafe
+        self.message.raw = self.message_raw
+        self.contract = _Namespace(Contract=Contract, get_at=self.get_contract_at)
 
     def get_contract_at(self, address: Address) -> _ContractProxy:
         return _ContractProxy(self.bus, address)

@@ -1,0 +1,65 @@
+# contracts/v06/PORT.diff, written by scripts/port.py. Do not edit it.
+#
+# The whole difference between the frozen pair in contracts/, which runs on
+# studionet under py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6,
+# and the ported pair in contracts/v06/, which runs on Studio Next under
+# py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng.
+#
+# Every changed line is the runtime header, an import, or differs only in one
+# of four API names: gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe
+# and gl.message_raw. The logic, the prompt and every string are unchanged.
+
+--- contracts/escrow.py
++++ contracts/v06/escrow.py
+@@ -1 +1,2 @@
+-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
++# v0.3.0
++# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
+@@ -21,0 +23,2 @@
++from genlayer.storage import DynArray, TreeMap, allow as allow_storage
++import genlayer as gl
+@@ -70 +73 @@
+-    gl.message_raw['datetime'], an ISO 8601 string fixed for the transaction and
++    gl.message.raw['datetime'], an ISO 8601 string fixed for the transaction and
+@@ -103 +106 @@
+-# the chain layer rather than in GenVM. gl.get_contract_at(addr).emit_transfer()
++# the chain layer rather than in GenVM. gl.contract.get_at(addr).emit_transfer()
+@@ -177 +180 @@
+-class RecourseEscrow(gl.Contract):
++class RecourseEscrow(gl.contract.Contract):
+@@ -213 +216 @@
+-        return u64(_seconds(gl.message_raw["datetime"]))
++        return u64(_seconds(gl.message.raw["datetime"]))
+@@ -442 +445 @@
+-        gl.get_contract_at(self.dispute_contract).emit(on="accepted").adjudicate(
++        gl.contract.get_at(self.dispute_contract).emit(on="accepted").adjudicate(
+@@ -513 +516 @@
+-        gl.get_contract_at(self.dispute_contract).emit(on="finalized").check_promise(
++        gl.contract.get_at(self.dispute_contract).emit(on="finalized").check_promise(
+--- contracts/dispute.py
++++ contracts/v06/dispute.py
+@@ -1 +1,2 @@
+-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
++# v0.3.0
++# { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
+@@ -21,0 +23,2 @@
++from genlayer.storage import DynArray, TreeMap, allow as allow_storage
++import genlayer as gl
+@@ -324 +327 @@
+-class RecourseDispute(gl.Contract):
++class RecourseDispute(gl.contract.Contract):
+@@ -346 +349 @@
+-        text = gl.message_raw["datetime"].strip()
++        text = gl.message.raw["datetime"].strip()
+@@ -395 +398 @@
+-        out = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
++        out = gl.vm.run_nondet(leader_fn, validator_fn)
+@@ -413 +416 @@
+-        gl.get_contract_at(self.escrow).emit(on="finalized").settle(pid, verdict, reason)
++        gl.contract.get_at(self.escrow).emit(on="finalized").settle(pid, verdict, reason)
+@@ -467 +470 @@
+-        out = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
++        out = gl.vm.run_nondet(leader_fn, validator_fn)
+@@ -469 +472 @@
+-        gl.get_contract_at(self.escrow).emit(on="finalized").set_judgeable(
++        gl.contract.get_at(self.escrow).emit(on="finalized").set_judgeable(

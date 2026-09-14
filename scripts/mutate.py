@@ -25,6 +25,7 @@ scratch directory, mutated there, and the copy is removed.
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import shutil
 import subprocess
@@ -32,9 +33,18 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tests" / "direct"))
+
+from harness import CONTRACT_MODULES  # noqa: E402  the modules that run once per pair
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+#: Every mutant runs against both pairs: the frozen one, deployed on studionet,
+#: and the ported one, deployed on Studio Next. The same defence has to be
+#: caught in each, because a port that dropped a guard would pass everything
+#: that only looked at the first pair.
+PAIRS = {"frozen": "contracts", "v06": "contracts/v06"}
 
 #: (file, what is being broken, the code to replace, what to replace it with).
 #: Each is a bug somebody could plausibly ship, not a syntactic mangling. A
@@ -167,24 +177,32 @@ def main() -> int:
 
     work = pathlib.Path(tempfile.mkdtemp(prefix="recourse-mutate-"))
     try:
-        # Everything the suite imports. Copying too little makes pytest fail to
+        # Everything the suite reads. Copying too little makes pytest fail to
         # collect, which exits non-zero with no FAILED line - and a runner that
         # reads any non-zero exit as a kill then reports a perfect score while
         # testing nothing. That happened here, and requiring a named test below
-        # is what caught it.
-        for name in ("contracts", "tests", "eval", "agent", "seller", "shared", "linter"):
-            shutil.copytree(ROOT / name, work / name, dirs_exist_ok=True)
-        # The parity tests read the feed's source to check it against the
-        # contracts. Its dependencies are irrelevant and enormous.
+        # is what caught it. A list of folders went stale the same way once the
+        # suite began reading the README, docs/, evidence/ and scripts/, so the
+        # whole repository is copied, less what is enormous and irrelevant, and
+        # never the keys or the local deployment record.
         shutil.copytree(
-            ROOT / "web", work / "web", dirs_exist_ok=True,
-            ignore=shutil.ignore_patterns("node_modules", ".next", "out", "*.tsbuildinfo"),
+            ROOT, work, dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns(
+                ".git", ".venv", "node_modules", ".next", "out", "*.tsbuildinfo", "__pycache__",
+                ".accounts.json", "deployed.json", ".env", ".env.local",
+            ),
         )
+
+        # The copy has no .git of its own, and git looking upward from a temp
+        # folder can find an unrelated repository with none of this history,
+        # where the commit order test reads an empty log. Pointing git at this
+        # repository keeps the baseline the same suite the gate runs.
+        env = dict(os.environ, GIT_DIR=str(ROOT / ".git"))
 
         baseline = subprocess.run(
             [sys.executable, "-m", "pytest", "tests/direct/", "-q",
              "-p", "no:gltest", "-p", "no:gltest_direct"],
-            cwd=work, capture_output=True, text=True,
+            cwd=work, capture_output=True, text=True, env=env,
         )
         if baseline.returncode != 0:
             print("The suite does not pass before any mutation, so nothing below means")
@@ -193,48 +211,60 @@ def main() -> int:
             return 1
         print(f"baseline green: {baseline.stdout.strip().splitlines()[-1]}\n")
         originals = {
-            name: (work / "contracts" / f"{name}.py").read_text(encoding="utf-8")
+            (pair, name): (work / folder / f"{name}.py").read_text(encoding="utf-8")
+            for pair, folder in PAIRS.items()
             for name in ("escrow", "dispute")
         }
+        # Only the tests that execute or read a contract, and only their run
+        # against the pair being mutated. Every module outside this list reads
+        # the freeze record or the port, and would go red on ANY edit to a
+        # contract file: a kill it scored would be a hash mismatch, not a
+        # defence noticing it had gone.
+        modules = [f"tests/direct/{name}.py" for name in CONTRACT_MODULES]
 
-        rows: list[tuple[str, str, str]] = []
+        rows: list[tuple[str, str, dict[str, str]]] = []
         escaped: list[str] = []
         for contract, label, old, new in MUTANTS:
-            target = work / "contracts" / f"{contract}.py"
-            source = originals[contract]
-            if old not in source:
-                print(f"  STALE    {label}")
-                escaped.append(f"{label} (the code it mutates has moved)")
-                continue
-            target.write_text(source.replace(old, new, 1), encoding="utf-8")
-            result = subprocess.run(
-                [sys.executable, "-m", "pytest", "tests/direct/", "-q",
-                 "-p", "no:gltest", "-p", "no:gltest_direct"],
-                cwd=work, capture_output=True, text=True,
-            )
-            target.write_text(source, encoding="utf-8")
+            caught_by: dict[str, str] = {}
+            for pair, folder in PAIRS.items():
+                target = work / folder / f"{contract}.py"
+                source = originals[(pair, contract)]
+                if old not in source:
+                    print(f"  STALE    {pair:6} {label}")
+                    escaped.append(f"{label}, {pair} pair (the code it mutates has moved)")
+                    continue
+                target.write_text(source.replace(old, new, 1), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, "-m", "pytest", *modules, "-q", "-k", pair,
+                     "-p", "no:gltest", "-p", "no:gltest_direct"],
+                    cwd=work, capture_output=True, text=True, env=env,
+                )
+                target.write_text(source, encoding="utf-8")
 
-            caught = [
-                line.split("::")[-1].split()[0]
-                for line in result.stdout.splitlines()
-                if line.startswith("FAILED")
-            ]
-            if result.returncode == 0 or not caught:
-                print(f"  ESCAPED  {label}")
-                escaped.append(label)
-                continue
-            print(f"  killed   {label}")
-            rows.append((contract, label, caught[0]))
+                caught = [
+                    line.split("::")[-1].split()[0]
+                    for line in result.stdout.splitlines()
+                    if line.startswith("FAILED")
+                ]
+                if result.returncode == 0 or not caught:
+                    print(f"  ESCAPED  {pair:6} {label}")
+                    escaped.append(f"{label}, {pair} pair")
+                    continue
+                print(f"  killed   {pair:6} {label}")
+                # The id carries the pair in brackets; the table names the test.
+                caught_by[pair] = caught[0].split("[")[0]
+            if len(caught_by) == len(PAIRS):
+                rows.append((contract, label, caught_by))
 
         print("\n" + "=" * 66)
         if escaped:
-            print(f"{len(escaped)} of {len(MUTANTS)} mutants escaped, which is a coverage gap:")
+            print(f"{len(escaped)} mutant runs escaped, which is a coverage gap:")
             for item in escaped:
                 print(f"  - {item}")
             print("\nWrite the test that would have caught it. No table is written.")
             return 1
 
-        print(f"all {len(MUTANTS)} mutants killed by the direct tests")
+        print(f"all {len(MUTANTS)} mutants killed on both pairs by the direct tests")
         if args.table:
             out = pathlib.Path(args.table)
             lines = [
@@ -242,17 +272,21 @@ def main() -> int:
                 "",
                 "Generated by `python scripts/mutate.py --table docs/MUTATIONS.md`.",
                 "",
-                "Each row is a defence deleted on purpose and the test that noticed. The",
-                "generator refuses to write this file if anything escapes, so its existence",
-                "is the claim and the rows are the evidence.",
+                "Each row is a defence deleted on purpose and the test that noticed, once",
+                "in the frozen pair (contracts/, deployed on studionet) and once in the",
+                "ported pair (contracts/v06/, deployed on Studio Next). The generator",
+                "refuses to write this file if anything escapes in either, so its",
+                "existence is the claim and the rows are the evidence.",
                 "",
-                f"**{len(rows)} of {len(MUTANTS)} defences verified.**",
+                f"**{len(rows)} of {len(MUTANTS)} defences verified in both pairs.**",
                 "",
-                "| contract | defence removed | caught by |",
-                "| --- | --- | --- |",
+                "| contract | defence removed | caught in the frozen pair by | caught in the ported pair by |",
+                "| --- | --- | --- | --- |",
             ]
-            for contract, label, test in rows:
-                lines.append(f"| {contract} | {label} | `{test}` |")
+            for contract, label, caught_by in rows:
+                lines.append(
+                    f"| {contract} | {label} | `{caught_by['frozen']}` | `{caught_by['v06']}` |"
+                )
             lines.append("")
             out.write_text("\n".join(lines), encoding="utf-8")
             print(f"wrote {out}")

@@ -74,7 +74,13 @@ def files():
 #: object, and either would publish addresses that are not where they say.
 #: shared/chain.py carries the same table; tests/direct/test_freeze.py holds
 #: the two equal.
-KNOWN_CHAIN_IDS = {"studionet": 61999, "bradbury": 4221}
+KNOWN_CHAIN_IDS = {"studionet": 61999, "studio-next": 61997, "bradbury": 4221}
+
+#: The pairs FROZEN.json records, by the name a deployment gives in its `pair`
+#: field. "frozen" is the first pair, contracts/escrow.py and dispute.py, and a
+#: deployment that names no pair runs it. "v06" is contracts/v06/, the same
+#: files ported to the runtime Studio Next runs by scripts/port.py.
+PAIRS = {"frozen": "contracts", "v06": "contracts/v06"}
 
 ADDRESS = re.compile(r"^0x[0-9a-fA-F]{40}$")
 
@@ -84,11 +90,13 @@ def freeze_problems(record: dict, hashes: dict, deployed: dict | None) -> list[s
     Everything wrong with a freeze record, as a list. Pure, so a test can hand
     it a record and a deployed.json without touching the disk.
 
-    The freeze is over the contract BYTES. `deployments` is where those bytes
-    live, keyed by network, and adding a network extends the record: the hash
-    check does not care how many entries there are, only that every entry names
-    a known network with the right chain id and two well formed addresses, and
-    that a deployed.json on disk points at one of them.
+    The first pair is frozen at the bytes deployed on studionet, and a second
+    pair, `v06`, is the same logic ported to a newer runtime. `hashes` carries
+    the first pair as "escrow" and "dispute" and the ported pair as
+    "v06/escrow" and "v06/dispute". `deployments` is where each pair lives,
+    keyed by network: every entry names a known network with the right chain
+    id, two well formed addresses, and a pair this record holds, and a
+    deployed.json on disk points at one of them.
     """
     problems: list[str] = []
     deployments = record.get("deployments") or {}
@@ -100,6 +108,16 @@ def freeze_problems(record: dict, hashes: dict, deployed: dict | None) -> list[s
                 f"    now     {hashes[name]}\n"
                 f"    frozen  {record[name]['sha256']}  ({where})"
             )
+    ported = record.get("v06")
+    if ported:
+        for name in ("escrow", "dispute"):
+            now = hashes.get(f"v06/{name}")
+            if now != ported[name]["sha256"]:
+                problems.append(
+                    f"contracts/v06/{name}.py does not match its record in FROZEN.json.\n"
+                    f"    now     {now}\n"
+                    f"    frozen  {ported[name]['sha256']}"
+                )
     if not deployments:
         problems.append("FROZEN.json has no deployments; the bytes are frozen but live nowhere")
     for network, entry in deployments.items():
@@ -113,6 +131,9 @@ def freeze_problems(record: dict, hashes: dict, deployed: dict | None) -> list[s
             problems.append(
                 f"deployments.{network}.chain_id is {entry.get('chain_id')}, but {network} is chain {known}"
             )
+        pair = entry.get("pair", "frozen")
+        if pair not in PAIRS or (pair != "frozen" and pair not in record):
+            problems.append(f"deployments.{network}.pair is {pair!r}, which FROZEN.json does not record")
         for name in ("escrow", "dispute"):
             if not ADDRESS.match(str(entry.get(name, ""))):
                 problems.append(f"deployments.{network}.{name} is not an address: {entry.get(name)!r}")
@@ -136,6 +157,11 @@ def freeze_problems(record: dict, hashes: dict, deployed: dict | None) -> list[s
     return problems
 
 
+def lf_sha256(path: pathlib.Path) -> str:
+    """sha256 over LF-normalised bytes, the form deploy.py puts on chain."""
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def frozen_contracts() -> list[str]:
     """
     The contracts are frozen at the deployed bytes, and this is the check rather
@@ -147,6 +173,10 @@ def frozen_contracts() -> list[str]:
     were recorded against these contracts. An edit here, however small, is a
     redeploy, and a redeploy is 63 consensus transactions to restore the
     evidence plus the chance that a re-run moves a number already published.
+
+    The ported pair is held two ways: to its own hashes, and to being exactly
+    what scripts/port.py makes of the first pair. The second is what proves
+    that nothing but the header, two imports and four API names moved.
 
     Hashes are taken over LF-normalised bytes. deploy.py reads with universal
     newlines, so that is what is on chain, and it is the only form that is the
@@ -163,11 +193,22 @@ def frozen_contracts() -> list[str]:
             deployed = json.loads(deployed_path.read_text(encoding="utf-8"))
         except ValueError:
             return ["deployed.json could not be read against the freeze"]
-    hashes = {
-        name: hashlib.sha256((ROOT / "contracts" / f"{name}.py").read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-        for name in ("escrow", "dispute")
-    }
+    hashes = {name: lf_sha256(ROOT / "contracts" / f"{name}.py") for name in ("escrow", "dispute")}
+    for name in ("escrow", "dispute"):
+        path = ROOT / "contracts" / "v06" / f"{name}.py"
+        if path.exists():
+            hashes[f"v06/{name}"] = lf_sha256(path)
     problems = freeze_problems(record, hashes, deployed)
+    if record.get("v06"):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import port  # noqa: PLC0415  scripts/port.py
+
+        stale = port.stale()
+        if stale:
+            problems.append(
+                "contracts/v06 is not exactly the port of the frozen pair: " + ", ".join(stale)
+                + ". Run python scripts/port.py; never edit contracts/v06/ by hand."
+            )
     if problems:
         problems.append(
             "Every published number is tied to the frozen pair. If a change is genuinely\n"
@@ -209,7 +250,7 @@ def main() -> int:
         for line in freeze:
             print(f"  {line}")
     else:
-        print("contracts frozen at the deployed bytes, unchanged")
+        print("contracts frozen at the deployed bytes, unchanged; the ported pair is the port")
 
     if not offenders:
         print(f"house style clean ({len(BANNED)} characters checked across {scanned} files)")

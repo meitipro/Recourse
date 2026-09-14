@@ -3,3 +3,6 @@
 # sha256 in contracts/FROZEN.json gets a different answer from the same file.
 contracts/*.py text eol=lf
 contracts/FROZEN.json text eol=lf
+# The ported pair and its diff are hashed and regenerated the same way.
+contracts/v06/*.py text eol=lf
+contracts/v06/PORT.diff text eol=lf

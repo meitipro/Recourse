@@ -28,10 +28,29 @@ RECORD = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf
 
 
 def real_hashes() -> dict:
-    return {
-        name: hashlib.sha256((ROOT / "contracts" / f"{name}.py").read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-        for name in ("escrow", "dispute")
-    }
+    """Both pairs, keyed the way check.freeze_problems reads them."""
+    hashes = {}
+    for key, folder in (("", "contracts"), ("v06/", "contracts/v06")):
+        for name in ("escrow", "dispute"):
+            data = (ROOT / folder / f"{name}.py").read_bytes().replace(b"\r\n", b"\n")
+            hashes[key + name] = hashlib.sha256(data).hexdigest()
+    return hashes
+
+
+def test_an_edited_ported_file_fails_the_gate():
+    hashes = real_hashes()
+    hashes["v06/dispute"] = "0" * 64
+    problems = check.freeze_problems(RECORD, hashes, None)
+    assert any("contracts/v06/dispute.py does not match its record" in p for p in problems)
+
+
+def test_a_deployment_naming_a_pair_the_record_does_not_hold_fails():
+    record = copy.deepcopy(RECORD)
+    record["deployments"]["bradbury"] = dict(
+        record["deployments"]["studionet"], chain_id=4221, pair="v07",
+    )
+    problems = check.freeze_problems(record, real_hashes(), None)
+    assert any("bradbury.pair is 'v07'" in p for p in problems)
 
 
 def test_the_two_hashes_are_where_they_were_and_match_the_files():

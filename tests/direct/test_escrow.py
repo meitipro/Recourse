@@ -15,6 +15,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import genvm_double as D  # noqa: E402
 from harness import ONE_GEN, World, raises  # noqa: E402
+import harness  # noqa: E402
 
 ST_OPEN, ST_WITHDRAWN, ST_DISPUTED, ST_RESOLVED = 0, 1, 2, 3
 V_NONE, V_HONORED, V_NOT_HONORED, V_UNCLEAR = 0, 1, 2, 3
@@ -911,7 +912,7 @@ def test_no_model_call_reaches_the_escrow():
     The money path must reproduce byte for byte on every validator. A mismatch
     is a deterministic violation, which opens a tribunal and can slash a leader.
     """
-    source = (pathlib.Path(__file__).resolve().parents[2] / "contracts" / "escrow.py").read_text(
+    source = (harness.contract_path("escrow")).read_text(
         encoding="utf-8"
     )
     for banned in ("exec_prompt", "run_nondet", "eq_principle", "nondet.web", "get_webpage"):
@@ -925,7 +926,7 @@ def test_every_write_checks_who_is_calling():
     """
     import ast
 
-    path = pathlib.Path(__file__).resolve().parents[2] / "contracts" / "escrow.py"
+    path = harness.contract_path("escrow")
     tree = ast.parse(path.read_text(encoding="utf-8"))
     contract = next(
         node

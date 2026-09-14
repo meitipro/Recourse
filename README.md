@@ -249,8 +249,8 @@ ruled on the merits.
 ## What is verified, and how
 
 ```bash
-python scripts/test.py         # freeze, house style, both contracts linted, 272 direct tests
-python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified
+python scripts/test.py         # freeze, house style, both pairs linted, 413 direct tests
+python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
 RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle, 26 checks along it
@@ -259,7 +259,7 @@ python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 272 direct tests cover the contracts through the double, the buyer agent,
+The 413 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -269,8 +269,9 @@ against every hash, refusal, timing and score this README cites.
 
 A green suite says the tests agree with the code, not that they would notice if
 the code were wrong. `scripts/mutate.py` deletes one defence at a time across
-both contracts and records which test noticed. **32 of 32 are caught**, and
-every row is in [docs/MUTATIONS.md](docs/MUTATIONS.md) with its catching test.
+both contracts and both pairs, and records which test noticed. **32 of 32 are caught**
+in each pair, and every row is in [docs/MUTATIONS.md](docs/MUTATIONS.md) with the
+test that caught it in each.
 The generator refuses to write that file if anything escapes, so the file
 existing is itself the claim.
 

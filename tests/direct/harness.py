@@ -26,18 +26,61 @@ GEN = "1" + "0" * 18
 ONE_GEN = int(GEN)
 
 
+#: The two pairs the contract tests run against. "frozen" is contracts/, the
+#: pair deployed on studionet. "v06" is contracts/v06/, the same files ported
+#: to the runtime Studio Next runs by scripts/port.py, with
+#: contracts/v06/PORT.diff as the whole difference. conftest.py runs every
+#: contract test once per pair by setting PAIR for the length of the test.
+PAIRS = {"frozen": CONTRACTS, "v06": CONTRACTS / "v06"}
+PAIR = "frozen"
+
+#: The test modules that execute or read a contract, and so run once per pair.
+#: scripts/mutate.py runs its mutants against these same modules.
+CONTRACT_MODULES = ("test_dispute", "test_escrow", "test_gate_question_has_not_drifted", "test_parity")
+
+
+def contract_path(name: str) -> pathlib.Path:
+    """The pair under test's <name>.py."""
+    return PAIRS[PAIR] / f"{name}.py"
+
+
 def _install(gl: D.GL) -> None:
-    """Publish a `genlayer` module whose star import gives the contracts what they expect."""
+    """
+    Publish a `genlayer` module shaped like the runtime the pair under test was
+    written for, so each pair's imports resolve the way they would on a node
+    and an import the port left out fails here rather than on chain.
+    """
+    sys.modules.pop("genlayer.storage", None)
     module = types.ModuleType("genlayer")
-    module.gl = gl
     module.Address = D.Address
-    module.allow_storage = D.allow_storage
-    module.DynArray = D.DynArray
-    module.TreeMap = D.TreeMap
     module.u8 = D.u8
     module.u32 = D.u32
     module.u64 = D.u64
     module.u256 = D.u256
+    if PAIR == "v06":
+        # py-genlayer:5jycge4q. The star import brings Address and the integer
+        # types but not gl, the storage types or the decorator: `gl` is the
+        # package itself, and the storage names live in genlayer.storage.
+        storage = types.ModuleType("genlayer.storage")
+        storage.DynArray = D.DynArray
+        storage.TreeMap = D.TreeMap
+        storage.allow = D.allow_storage
+        for name in ("contract", "vm", "message", "public", "nondet", "evm"):
+            setattr(module, name, getattr(gl, name))
+        module.storage = storage
+        module.__all__ = [
+            "contract", "vm", "message", "public", "nondet", "evm", "storage",
+            "Address", "u8", "u32", "u64", "u256",
+        ]
+        sys.modules["genlayer"] = module
+        sys.modules["genlayer.storage"] = storage
+        return
+    # py-genlayer:1jb45, the frozen pair's runtime: the star import gives gl
+    # and the storage names directly.
+    module.gl = gl
+    module.allow_storage = D.allow_storage
+    module.DynArray = D.DynArray
+    module.TreeMap = D.TreeMap
     module.__all__ = [
         "gl",
         "Address",
@@ -53,9 +96,9 @@ def _install(gl: D.GL) -> None:
 
 
 def load(name: str, gl: D.GL) -> types.ModuleType:
-    """Import contracts/<name>.py fresh against this gl."""
+    """Import the pair under test's <name>.py fresh against this gl."""
     _install(gl)
-    path = CONTRACTS / f"{name}.py"
+    path = contract_path(name)
     spec = importlib.util.spec_from_file_location(f"recourse_{name}", path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module

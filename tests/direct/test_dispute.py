@@ -18,6 +18,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import genvm_double as D  # noqa: E402
 from harness import ONE_GEN, World, raises  # noqa: E402
+import harness  # noqa: E402
 
 V_HONORED, V_NOT_HONORED, V_UNCLEAR = 1, 2, 3
 ST_DISPUTED, ST_RESOLVED = 2, 3
@@ -172,7 +173,7 @@ def test_parsing_never_defaults_to_a_verdict():
     decide the case in the seller's favour, because unclear leaves the payment.
     """
     source = (
-        pathlib.Path(__file__).resolve().parents[2] / "contracts" / "dispute.py"
+        harness.contract_path("dispute")
     ).read_text(encoding="utf-8")
     body = source[source.index("def parse_verdict") : source.index("def _ask")]
     assert "return {" in body
@@ -429,10 +430,10 @@ def test_the_validator_compares_exactly_and_forgives_nothing():
     different verdict disagrees, full stop.
     """
     source = (
-        pathlib.Path(__file__).resolve().parents[2] / "contracts" / "dispute.py"
+        harness.contract_path("dispute")
     ).read_text(encoding="utf-8")
     block = source[source.index("def validator_fn(leader_result)") :]
-    block = block[: block.index("out = gl.vm.run_nondet_unsafe")]
+    block = block[: block.index("out = gl.vm.run_nondet")]
     assert 'mine["verdict"] == their_verdict' in block
     for loosening in ("in (", "startswith", "abs(", "<=", ">=", "or their_verdict"):
         assert loosening not in block, f"the comparison contains a loosening: {loosening}"
@@ -519,7 +520,7 @@ def test_every_value_reaching_the_prompt_is_fenced_or_owned_by_the_contract():
     import ast
 
     source = (
-        pathlib.Path(__file__).resolve().parents[2] / "contracts" / "dispute.py"
+        harness.contract_path("dispute")
     ).read_text(encoding="utf-8")
     tree = ast.parse(source)
     builder = next(
@@ -573,7 +574,7 @@ def test_every_write_in_the_dispute_contract_checks_who_is_calling():
     """
     import ast
 
-    path = pathlib.Path(__file__).resolve().parents[2] / "contracts" / "dispute.py"
+    path = harness.contract_path("dispute")
     tree = ast.parse(path.read_text(encoding="utf-8"))
     contract = next(
         node for node in ast.walk(tree)
@@ -793,7 +794,7 @@ def test_exactly_one_non_deterministic_block_runs_per_case():
 
 def test_the_dispute_contract_reads_no_web_and_holds_no_money():
     source = (
-        pathlib.Path(__file__).resolve().parents[2] / "contracts" / "dispute.py"
+        harness.contract_path("dispute")
     ).read_text(encoding="utf-8")
     for banned in ("nondet.web", "get_webpage", "payable", "emit_transfer"):
         assert banned not in source, f"{banned} must never appear in the dispute contract"
