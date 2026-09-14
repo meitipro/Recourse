@@ -1,0 +1,86 @@
+{
+  "accuracy": 2,
+  "distribution": {
+    "honored": 1,
+    "unclear": 2
+  },
+  "instance": "0x67Bb1971C340c24dbE65fBE89acFcF2FaCDb9bB0",
+  "measured_at": 1789420681,
+  "n": 3,
+  "network": "studio-next",
+  "rows": [
+    {
+      "correct": true,
+      "expected": "unclear",
+      "id": "19",
+      "note": "Both clauses are measurable and they cannot both be satisfied: only two filings exist inside 24 hours, so returning 3 means breaking the age bound and honouring the age bound means returning 2. The promise does not say which clause gives way. Ruling either way invents a precedence the seller never agreed to.",
+      "observed": [
+        "unclear",
+        "unclear",
+        "not_honored"
+      ],
+      "reasons": [
+        "Read one way this was not_honored, read the other way honored. A promise whose answer depends on the order the evidence is read in does not settle the question.",
+        "Read one way this was not_honored, read the other way honored. A promise whose answer depends on the order the evidence is read in does not settle the question.",
+        "Oldest filing (2026-09-01) >24h before response time (2026-09-05T18:20Z)"
+      ],
+      "seconds": [
+        38.4,
+        34.0,
+        42.9
+      ],
+      "set": "v2",
+      "stable": false
+    },
+    {
+      "correct": true,
+      "expected": "honored",
+      "id": "20",
+      "note": "The price is a decimal number carried as a JSON string. It is the right pair, the right value and four seconds old against a ten second bound. The promise constrains the number, not the JSON type of its container, and reading a quoted decimal as a breach is the kind of technicality that would let any seller be found against on wording nobody agreed to.",
+      "observed": [
+        "honored",
+        "honored",
+        "honored"
+      ],
+      "reasons": [
+        "Response includes spot price as decimal number and timestamp within last 10 seconds of chain-recorded response time.",
+        "The response provided the price for ETH-USD as a decimal. The timestamp 18:19:58 is within 10 seconds of the on-chain response time 18:20:02.",
+        "Price is a decimal number, and timestamp shows data refreshed within last 10 seconds."
+      ],
+      "seconds": [
+        42.6,
+        26.9,
+        33.2
+      ],
+      "set": "v2",
+      "stable": true
+    },
+    {
+      "correct": false,
+      "expected": "honored",
+      "id": "21",
+      "note": "The buyer asked for a pair the promise never covered, and the endpoint said so immediately and named what it does cover. Nothing promised was withheld. A dispute right that lets a buyer pay for something outside the promise and then recover on the seller's refusal is a way to extract refunds, not a way to enforce promises.",
+      "observed": [
+        "unclear",
+        "unclear",
+        "unclear"
+      ],
+      "reasons": [
+        "PROMISE covers ETH-USD and BTC-USD only. REQUEST asks for SOL-USD, which the PROMISE never addressed.",
+        "PROMISE covers only ETH/BTC-USD prices; REQUEST asks for SOL-USD which PROMISE never addressed",
+        "The PROMISE covers only ETH-USD and BTC-USD spot prices. The REQUEST asked for SOL-USD, which the PROMISE never covered."
+      ],
+      "seconds": [
+        65.5,
+        33.3,
+        46.8
+      ],
+      "set": "v2",
+      "stable": true
+    }
+  ],
+  "runs": 3,
+  "set": "v2",
+  "stability": 2,
+  "unclear": 2
+}

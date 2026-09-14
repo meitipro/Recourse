@@ -7,34 +7,41 @@ would measure less than this and would flatter the result.
 | network | judgment contract | measured | runs per case |
 | --- | --- | --- | --- |
 | studionet | `0x7711F22d507ED3C15cF42BA6Ead2A5BD72EFcb71` | 2026-09-05 | 3 |
+| studio-next | `0x67Bb1971C340c24dbE65fBE89acFcF2FaCDb9bB0` | 2026-09-14 | 3 |
 
-The same frozen bytes wherever they are deployed, one column per network, never
-merged and never averaged. studionet is the only deployment today; a second
-validator set ruling on the same three strings would be a second column, and a
-disagreement between them a finding, not noise.
+One column per network, never merged and never averaged. The two pairs of
+contracts are the same logic, the same prompt and the same strings, with a published diff that touches only API names, running on two networks under two runtimes, with both pairs of hashes recorded, in `contracts/FROZEN.json`; the diff is
+`contracts/v06/PORT.diff`. A disagreement between the columns is a finding,
+not noise.
 
 ## The numbers
 
-| | studionet |
-| --- | --- |
-| accuracy, matched the verdict committed before the run | **1/3** |
-| stability, all 3 runs of a case agreed | 2/3 |
-| landed on unclear, the honesty signal | 1/3 |
+| | studionet | studio-next |
+| --- | --- | --- |
+| accuracy, matched the verdict committed before the run | **1/3** | **2/3** |
+| stability, all 3 runs of a case agreed | 2/3 | 2/3 |
+| landed on unclear, the honesty signal | 1/3 | 2/3 |
 
-The tuned set, measured on its own 18 cases, scores **17/18**: [RESULTS.md](RESULTS.md).
+The tuned set, measured on its own cases, scores **17/18** on studionet and **16/18** on studio-next: [RESULTS.md](RESULTS.md).
 
 ## Every case
 
-| case | expected | studionet observed | studionet correct |
-| --- | --- | --- | --- |
-| 19 | unclear | not_honored, not_honored, unclear | no |
-| 20 | honored | honored, honored, honored | yes |
-| 21 | honored | unclear, unclear, unclear | no |
+| case | expected | studionet observed | studio-next observed | studionet correct | studio-next correct |
+| --- | --- | --- | --- | --- | --- |
+| 19 | unclear | not_honored, not_honored, unclear | unclear, unclear, not_honored | no | yes |
+| 20 | honored | honored, honored, honored | honored, honored, honored | yes | yes |
+| 21 | honored | unclear, unclear, unclear | unclear, unclear, unclear | no | no |
 
 ## Where the networks disagree
 
-Only studionet has been measured for this set. There is nothing to compare
-yet; the second column appears when the same cases have run on a second network.
+2 of 3 cases landed on the same verdict on the first run on studionet and studio-next. 1 did not: two validator sets read the same frozen strings and reached different verdicts. Stated, not explained away: which network is right is exactly the question a committee exists to answer, and here two committees answered it differently.
+
+### Case 19: expected unclear
+
+- **studionet** answered `not_honored, not_honored, unclear`: One filing (2026-09-01) is older than 24 hours from response time (2026-09-05T18:20:03Z).
+- **studio-next** answered `unclear, unclear, not_honored`: Read one way this was not_honored, read the other way honored. A promise whose answer depends on the order the evidence is read in does not settle the question.
+
+The recorded expectation: Both clauses are measurable and they cannot both be satisfied: only two filings exist inside 24 hours, so returning 3 means breaking the age bound and honouring the age bound means returning 2. The promise does not say which clause gives way. Ruling either way invents a precedence the seller never agreed to.
 
 ## What the judge got wrong
 
@@ -57,6 +64,18 @@ It also disagreed with itself across runs, which is the stronger signal.
 **What it answered.** `unclear, unclear, unclear`
 
 **Its reasoning on the first run.** The PROMISE covers ETH-USD and BTC-USD; the REQUEST asks for SOL-USD, which the PROMISE never addresses.
+
+It was stable, so this is a consistent reading rather than a wobble.
+
+**studio-next:** 21.
+
+### studio-next, case 21: expected honored, answered unclear
+
+**Why the expected answer is right.** The buyer asked for a pair the promise never covered, and the endpoint said so immediately and named what it does cover. Nothing promised was withheld. A dispute right that lets a buyer pay for something outside the promise and then recover on the seller's refusal is a way to extract refunds, not a way to enforce promises.
+
+**What it answered.** `unclear, unclear, unclear`
+
+**Its reasoning on the first run.** PROMISE covers ETH-USD and BTC-USD only. REQUEST asks for SOL-USD, which the PROMISE never addressed.
 
 It was stable, so this is a consistent reading rather than a wobble.
 
@@ -106,8 +125,8 @@ fixed before the measurement, whatever order the code was written in. They
 were chosen to probe the weakness the first set exposed rather than to raise
 the score, and the question was never narrowed against them.
 
-**A second network.** The same bytes, verified by hash in `contracts/FROZEN.json`,
-judged by a different validator set. Agreement between networks says the
+**A second network.** The two pairs of contracts are the same logic, the same prompt and the same strings, with a published diff that touches only API names, running on two networks under two runtimes, with both pairs of hashes recorded,
+each judged by its own network's validator set. Agreement between networks says the
 verdicts follow from the strings rather than from one committee's habits;
 disagreement says which cases sit on the boundary.
 
@@ -115,5 +134,6 @@ disagreement says which cases sit on the boundary.
 
 ```bash
 python eval/run.py --network studionet --set v2 --runs 3
+python eval/run.py --network studio-next --set v2 --runs 3
 python eval/report.py --set v2
 ```

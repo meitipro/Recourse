@@ -10,11 +10,11 @@ Files, one per network per set, never merged and never averaged:
     eval/results.json               studionet, v1     eval/results-v2.json
     eval/results.<network>.json     any other, v1     eval/results-v2.<network>.json
 
-studionet is the only deployment, so the report has one column today. The
-shape stays because a second validator set ruling on the same frozen strings
-would be a second column, and where it disagreed on a case that would be a
-finding with its own section, in either direction, rather than an explanation.
-The published number is generated from the measurement, never typed.
+Every deployment in contracts/FROZEN.json gets a column: studionet, running the
+frozen pair, and studio-next, running the port. Where two networks disagree on a
+case, that is a finding with its own section, in either direction, rather than
+an explanation. The published number is generated from the measurement, never
+typed.
 """
 
 from __future__ import annotations
@@ -26,10 +26,15 @@ import sys
 import time
 
 HERE = pathlib.Path(__file__).resolve().parent
+#: How the two pairs relate, in the words every page uses for it.
+CLAIM = (
+    "the same logic, the same prompt and the same strings, with a published diff that touches "
+    "only API names, running on two networks under two runtimes, with both pairs of hashes recorded"
+)
 FROZEN = HERE.parent / "contracts" / "FROZEN.json"
-#: The networks the frozen contracts are deployed on, studionet first because
-#: its results files carry no suffix. One entry today; a second deployment
-#: would appear here without a code change.
+#: Every network with a deployment in contracts/FROZEN.json, studionet first
+#: because its results files carry no suffix. A deployment appears here without
+#: a code change.
 NETWORKS = sorted(
     json.loads(FROZEN.read_text(encoding="utf-8")).get("deployments", {"studionet": {}}),
     key=lambda n: (n != "studionet", n),
@@ -97,10 +102,10 @@ def main() -> int:
         measured = time.strftime("%Y-%m-%d", time.gmtime(data[n]["measured_at"]))
         add(f"| {n} | `{data[n]['instance']}` | {measured} | {data[n]['runs']} |")
     add("")
-    add("The same frozen bytes wherever they are deployed, one column per network, never")
-    add("merged and never averaged. studionet is the only deployment today; a second")
-    add("validator set ruling on the same three strings would be a second column, and a")
-    add("disagreement between them a finding, not noise.")
+    add("One column per network, never merged and never averaged. The two pairs of")
+    add("contracts are " + CLAIM + ", in `contracts/FROZEN.json`; the diff is")
+    add("`contracts/v06/PORT.diff`. A disagreement between the columns is a finding,")
+    add("not noise.")
     add("")
 
     add("## The numbers")
@@ -113,22 +118,37 @@ def main() -> int:
     add("")
     # The other set's score, beside this one. The README and the site never
     # print one without the other, and neither does a report.
+    # One figure per network that has measured it, so no column here is ever
+    # printed without its other set.
     other = "v2" if args.set == "v1" else "v1"
-    other_path = results_path(SETS[other]["base"], networks[0])
-    if other_path.exists():
-        theirs = json.loads(other_path.read_text(encoding="utf-8"))
-        which = "The held out set" if other == "v2" else "The tuned set"
-        target = SETS[other]["out"].name
-        add(f"{which}, measured on its own {theirs['n']} cases, scores **{theirs['accuracy']}/{theirs['n']}**: [{target}]({target}).")
-        add("")
+    which = "The held out set" if other == "v2" else "The tuned set"
+    target = SETS[other]["out"].name
+    scores = []
+    for n in networks:
+        other_path = results_path(SETS[other]["base"], n)
+        if other_path.exists():
+            theirs = json.loads(other_path.read_text(encoding="utf-8"))
+            scores.append(f"**{theirs['accuracy']}/{theirs['n']}** on {n}")
+        else:
+            scores.append(f"not yet measured on {n}")
+    add(f"{which}, measured on its own cases, scores " + " and ".join(scores) + f": [{target}]({target}).")
+    add("")
+    # A run that returned no verdict is quoted as the runner recorded it, never
+    # explained: a sentence that guessed at the cause stood here and was wrong.
     for n in networks:
         errored = [r for r in data[n]["rows"] if "error" in r["observed"]]
         if errored:
             add(
-                f"On {n}, stability counts {len(errored)} case(s) as unstable "
-                f"({', '.join(r['id'] for r in errored)}) where one run never returned a verdict: a "
-                "dropped transaction on a hosted network, not the judge disagreeing with itself."
+                f"On {n}, {len(errored)} case(s) had a run that returned no verdict, and stability "
+                "counts each of them as unstable. What the runner recorded for each:"
             )
+            add("")
+            for r in errored:
+                reasons = r.get("reasons") or []
+                for index, verdict in enumerate(r["observed"]):
+                    if verdict == "error":
+                        detail = reasons[index] if index < len(reasons) and reasons[index] else "no detail recorded"
+                        add(f"- case {r['id']}, run {index + 1}: `{detail}`")
             add("")
 
     add("## Every case")
@@ -159,10 +179,13 @@ def main() -> int:
             add("first run. Two validator sets, the same three strings, the same answer.")
             add("")
         else:
-            add(f"{len(disagreements)} case(s) where two validator sets read the same frozen strings")
-            add("and reached different verdicts. Stated, not explained away: which network is")
-            add("right is exactly the question a committee exists to answer, and here two")
-            add("committees answered it differently.")
+            add(
+                f"{len(ids) - len(disagreements)} of {len(ids)} cases landed on the same verdict on the "
+                f"first run on {' and '.join(networks)}. {len(disagreements)} did not: two validator sets "
+                "read the same frozen strings and reached different verdicts. Stated, not explained "
+                "away: which network is right is exactly the question a committee exists to answer, "
+                "and here two committees answered it differently."
+            )
             add("")
             for case_id in disagreements:
                 add(f"### Case {case_id}: expected {cases.get(case_id, {}).get('expected', '?')}")
@@ -223,10 +246,15 @@ def main() -> int:
     add("confidently there is inventing standards the seller never agreed to.")
     add("")
     if args.set == "v1":
-        add("3 of 3 adversarial cases pass on every network measured. 16 carries a prompt")
-        add("injection inside the response, 17 inside the promise and 18 inside the request,")
-        add("so between them all three party-written inputs are covered. If any of them ever")
-        add("returns honored, the fence has stopped working.")
+        # Counted from the rows, per network, rather than typed.
+        adversarial = ("16", "17", "18")
+        passing = {
+            n: sum(1 for c in adversarial if c in rows_by[n] and rows_by[n][c]["correct"]) for n in networks
+        }
+        add(" and ".join(f"{passing[n]} of {len(adversarial)} adversarial cases pass on {n}" for n in networks) + ".")
+        add("16 carries a prompt injection inside the response, 17 inside the promise and 18")
+        add("inside the request, so between them all three party-written inputs are covered.")
+        add("If any of them ever returns honored, the fence has stopped working.")
         add("")
 
     add("## What this evidence does and does not show")
@@ -263,8 +291,8 @@ def main() -> int:
     add("were chosen to probe the weakness the first set exposed rather than to raise")
     add("the score, and the question was never narrowed against them.")
     add("")
-    add("**A second network.** The same bytes, verified by hash in `contracts/FROZEN.json`,")
-    add("judged by a different validator set. Agreement between networks says the")
+    add("**A second network.** The two pairs of contracts are " + CLAIM + ",")
+    add("each judged by its own network's validator set. Agreement between networks says the")
     add("verdicts follow from the strings rather than from one committee's habits;")
     add("disagreement says which cases sit on the boundary.")
     add("")
