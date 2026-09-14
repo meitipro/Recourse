@@ -52,11 +52,15 @@ back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
 
 [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
-shot, timed, every spoken number one this repository publishes.
+shot, timed, every spoken number one this repository publishes. It films
+Studio Next, where the verdict is recorded and the settlement does not move,
+and says so on camera rather than cutting around it.
+[Settlement on Studio Next](#settlement-on-studio-next) gives the reason; the
+money coming back, described above, happens on studionet.
 
-![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
+![The live feed on Studio Next, read from the chain when the page opened: nine payments, six disputes opened, three of five not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
-![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain, and stage 1 answers without asking a model, as the line under the verdict says: not judgeable, because nothing in it is measurable](docs/images/linter.png)
+![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain on studionet, and stage 1 answers without asking a model, as the line under the verdict says: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 
 Measured on studionet, as medians over every dispute on the public record in
 `evidence/snapshot.json`, and printed by the demo for its own run:
@@ -297,31 +301,32 @@ Next, cases 02 and 07, `status=UNDETERMINED execution=FINISHED_WITH_RETURN`.
 
 ### Settlement on Studio Next
 
-Judgment runs on Studio Next and writes its verdict to the case. The
-settlement that verdict implies does not pay out there, and the reason is a
-rule of consensus v0.6 rather than anything in the contracts. Every message a
-transaction's descendants emit is funded in advance, in one allocation tree
-submitted with that transaction, and an external message, which is what a
-value transfer is, is accepted only at the root of that tree. `open_dispute`
-emits `adjudicate`, `adjudicate` emits `settle`, and `settle` sends the
-payouts, two messages below the transaction that funds them. So `settle` ends
-`fee no_matching_allocation # external`, and the payment stays disputed with
-its verdict on the case. Its four cases carry all three verdicts, p-000003
-and p-000005 `not_honored`, p-000006 `honored` and p-000007 `unclear`, and
-none of the four has settled.
+**What works there, what does not, and why.** Everything up to the verdict
+works on Studio Next: paying into escrow, recording the response, opening a
+dispute, and the committee's judgment in both presentation orders, written to
+the case. Its five cases carry all three verdicts, p-000003, p-000005 and
+p-000009 `not_honored`, p-000006 `honored` and p-000007 `unclear`. A payout
+sent from the top of its own transaction works too: the seller's withdraw,
+and reclaim for a dispute whose judgment never landed. What does not work is
+the settlement a verdict implies. The payment and the bond stay in escrow, so
+a contested buyer gets its verdict on chain and not its money. The reason is a
+rule of consensus v0.6, not anything in the contracts: every message a
+transaction's descendants emit is funded in advance from one allocation tree
+submitted with that transaction, and a value transfer is accepted only at the
+root of that tree. `open_dispute` emits `adjudicate`, `adjudicate` emits
+`settle`, and `settle` sends the payouts two messages below the transaction
+that funds them, so every `settle` there ended
+`fee no_matching_allocation # external` and none of the five cases has
+settled. The contested path settles end to end on studionet, where the timings
+near the top of this file were measured, and [docs/SCRIPT.md](docs/SCRIPT.md)
+films Studio Next saying exactly this.
 
-A payout sent from the top of its own transaction is funded at the root, and
-`shared/chain.py` allocates one there for `withdraw` and `reclaim`:
+The payouts that do run there, which `shared/chain.py` allocates at the root:
 
 | payment on Studio Next | what ran | what moved | transaction |
 | --- | --- | --- | --- |
 | p-000004 | `withdraw`, by `scripts/withdraw.py`, after the window closed | the payment to the seller | [0x77c1a88e...](https://explorer-studio-dev.genlayer.com/tx/0x77c1a88ed0db54bfe012ff49feaffee0beb184ed69632dcccd47a40369e8a9cc) |
 | p-000002 | `reclaim`, by the buyer, after a judgment that never landed | the payment to the seller and the bond to the buyer | [0xbc7fd996...](https://explorer-studio-dev.genlayer.com/tx/0xbc7fd996b751edc5d92706d935ff160fbed5fb2a3584d0c3fe2828dd010f6506) |
-
-On Studio Next, then, the honest path completes, and a dispute whose judgment
-never lands unwinds to the split `reclaim` applies. A contested buyer gets its
-verdict on chain and not its money. The contested path settles end to end on
-studionet, where the timings near the top of this file were measured.
 
 The refusals are on chain there too, recorded by
 `python scripts/evidence.py --network studio-next`:
@@ -339,7 +344,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 422 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 423 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -351,7 +356,7 @@ python eval/run.py --network studio-next --set v2 --runs 3
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 422 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 423 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

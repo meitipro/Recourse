@@ -236,6 +236,20 @@ def network_name() -> str:
     return os.environ.get("RECOURSE_NETWORK", DEFAULT_NETWORK)
 
 
+def settlement_moves(network: str) -> bool:
+    """
+    Whether a verdict's settlement pays out on this network.
+
+    On consensus v0.6 a value transfer can be funded only at the root of the
+    allocation tree a transaction is submitted with, and settle's transfers sit
+    two messages below the transaction that funds them: open_dispute, then
+    adjudicate, then settle. So there the verdict is written to the case and
+    the escrow keeps the payment and the bond. Measured on Studio Next on 14
+    September: every settle ended "fee no_matching_allocation # external".
+    """
+    return network not in V06_NETWORKS
+
+
 def sdk_problem(name: str) -> str | None:
     """
     Why the installed SDK cannot reach this network at all, or None when it can.

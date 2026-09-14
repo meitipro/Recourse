@@ -4,8 +4,10 @@
  * The hero's lane, ported from the design canvas.
  *
  * A stream of payments scrolls past as hairlines. Every so often one grows,
- * is marked CONTESTED, then travels back and fades as RETURNED. It is the
- * product in one gesture, and it is the only animation on the site.
+ * is marked CONTESTED, then travels back and fades as RETURNED. On a network
+ * where the settlement does not move, Studio Next, it fades as JUDGED instead:
+ * a lane that said RETURNED there would show a refund that runtime cannot pay.
+ * It is the product in one gesture, and it is the only animation on the site.
  *
  * Under prefers-reduced-motion, and anywhere a 2d context is unavailable, the
  * canvas removes itself and the static fallback behind it shows instead. The
@@ -13,6 +15,9 @@
  */
 
 import { useEffect, useRef } from "react";
+
+/** What the returning tick says. The build's network is inlined here at build time. */
+const RETURN_LABEL = process.env.NEXT_PUBLIC_RECOURSE_NETWORK === "studio-next" ? "JUDGED" : "RETURNED";
 
 export default function LaneCanvas({ onFallback }: { onFallback: (fallback: boolean) => void }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
@@ -108,7 +113,7 @@ export default function LaneCanvas({ onFallback }: { onFallback: (fallback: bool
       } else if (event.phase === "return") {
         const p = Math.min(1, elapsed / 900);
         h = 150;
-        label = "RETURNED";
+        label = RETURN_LABEL;
         shift = (width < 720 ? 110 : 220) * ease(p);
         alpha = p > 0.6 ? 1 - (p - 0.6) / 0.4 : 1;
         labelAlpha = alpha;

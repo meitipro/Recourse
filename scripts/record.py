@@ -5,12 +5,13 @@ The recording, driven from one window: docs/SCRIPT.md's shots, in its order.
     python scripts/record.py --dry-run             walk every shot, run nothing
     python scripts/record.py                       the take
     python scripts/record.py --linter --withdraw   with those OPTIONAL shots
+    python scripts/record.py --network studio-next the take on Studio Next
 
 This window is Terminal A. Each shot's label is printed before it runs, in
 block figures a screen capture can read. A terminal shot waits for the line
 SCRIPT.md says appears in it, and every switch to a browser tab or another
 window is a pause that waits for a key, never a timer. Terminal B, the
-stopwatch, opens when the dispute line prints and stops when the refund line
+stopwatch, opens when the dispute line prints and stops when the verdict line
 does.
 
 It drives what SCRIPT.md lists and nothing else. Every label, instruction and
@@ -249,14 +250,13 @@ PLAN: list[tuple[str, list[Step]]] = [
     ]),
     ("0:56 to 1:04", [
         Step("expect", 'a line starting "verdict"', "verdict", starts("verdict")),
+        Step("stopwatch_stop", "Terminal B", "stops by itself at the verdict line"),
         Step("expect", 'a line starting "reason"', "reason", starts("reason")),
         Step("expect", 'a line starting "dispute to verdict"', "dispute to verdict", starts("dispute to verdict")),
     ]),
     ("1:04 to 1:12", [
-        Step("expect", 'a line starting "dispute to money back"', "dispute to money back",
-             starts("dispute to money back")),
-        Step("expect", 'a line starting "refund" with "returned" in it', "refund", starts("refund", "returned")),
-        Step("stopwatch_stop", "Terminal B", "stops by itself at that refund line"),
+        Step("expect", 'a line starting "settlement" with "not moved" in it', "settlement",
+             starts("settlement", "not moved")),
         Step("finished", "demo.py finishes and exits 0"),
         Step("pause", "browser tab 2, the feed, reloaded", "Browser, section 05"),
     ]),
@@ -416,6 +416,7 @@ class Take:
             field("OPTIONAL", ", ".join(flags) if flags else "none in this run; each has its own flag")
             field("Terminal B", f"opens at 0:36 in {stopwatch_mechanism()}")
             field("the site", self.site)
+            field("network", self.args.network or "studionet, the default")
         self.before()
         later: dict[str, list[tuple[Shot, list[Step]]]] = {}
         for time_range, steps in PLAN:
@@ -488,6 +489,8 @@ class Take:
 
     def step_run(self, shot: Shot, step: Step) -> None:
         command = step.what.format(pid=self.pid or "p-000NNN")
+        if self.args.network:
+            command += f" --network {self.args.network}"
         if self.dry:
             field("runs", f"{command}   (dry run: not run)")
             return
@@ -591,7 +594,7 @@ class Take:
                 self.stopwatch = open_stopwatch(self.stop_file)
             except Exception as error:  # noqa: BLE001 - the 0:36 step reports it
                 self.stopwatch, self.stopwatch_error = "failed", str(error)
-        elif self.stopwatch and not self.stopped and line.startswith("refund") and "returned" in line:
+        elif self.stopwatch and not self.stopped and line.startswith("verdict"):
             self.stop_file.touch()
             self.stopped = True
 
@@ -623,6 +626,7 @@ def main() -> int:
     parser.add_argument("--clerk", action="store_true", help="OPTIONAL: the clerk at 1:12; needs a key behind the linter")
     parser.add_argument("--withdraw", action="store_true", help="OPTIONAL: the withdraw at 1:12, once the honest window has closed")
     parser.add_argument("--hosted", action="store_true", help=f"the live site at {HOSTED_SITE} instead of {LOCAL_SITE}")
+    parser.add_argument("--network", default=None, help="the network the take runs on, passed to demo.py and withdraw.py; default studionet")
     args = parser.parse_args()
 
     text = SCRIPT_MD.read_text(encoding="utf-8")

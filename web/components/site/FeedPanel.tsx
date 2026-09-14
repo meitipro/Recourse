@@ -90,6 +90,9 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
   const [open, setOpen] = useState<string | null>(null);
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [all, setAll] = useState(false);
+  // A case's three frozen strings, read when its row is first opened. The
+  // page's own read carries each case's verdict and reason, not the strings.
+  const [strings, setStrings] = useState<Record<string, { promise: string; request: string; response: string } | "reading" | "unread">>({});
 
   const now = Math.floor(Date.now() / 1000);
   const failed = !data.ok;
@@ -100,8 +103,12 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
   const sorted = [...data.rows].sort((a, b) => (sort === "asc" ? a.pid.localeCompare(b.pid) : b.pid.localeCompare(a.pid)));
   const shown = all ? sorted : sorted.slice(0, limit);
 
-  const decided = data.rows.filter((row) => row.status === 3);
-  const upheld = decided.filter((row) => row.verdict === 2);
+  // Decided means a committee ruled, and a ruling is a case. On studionet
+  // every case settled, so this is also every settled dispute. On Studio Next a
+  // case is judged and the escrow keeps the money, and the count still shows
+  // the committee's rulings rather than settlements that cannot run there.
+  const decided = data.rows.filter((row) => row.case);
+  const upheld = decided.filter((row) => row.case?.verdict === 2);
   const elapsed = decided
     .map((row) => (row.case ? row.case.decided_at - row.created_at : 0))
     .filter((value) => value > 0)
@@ -134,9 +141,19 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
 
   const rows = shown.map((row) => {
     const state = stateOf(row, now);
-    const verdict = VERDICT_NAMES[row.verdict] ?? String(row.verdict);
+    // The escrow carries the verdict once it settles. Until then, and on a
+    // network where it never does, the case carries the committee's.
+    const code = row.status !== 3 && row.case ? row.case.verdict : row.verdict;
+    const verdict = VERDICT_NAMES[code] ?? String(code);
     const citation = row.case ? toCitation(row.pid, row.case.decided_at) : null;
     const isOpen = open === row.pid;
+    const held = strings[row.pid];
+    const got = typeof held === "object" ? held : null;
+    const reading = row.case && !got
+      ? held === "unread"
+        ? `Not readable just now. ${citation} has the case.`
+        : "Reading the case from chain."
+      : null;
     return {
       id: row.pid,
       pid: row.pid,
@@ -149,9 +166,11 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
       verdict: row.status < 2 ? "not contested" : verdict.replace("_", " "),
       verdictStyle: row.status < 2 ? verdictStyle("pending") : verdictStyle(verdict),
       elapsed: row.case && row.case.decided_at > row.created_at ? `${row.case.decided_at - row.created_at}s` : "-",
-      promise: row.case?.promise ?? "On the seller's row, and frozen into a case when the payment is contested.",
-      request: row.request ?? "-",
-      response: row.response ?? "Not recorded yet.",
+      promise: got?.promise ?? reading ?? "On the seller's row, and frozen into a case when the payment is contested.",
+      // The drawer promises the three frozen strings the validators were
+      // given, and those are the case's own, read when the row opens.
+      request: got?.request ?? reading ?? row.request ?? "-",
+      response: got?.response ?? reading ?? row.response ?? "Not recorded yet.",
       reason: row.case?.reason ?? "No case: this payment was never contested.",
       fixture: `Paid ${new Date(row.created_at * 1000).toUTCString()}. Seller ${row.seller}.${
         row.case ? ` Verdict written ${new Date(row.case.decided_at * 1000).toUTCString()}.` : ""
@@ -159,7 +178,21 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
       isOpen,
       edge: isOpen ? "#1B2130" : "#151A25",
       bg: isOpen ? "#0B0E15" : "transparent",
-      toggle: () => setOpen(isOpen ? null : row.pid),
+      toggle: () => {
+        setOpen(isOpen ? null : row.pid);
+        if (!isOpen && row.case && !strings[row.pid]) {
+          setStrings((known) => ({ ...known, [row.pid]: "reading" }));
+          fetch(`/api/case/${row.pid}`)
+            .then((reply) => (reply.ok ? reply.json() : Promise.reject(reply.status)))
+            .then((found) =>
+              setStrings((known) => ({
+                ...known,
+                [row.pid]: { promise: found.promise, request: found.request, response: found.response },
+              })),
+            )
+            .catch(() => setStrings((known) => ({ ...known, [row.pid]: "unread" })));
+        }
+      },
     };
   });
 

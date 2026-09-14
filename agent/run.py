@@ -38,7 +38,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from agent.checks import check
 from seller.signing import verify
-from shared.chain import GEN, Chain, load_accounts, load_deployment
+from shared.chain import GEN, Chain, load_accounts, load_deployment, network_name, settlement_moves
 
 STATUS = {0: "open", 1: "withdrawn", 2: "disputed", 3: "resolved"}
 VERDICT = {0: "pending", 1: "honored", 2: "not_honored", 3: "unclear"}
@@ -126,6 +126,14 @@ def out(payload: dict, as_json: bool, line: str = "") -> None:
     if as_json:
         return
     print(line, flush=True)
+
+
+def read_case(chain: Chain, dispute: str, pid: str) -> dict:
+    """The dispute contract's case for a payment, or {} until adjudicate has written one."""
+    try:
+        return chain.read_json(dispute, "get_case", [pid])
+    except Exception:  # noqa: BLE001  "[EXPECTED] unknown case" until then
+        return {}
 
 
 def finish(report: dict, args: argparse.Namespace, code: int) -> int:
@@ -280,43 +288,74 @@ def main() -> int:
     report["dispute_hash"] = opened["hash"]
     out(report, args.json, f"disputed         bond {bond / GEN:.0f} GEN posted, no human involved")
 
-    # 7 - poll until the verdict lands.
+    # 7 - poll until the verdict lands. Where settlement moves, the escrow's
+    # status turns resolved as the verdict arrives, and says so on its own.
+    # Where it cannot (shared/chain.py settlement_moves), the verdict lands on
+    # the dispute contract's case while the escrow keeps the payment and the
+    # bond, so the case is read as well, and the verdict is printed when the
+    # committee writes it rather than after a wait for money that cannot come.
+    moves = settlement_moves(network_name())
     deadline = time.time() + args.timeout
-    row = {}
+    row: dict = {}
+    case: dict = {}
     while time.time() < deadline:
         row = buyer.read_json(escrow, "get_payment", [pid])
         if int(row["status"]) == 3:
             break
+        if not moves:
+            case = read_case(buyer, deployment["dispute"], pid)
+            if int(case.get("verdict", 0)):
+                break
         time.sleep(5)
 
     elapsed = time.time() - contested_at
     total = time.time() - started
     settled = int(row.get("status", 0)) == 3
-    name = VERDICT.get(int(row.get("verdict", 0)), "pending")
+    judged = int(case.get("verdict", 0))
+    name = VERDICT.get(judged if judged and not settled else int(row.get("verdict", 0)), "pending")
     report["verdict"] = name
     report["settled"] = settled
     report["seconds_dispute_to_settlement"] = round(elapsed, 1)
     report["seconds_payment_to_settlement"] = round(total, 1)
 
-    case_reason = ""
     if settled:
-        try:
-            case_reason = buyer.read_json(deployment["dispute"], "get_case", [pid])["reason"]
-        except Exception:  # noqa: BLE001
-            case_reason = ""
+        case = read_case(buyer, deployment["dispute"], pid)
+    case_reason = str(case.get("reason", ""))
     report["reason"] = case_reason
 
-    # The verdict is printed the moment it lands. The money follows on
-    # finality, about half a minute later, and is printed when it arrives, so a
-    # terminal watching this never shows the two as one event.
+    # The verdict is printed the moment it lands. Where settlement moves, the
+    # money follows on finality, about half a minute later, and is printed when
+    # it arrives, so a terminal watching this never shows the two as one event.
     out(report, args.json, "")
     out(report, args.json, f"verdict          {name}")
     if case_reason:
         out(report, args.json, f"reason           {case_reason}")
     out(report, args.json, f"dispute to verdict      {elapsed:.0f}s")
-    out(report, args.json, f"payment to settlement   {total:.0f}s")
-    if not settled:
+    if moves or settled:
+        out(report, args.json, f"payment to settlement   {total:.0f}s")
+    if not settled and (moves or not judged):
         out(report, args.json, f"  still {STATUS.get(int(row.get('status', 0)), '?')} after {args.timeout}s")
+
+    if not moves and judged and not settled:
+        # The settlement this verdict implies is attempted about half a minute
+        # after it lands: 31 to 33 seconds on Studio Next, over the four cases in
+        # evidence/snapshot-studio-next.json, and every attempt failed there. The
+        # escrow is watched long enough to see that and no longer, and what it
+        # shows is printed as it is.
+        watch_until = time.time() + 60
+        while time.time() < watch_until and not settled:
+            time.sleep(5)
+            row = buyer.read_json(escrow, "get_payment", [pid])
+            settled = int(row["status"]) == 3
+        report["settled"] = settled
+        if not settled:
+            report["settlement"] = "not moved"
+            report["refund_expected"] = "0"
+            report["refund_landed"] = False
+            report["balance_before"] = str(balance_before)
+            report["balance_after"] = str(buyer.balance(accounts["buyer"].address))
+            out(report, args.json, "settlement       not moved: the escrow still holds the payment and the bond")
+            return finish(report, args, 0)
 
     # 8 - the money. Balances are read from the chain, never assumed from the
     # settlement table.

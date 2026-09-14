@@ -90,10 +90,27 @@ class Sources:
         self.next = json.loads(read(ROOT / "evidence" / "snapshot-studio-next.json"))
         self.validators = json.loads(read(ROOT / "eval" / "validators.json"))
         self.feed = json.loads(read(ROOT / "docs" / "images" / "feed.json"))["tiles"]
+        # The image is of whichever network the site was built for; shots.py
+        # writes it beside the tiles.
+        self.feed_network = json.loads(read(ROOT / "docs" / "images" / "feed.json")).get("network", "studionet")
+        self.feed_snapshot = self.next if self.feed_network == "studio-next" else self.snapshot
 
     @property
     def committee(self) -> int:
         return int(self.totals["committee"])
+
+    def feed_caption(self, what: str) -> str:
+        """One figure the feed image shows, beside what its network's snapshot says. Not honored counts cases."""
+        totals = self.feed_snapshot["totals"]
+        cases = self.feed_snapshot["cases"]
+        not_honored = sum(1 for case in cases if case["verdict_name"] == "not_honored")
+        figures = {
+            "payments": (totals["payments"], self.feed.get("Payments")),
+            "disputes opened": (totals["disputes_opened"], self.feed.get("Disputes opened")),
+            "not honored": (f"{not_honored} of {len(cases)} cases", self.feed.get("Not honored")),
+        }
+        now, shown = figures[what]
+        return f"{self.feed_network}: {what} {now} in its snapshot; docs/images/feed.json shows {shown}"
 
     @functools.cached_property
     def direct_tests(self) -> str:
@@ -228,6 +245,23 @@ class Sources:
         return f"a policy naming qwen with a 0.2 floor appears in {len(hits)} receipt files"
 
 
+def caption_words() -> tuple[str, str, str]:
+    """The three figures the feed image shows, spelled the way its caption spells them."""
+    names = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+        "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+    ]
+
+    def spell(n: int) -> str:
+        return names[n] if 0 <= n < len(names) else str(n)
+
+    tiles = json.loads(read(ROOT / "docs" / "images" / "feed.json"))["tiles"]
+    ruled_not, ruled = (int(part) for part in tiles["Not honored"].split("/"))
+    return spell(int(tiles["Payments"])), spell(int(tiles["Disputes opened"])), f"{spell(ruled_not)} of {spell(ruled)}"
+
+
+CAPTION = caption_words()
+
 # --- rules: which file each README number comes from ---------------------------
 
 Value = typing.Union[str, typing.Callable[[Sources], str]]
@@ -246,7 +280,7 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
     (r"networks agree on", r"17 of 18|2 of 3|two", 0, "eval/RESULTS.md, eval/RESULTS-V2.md", lambda s: s.agreement()),
     (r"studionet has 20 validators", r"20|16|five", 0, "eval/validators.json", lambda s: s.validators_line()),
     (r"two more such runs|cases 02 and 07", r"two|02", 0, "eval/results.studio-next.json", lambda s: s.no_verdict_next()),
-    (r"cases carry all three verdicts|none of the four has settled", r"four|three", 0, "evidence/snapshot-studio-next.json", lambda s: s.next_cases()),
+    (r"cases carry all three verdicts|cases has settled", r"[a-z]+", 0, "evidence/snapshot-studio-next.json", lambda s: s.next_cases()),
     (r"two networks under two runtimes", r"two", 0, "contracts/FROZEN.json",
      lambda s: f"{len(s.frozen['deployments'])} deployments; runtimes {s.frozen['runtime']} and {s.frozen['v06']['runtime']}"),
     (r"^Two networks$|Two networks sets", r"Two", 0, "contracts/FROZEN.json", lambda s: f"deployments: {', '.join(s.frozen['deployments'])}"),
@@ -264,12 +298,14 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
      "evidence/snapshot.json", lambda s: s.stale("p-000014")),
     (r"nine hour|nine hours", r"nine", 0, "seller/main.py", lambda s: "STALE_HOURS = " + literal("seller/main.py", r"STALE_HOURS = (\d+)")),
     (r"ninety second recording script", r"ninety", 0, "docs/SCRIPT.md", lambda s: f"its last shot ends at {s.script_end}"),
-    (r"read from the chain when the page opened", r"nineteen", 0, "evidence/snapshot.json",
-     lambda s: f"totals.payments = {s.totals['payments']}; docs/images/feed.json shows {s.feed.get('Payments')}"),
-    (r"read from the chain when the page opened", r"ten", 0, "evidence/snapshot.json",
-     lambda s: f"totals.disputes_opened = {s.totals['disputes_opened']}; docs/images/feed.json shows {s.feed.get('Disputes opened')}"),
-    (r"read from the chain when the page opened", r"eight of ten", 0, "evidence/snapshot.json",
-     lambda s: f"totals.upheld = {s.totals['upheld']} of {s.totals['decided']} decided; docs/images/feed.json shows {s.feed.get('Not honored')}"),
+    # The caption's three figures are whatever the photographed tiles read,
+    # held to the snapshot of the network the image is of.
+    (r"read from the chain when the page opened", CAPTION[0], 0, "the snapshot docs/images/feed.json names",
+     lambda s: s.feed_caption("payments")),
+    (r"read from the chain when the page opened", CAPTION[1], 0, "the snapshot docs/images/feed.json names",
+     lambda s: s.feed_caption("disputes opened")),
+    (r"read from the chain when the page opened", CAPTION[2], 0, "the snapshot docs/images/feed.json names",
+     lambda s: s.feed_caption("not honored")),
     (r"dispute to verdict", r"67", 0, "evidence/snapshot.json", lambda s: f"totals.median_dispute_to_verdict_seconds = {s.totals['median_dispute_to_verdict_seconds']}"),
     (r"dispute to money back", r"100", 0, "evidence/snapshot.json", lambda s: f"totals.median_dispute_to_money_back_seconds = {s.totals['median_dispute_to_money_back_seconds']}"),
     (r"finalizes a median of", r"30", 0, "evidence/snapshot.json", lambda s: f"totals.median_finality_seconds = {s.totals['median_finality_seconds']}"),

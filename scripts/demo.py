@@ -151,7 +151,13 @@ def main() -> int:
         rule("result")
         row = chain.read_json(deployment["escrow"], "get_seller", [deployment["seller"]])
         print(f"seller record   {row['upheld']} upheld of {row['total']} payments")
-        if contested:
+        if contested and contested.get("settlement") == "not moved":
+            # On a runtime where the settlement cannot be funded the verdict is
+            # the outcome, and the result says so. No money moved, so there is
+            # no money to report and nothing here reports any.
+            print(f"verdict         {contested['verdict']}")
+            print("settlement      not moved: the escrow still holds the payment and the bond")
+        elif contested:
             settled = contested.get("settled")
             landed = contested.get("refund_landed")
             # The claim is money back, not verdict reached, so the number that

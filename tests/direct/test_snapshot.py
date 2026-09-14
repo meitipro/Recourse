@@ -394,14 +394,23 @@ def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
 
     When this fails, retake the image with docs/shots.py and rewrite the caption
     in the same commit, as docs/RUNBOOK.md says.
+
+    The image is of whichever network the site was built for, which shots.py
+    reads off the footer and writes beside the tiles. The Not honored tile
+    counts the committee's rulings, the cases, because on Studio Next a case is
+    judged and never settled. On studionet every case settled, so the two
+    counts are the same there.
     """
-    totals = SNAPSHOT["totals"]
     shot = json.loads((ROOT / "docs" / "images" / "feed.json").read_text(encoding="utf-8"))
+    snapshot = SNAPSHOTS[shot.get("network", "studionet")]
+    totals = snapshot["totals"]
+    ruled = len(snapshot["cases"])
+    not_honored = sum(1 for case in snapshot["cases"] if case["verdict_name"] == "not_honored")
     read = {label.lower(): value for label, value in shot["tiles"].items()}
     expected = {
         "payments": str(totals["payments"]),
         "disputes opened": str(totals["disputes_opened"]),
-        "not honored": f"{totals['upheld']}/{totals['decided']}",
+        "not honored": f"{not_honored}/{ruled}",
     }
     for label, value in expected.items():
         assert read.get(label) == value, (
@@ -412,7 +421,7 @@ def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
     assert caption, "the README no longer shows the feed image"
     stated = (
         f"{spell(totals['payments'])} payments, {spell(totals['disputes_opened'])} disputes opened, "
-        f"{spell(totals['upheld'])} of {spell(totals['decided'])} not honored"
+        f"{spell(not_honored)} of {spell(ruled)} not honored"
     )
     assert stated in " ".join(caption.group(1).split()), f"the feed caption should say {stated!r}"
 

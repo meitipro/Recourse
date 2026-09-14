@@ -23,10 +23,10 @@ contract files, runs the direct tests, checks house style, holds the README's
 test count to pytest, and typechecks the site. It printed:
 
 ```
-422 passed
+423 passed
 === lint escrow / lint dispute / lint v06/escrow / lint v06/dispute
 === validate escrow / validate dispute / validate v06/escrow / validate v06/dispute
-README, docs/RULES.md and pytest agree: 422 direct tests, 1 skipped
+README, docs/RULES.md and pytest agree: 423 direct tests, 1 skipped
 all green
 ```
 
@@ -84,7 +84,7 @@ python scripts/snapshot.py --network studio-next --check
 
 Each compares its network's snapshot with the chain and writes nothing. Both
 printed `no drift. The recorded evidence still describes the chain.`, over 19
-payments on studionet and 7 on Studio Next.
+payments on studionet and 9 on Studio Next.
 
 ## 5. The evaluation
 
@@ -117,6 +117,25 @@ python scripts/withdraw.py p-000004 --network studio-next
 It printed `withdrawn  tx 0x77c1a88e...` and `seller balance  504.00 -> 505.00
 GEN`. It writes to the chain, and a payment can be withdrawn once, so on a
 second run it is refused.
+
+The contested path itself, once, on Studio Next:
+
+```bash
+python scripts/demo.py --network studio-next
+```
+
+It writes two payments and a dispute to the chain. The contested payment,
+p-000009, printed:
+
+```
+verdict          not_honored
+dispute to verdict      29s
+settlement       not moved: the escrow still holds the payment and the bond
+```
+
+The settlement line came after the agent had watched the escrow for a
+minute, and the result block repeated the verdict and that line with no
+refund in it.
 
 ## 7. The rail claim
 
@@ -175,6 +194,14 @@ for Studio Next, the feed read its payments from chain 61997 through
 genlayer-js 2.0.0-rc.1, and section 06 read `16 / 18`, `16 / 18`, `2 / 18` and
 `2 / 3`, each tile naming `eval/results.studio-next.json` or its v2 file, with
 "the two misses in the first set on studio-next are cases 07 and 12".
+After the Studio Next demo run its feed read `9 PAYMENTS`, `6 DISPUTES
+OPENED` and `3/5 NOT HONORED`, counting the committee's rulings, and the new
+row read `RC-2026-0009`, `JUDGED, ACCEPTED`, `NOT HONORED`. Opening it read
+the case's three frozen strings from chain: the promise,
+`GET /quote?pair=ETH-USD` and the response. The case page for RC-2026-0003
+read `disputed (verdict written; on this runtime the settlement does not
+move)` with the verdict NOT HONORED, and the hero's lane, which a studionet
+build labels RETURNED, is labelled JUDGED in the shipped Studio Next code.
 Built for studionet, the feed read the escrow live through genlayer-js 1.1.8,
 19 payments, 10 disputes opened and 8/10 not honored, with no snapshot banner,
 and section 06 read `17 / 18`, `17 / 18`, `3 / 18` and `1 / 3` over
@@ -183,12 +210,16 @@ and section 06 read `17 / 18`, `17 / 18`, `3 / 18` and `1 / 3` over
 ## 10. The recording, rehearsed
 
 ```bash
-python scripts/record.py --dry-run
+python scripts/record.py --network studio-next --dry-run
 ```
 
 Runs nothing and writes nothing. It printed `SCRIPT.md 11 shots in its table,
 checked against record.py's plan before this printed, shot for shot, in
-order`, then every shot in the order `docs/SCRIPT.md` films them.
+order` and `network studio-next`, then every shot in the order
+`docs/SCRIPT.md` films them. At 0:56 it waits for the verdict line and stops
+Terminal B there, and at 1:04 for the line starting `settlement` with
+`not moved` in it: the take on Studio Next films no refund, because none
+comes.
 
 ## What this does not cover
 

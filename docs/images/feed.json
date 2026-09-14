@@ -1,9 +1,10 @@
 {
-  "captured_at": "2026-09-13T00:13:44Z",
+  "captured_at": "2026-09-14T23:37:16Z",
+  "network": "studio-next",
   "tiles": {
-    "Payments": "19",
-    "Disputes opened": "10",
-    "Not honored": "8/10",
-    "Median pay to dispute": "23s"
+    "Payments": "9",
+    "Disputes opened": "6",
+    "Not honored": "3/5",
+    "Median pay to dispute": "30s"
   }
 }

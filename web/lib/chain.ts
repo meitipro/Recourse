@@ -53,6 +53,15 @@ export const NETWORK: NetworkName =
   (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "studionet";
 
 /**
+ * Whether a verdict's settlement pays out on this network. On Studio Next,
+ * consensus v0.6 funds a value transfer only at the root of a transaction's
+ * allocation tree, and settle's transfers sit two messages below the one that
+ * funds them, so the verdict is written to the case and the escrow keeps the
+ * money. shared/chain.py settlement_moves says the same for the scripts.
+ */
+export const SETTLEMENT_MOVES = NETWORK !== "studio-next";
+
+/**
  * The frozen pair's addresses on this network, from contracts/FROZEN.json,
  * which next.config.mjs traces into the hosted function. The environment can
  * still override them, but nothing needs to set them: the freeze record is the

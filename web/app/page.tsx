@@ -95,8 +95,12 @@ function readOutside<T>(names: string[]): T | null {
 
 async function HeroWithTotals() {
   const data = await getFeed();
-  const decided = data.rows.filter((row) => row.status === 3);
-  const upheld = decided.filter((row) => row.verdict === 2);
+  // Decided means a committee ruled, and a ruling is a case. On studionet
+  // every case settled, so this is also every settled dispute. On Studio Next a
+  // case is judged and the escrow keeps the money, and the count still shows
+  // the committee's rulings rather than settlements that cannot run there.
+  const decided = data.rows.filter((row) => row.case);
+  const upheld = decided.filter((row) => row.case?.verdict === 2);
   const elapsed = decided
     .map((row) => (row.case ? row.case.decided_at - row.created_at : 0))
     .filter((value) => value > 0)

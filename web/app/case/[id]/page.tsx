@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EXPLORER, NETWORK, loadEvidence, toCitation, toPid } from "@/lib/chain";
+import { EXPLORER, NETWORK, loadEvidence, toCitation, toPid, SETTLEMENT_MOVES } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +55,10 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const decided = evidence.case;
   const citation = decided ? toCitation(pid, decided.decided_at) : null;
   const status = STATUS[payment.status] ?? String(payment.status);
-  const verdict = VERDICT[payment.verdict] ?? String(payment.verdict);
+  // The escrow carries the verdict once it settles. Until then, and on a
+  // network where it never does, the case carries the committee's.
+  const verdictCode = payment.status !== 3 && decided ? decided.verdict : payment.verdict;
+  const verdict = VERDICT[verdictCode] ?? String(verdictCode);
 
   return (
     <main className="case-page">
@@ -79,7 +82,11 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <dt>status</dt>
         <dd>
           {status}
-          {payment.status === 2 && decided ? " (verdict written, money moves on finalization)" : ""}
+          {payment.status === 2 && decided
+            ? SETTLEMENT_MOVES
+              ? " (verdict written, money moves on finalization)"
+              : " (verdict written; on this runtime the settlement does not move)"
+            : ""}
           {payment.status === 3 ? " (money moved)" : ""}
         </dd>
         <dt>verdict</dt>
