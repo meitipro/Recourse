@@ -179,6 +179,20 @@ WRITE_FEES = {
     "rotations": [1],
 }
 
+#: Writes whose messages emit messages of their own. Studio estimates a write
+#: by simulating it, which funds the messages that write emits and nothing
+#: below them: open_dispute emits adjudicate, and adjudicate emits settle when
+#: it finishes. Consensus v0.6 wants every internal message in that chain
+#: allocated by the transaction that starts it, and a child with no allocation
+#: for what it emits fails with "fee no_matching_allocation". Measured on
+#: Studio Next: adjudicate ran the whole judgment, then failed on the settle.
+#: Each entry maps a message the estimate already funds to the internal
+#: messages it emits in turn: (method, the deployment role it goes to, whether
+#: it fires on acceptance rather than on finality).
+CASCADES = {
+    "open_dispute": {"adjudicate": [("settle", "escrow", False)]},
+}
+
 FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
 
 
@@ -507,7 +521,51 @@ class Chain:
             raise
         except Exception:  # noqa: BLE001  a write Studio expects to be refused
             estimate = retry("flat fee estimate", self.client.estimate_transaction_fees, WRITE_FEES)
+        else:
+            if method in CASCADES:
+                estimate = self._cascade(estimate, CASCADES[method])
         return _fee_options(estimate)
+
+    def _cascade(self, estimate: dict, cascade: dict) -> dict:
+        """
+        Studio's estimate, with the messages below its first emissions
+        allocated as well.
+
+        Each message a cascade names goes in as a child of the allocation that
+        emits it, with that allocation's own fee parameters and its own
+        minimum budget, and the parent's budget grows by the child's: a
+        parent must carry what its children spend. Unused budget is refunded
+        at finalization, so erring high costs nothing but the deposit.
+        """
+        from genlayer_py.transactions.fees import derive_internal_message_call_key
+
+        nodes = [dict(node) for node in estimate.get("messageAllocations") or []]
+        if not nodes:
+            return estimate
+        deployment = load_deployment()
+        roles = {name: deployment[name] for name in ("escrow", "dispute")}
+        for parent_method, children in cascade.items():
+            wanted = str(derive_internal_message_call_key(parent_method)).lower()
+            for index in range(len(nodes)):
+                key = nodes[index]["callKey"]
+                key = "0x" + bytes(key).hex() if isinstance(key, (bytes, bytearray)) else str(key)
+                if key.lower() != wanted:
+                    continue
+                own = int(nodes[index]["budget"])
+                for method, role, on_acceptance in children:
+                    nodes.append({
+                        "messageType": 1,
+                        "onAcceptance": on_acceptance,
+                        "parentIndex": index,
+                        "recipient": roles[role],
+                        "callKey": derive_internal_message_call_key(method),
+                        "budget": own,
+                        "feeParams": nodes[index]["feeParams"],
+                    })
+                    nodes[index]["budget"] = int(nodes[index]["budget"]) + own
+        options = {k: v for k, v in (estimate.get("distribution") or {}).items() if k != "totalMessageFees"}
+        options["messageAllocations"] = nodes
+        return retry("cascade fee estimate", self.client.estimate_transaction_fees, options)
 
     def _guarded(self, what: str, attempt):
         sender = self.account.address if self.account else None
