@@ -204,9 +204,13 @@ def main() -> int:
 
     chain = Chain(owner)
 
-    print("\nfunding, one faucet call per account")
+    print("\nfunding, one faucet call per account that is short")
     if network in PROGRAMMATIC_FAUCET:
         for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
+            balance = chain.balance(account.address)
+            if balance >= args.min_balance * GEN:
+                print(f"  {name:6} {account.address[:10]} {balance / GEN:.2f} GEN, enough")
+                continue
             chain.fund(account.address, args.fund * GEN)
     else:
         # A browser faucet cannot be called from here, and the raw RPC faucet

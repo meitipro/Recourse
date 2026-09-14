@@ -152,12 +152,18 @@ EXPLORERS = {
     "asimov": "https://explorer-asimov.genlayer.com",
 }
 
+#: The most time units one phase may be allocated. Studio Next's consensus
+#: contract refuses anything outside 30 to 600 before the transaction exists:
+#: a deploy asking for 2000 reverted with PhaseTimeoutOutOfBounds(2000,30,600).
+MAX_TIMEUNITS = 600
+
 #: What a deploy asks for on a fee charging network. A deploy runs the
 #: constructor and emits nothing, and the unused deposit is refunded, so the
-#: allocation errs high rather than risking a deploy that runs out.
+#: allocation is the most the contract accepts rather than risking one that
+#: runs out.
 DEPLOY_FEES = {
-    "leaderTimeunitsAllocation": 2000,
-    "validatorTimeunitsAllocation": 2000,
+    "leaderTimeunitsAllocation": MAX_TIMEUNITS,
+    "validatorTimeunitsAllocation": MAX_TIMEUNITS,
     "totalMessageFees": 0,
     "rotations": [1],
 }
@@ -167,8 +173,8 @@ DEPLOY_FEES = {
 #: A refusal emits no messages, so this flat allocation is enough to put it on
 #: chain, where the refusal is recorded like any other.
 WRITE_FEES = {
-    "leaderTimeunitsAllocation": 1000,
-    "validatorTimeunitsAllocation": 1000,
+    "leaderTimeunitsAllocation": MAX_TIMEUNITS,
+    "validatorTimeunitsAllocation": MAX_TIMEUNITS,
     "totalMessageFees": 0,
     "rotations": [1],
 }
