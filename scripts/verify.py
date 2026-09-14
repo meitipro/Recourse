@@ -31,7 +31,9 @@ sys.path.insert(0, str(ROOT))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import Chain, load_accounts, load_deployment, retry, select_network  # noqa: E402
+from shared.chain import (  # noqa: E402
+    PAIR_OF_NETWORK, Chain, load_accounts, load_deployment, pair_paths, retry, select_network,
+)
 
 
 def normalise(text: str) -> str:
@@ -59,6 +61,17 @@ def deployed_source(chain: Chain, address: str) -> str:
     return str(value)
 
 
+def _linter() -> str:
+    """genvm-lint beside this interpreter first, so a virtual environment's own copy wins."""
+    import shutil
+
+    folder = pathlib.Path(sys.executable).parent
+    for name in ("genvm-lint.exe", "genvm-lint"):
+        if (folder / name).exists():
+            return str(folder / name)
+    return shutil.which("genvm-lint") or "genvm-lint"
+
+
 def _lint_deployed(name: str, source: str) -> int:
     """
     Run the linter over the bytes that came back off the chain.
@@ -82,7 +95,7 @@ def _lint_deployed(name: str, source: str) -> int:
         # Decoded as utf-8 explicitly: the linter prints a tick, and Windows
         # would otherwise decode it through the ansi codepage into mojibake.
         result = subprocess.run(
-            ["genvm-lint", "lint", str(target)],
+            [_linter(), "lint", str(target)],
             capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
         )
         # `check` prints a green validation line underneath a lint failure, so
@@ -109,9 +122,15 @@ def main() -> int:
     failures = 0
 
     print(f"network  {deployment['network']}")
-    for name, path in (("escrow", "contracts/escrow.py"), ("dispute", "contracts/dispute.py")):
+    # Each network runs one recorded pair: the frozen one on studionet, the
+    # port in contracts/v06/ on Studio Next. The bytes are held to that pair.
+    network = deployment["network"]
+    paths = pair_paths(network)
+    print(f"pair     {PAIR_OF_NETWORK.get(network, 'frozen')}")
+    for name, file in paths.items():
+        path = file.relative_to(ROOT).as_posix()
         address = deployment[name]
-        local = normalise((ROOT / path).read_text(encoding="utf-8"))
+        local = normalise(file.read_text(encoding="utf-8"))
         print(f"\n{name}  {address}")
         try:
             onchain = normalise(deployed_source(chain, address))
@@ -139,8 +158,11 @@ def main() -> int:
     # The evaluation ran on instances of its own. They are held to the same
     # bytes, because a score measured on a different judge would not be this
     # judge's score. A testnet reset loses them, which is a note, not a failure.
-    local = normalise((ROOT / "contracts" / "dispute.py").read_text(encoding="utf-8"))
-    for results in ("eval/results.json", "eval/results-v2.json"):
+    # Each network keeps its own results files, so only its own instances are
+    # looked for here: studionet's are not on Studio Next, and never were.
+    local = normalise(paths["dispute"].read_text(encoding="utf-8"))
+    suffix = "" if network == "studionet" else f".{network}"
+    for results in (f"eval/results{suffix}.json", f"eval/results-v2{suffix}.json"):
         path = ROOT / results
         instance = json.loads(path.read_text(encoding="utf-8")).get("instance") if path.exists() else None
         if not instance:
@@ -152,7 +174,7 @@ def main() -> int:
             print(f"  could not read it back, which a testnet reset explains: {str(error)[:120]}")
             continue
         if onchain == local:
-            print(f"  runs the same contracts/dispute.py ({len(local)} bytes)")
+            print(f"  runs the same {paths['dispute'].relative_to(ROOT).as_posix()} ({len(local)} bytes)")
         else:
             failures += 1
             print(f"  MISMATCH: the score in {results} was measured on different bytes")

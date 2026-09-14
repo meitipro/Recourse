@@ -129,14 +129,21 @@ def test_load_deployment_refuses_a_record_for_another_network(monkeypatch, tmp_p
     assert chain.load_deployment()["network"] == "studionet"
 
 
-def test_everything_defaults_to_studionet_the_only_deployment(monkeypatch):
+def test_two_deployments_each_running_its_own_pair(monkeypatch):
     monkeypatch.delenv("RECOURSE_NETWORK", raising=False)
     assert chain.network_name() == "studionet"
     assert chain.DEFAULT_NETWORK == "studionet"
-    assert list(RECORD["deployments"]) == ["studionet"]
-    assert chain.deployed_networks() == ["studionet"]
+    assert list(RECORD["deployments"]) == ["studionet", "studio-next"]
+    assert chain.deployed_networks() == ["studio-next", "studionet"]
+    # studionet runs the first pair and names none; Studio Next runs the port.
+    assert "pair" not in RECORD["deployments"]["studionet"]
+    entry = RECORD["deployments"]["studio-next"]
+    assert entry["pair"] == "v06" and entry["chain_id"] == 61997
+    assert entry["runtime"] == RECORD["v06"]["runtime"]
+    assert chain.PAIR_OF_NETWORK == {"studionet": "frozen", "studio-next": "v06"}
     # The record says so in words, next to the note that explains the shape.
-    assert "studionet is the only deployment" in RECORD["deployments_status"]
+    assert "studionet runs the frozen pair" in RECORD["deployments_status"]
+    assert "Studio Next runs the v06 pair" in RECORD["deployments_status"]
 
 
 def test_a_network_that_was_never_deployed_is_refused_by_name(monkeypatch):
