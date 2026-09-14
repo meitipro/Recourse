@@ -51,9 +51,8 @@ An agent pays, receives a nine hour old price, contests it, and has its money
 back without a human in the loop. Both paths run: the honest one, which adds no
 latency and costs nobody anything, and the contested one.
 
-`demo.py` prints the buyer agent's own lines as each step happens: the honest
-payment accepted and left to its window, the stale one caught and disputed with
-a bond, the verdict when it lands and the refund when it arrives.
+[docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
+shot, timed, every spoken number one this repository publishes.
 
 ![The live feed, read from the chain when the page opened: nineteen payments, ten disputes opened, eight of ten not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
@@ -164,7 +163,9 @@ held out     1/3     three further cases, answers committed before the
 ```
 
 The README, the site and both reports print those two accuracy figures
-together, and the section after next says why.
+together, and the section after next says why. On Studio Next the same two
+sets score 16/18 and 2/3, and [Two networks](#two-networks) sets the columns
+side by side.
 
 Commit order shows when a file was committed, not when it was written, and
 [eval/RESULTS.md](eval/RESULTS.md) says so under "What this evidence does and
@@ -193,6 +194,7 @@ part worth trusting:
 | **The feed image and its caption, stated as fourteen payments** while the snapshot, read from the same chain, said nineteen. | A review before submission of every sentence the chain could make false. A photograph of the chain goes stale with nothing failing, so `docs/shots.py` now writes what the tiles read beside the image, and `tests/direct/test_snapshot.py` fails when the picture or its caption disagrees with the snapshot. |
 | **Four claims on the site, from its design canvas**: a bond sized to the cost of judgment, one call across cards, x402 and any chain, card networks that govern x402, and a median with no name. | Checking each against this repository and a primary source. Each was corrected, and [docs/SOURCES.md](docs/SOURCES.md) holds every outside claim with the page it rests on. |
 | **A Studio Next run that never happened**: contract addresses, two timings, two evaluation scores, a disagreement on one case and a transaction count, reported during the migration as if they had been measured. | Checking the repository before writing any of it down. `contracts/FROZEN.json` and `deployed.json` named only studionet, and nothing had been deployed on Studio Next. None of the figures reached a file, and the commit that added this row lists them. |
+| **studionet's one run with no verdict, explained as a dropped transaction on a hosted network**, in `eval/RESULTS.md`. | Adding Studio Next's column put two more such runs beside it, and reading what the runner had recorded for each. studionet's said `status=UNDETERMINED execution=ERROR [LLM_ERROR] bad json`: nothing was dropped. The report now quotes the runner's record for every run with no verdict and explains none of them. |
 
 Design corrections are a different list and further down, under
 [Three things we got wrong first](#three-things-we-got-wrong-first). Those were
@@ -246,20 +248,110 @@ The three adversarial cases pass. Case 16 carries a prompt injection inside the
 response, 17 inside the promise and 18 inside the request, and all three are
 ruled on the merits.
 
+## Two networks
+
+The same cases were run three times each on studionet and on Studio Next,
+through real consensus on judgment instances of their own. The two pairs of
+contracts they ran are the same logic, the same prompt and the same strings,
+with a published diff that touches only API names, running on two networks
+under two runtimes, with both pairs of hashes recorded; [Contracts](#contracts)
+has the addresses, the hashes and the diff.
+
+| | studionet | Studio Next |
+| --- | --- | --- |
+| tuned set, accuracy | 17/18 | 16/18 |
+| tuned set, stability | 17/18 | 16/18 |
+| tuned set, landed on unclear | 3/18 | 2/18 |
+| held out set, accuracy | 1/3 | 2/3 |
+| held out set, stability | 2/3 | 2/3 |
+
+The columns are never merged or averaged. [eval/RESULTS.md](eval/RESULTS.md)
+and [eval/RESULTS-V2.md](eval/RESULTS-V2.md) set out every case with both
+networks' answers.
+
+### Where the networks disagree
+
+On the verdict each case landed on, which is its first run's and the one
+accuracy scores, the two networks agree on 17 of 18 tuned cases and 2 of 3
+held out ones. Two cases split, and on both of them neither network was stable
+across its three runs:
+
+- **07**, a six second timestamp against a five second promise. studionet
+  answered `unclear`, `unclear` and then a run with no verdict; Studio Next
+  answered `not_honored`, a run with no verdict, and `unclear`.
+- **19**, three filings promised and none older than 24 hours, when only two
+  exist inside 24 hours. studionet answered `not_honored`, `not_honored`,
+  `unclear`; Studio Next answered `unclear`, `unclear`, `not_honored`.
+
+Which network is right on either is the question a committee exists to
+answer, and here two committees answered it differently. They are different
+committees: read from each network's validator list after both sets had run,
+studionet has 20 validators and Studio Next 16, and five of studionet's model
+policies have no counterpart on Studio Next
+([eval/validators.json](eval/validators.json)).
+
+A run that returned no verdict counts as unstable and is quoted as the runner
+recorded it. There was one on studionet, case 07,
+`status=UNDETERMINED execution=ERROR [LLM_ERROR] bad json`, and two on Studio
+Next, cases 02 and 07, `status=UNDETERMINED execution=FINISHED_WITH_RETURN`.
+
+### Settlement on Studio Next
+
+Judgment runs on Studio Next and writes its verdict to the case. The
+settlement that verdict implies does not pay out there, and the reason is a
+rule of consensus v0.6 rather than anything in the contracts. Every message a
+transaction's descendants emit is funded in advance, in one allocation tree
+submitted with that transaction, and an external message, which is what a
+value transfer is, is accepted only at the root of that tree. `open_dispute`
+emits `adjudicate`, `adjudicate` emits `settle`, and `settle` sends the
+payouts, two messages below the transaction that funds them. So `settle` ends
+`fee no_matching_allocation # external`, and the payment stays disputed with
+its verdict on the case. Its four cases carry all three verdicts, p-000003
+and p-000005 `not_honored`, p-000006 `honored` and p-000007 `unclear`, and
+none of the four has settled.
+
+A payout sent from the top of its own transaction is funded at the root, and
+`shared/chain.py` allocates one there for `withdraw` and `reclaim`:
+
+| payment on Studio Next | what ran | what moved | transaction |
+| --- | --- | --- | --- |
+| p-000004 | `withdraw`, by `scripts/withdraw.py`, after the window closed | the payment to the seller | [0x77c1a88e...](https://explorer-studio-dev.genlayer.com/tx/0x77c1a88ed0db54bfe012ff49feaffee0beb184ed69632dcccd47a40369e8a9cc) |
+| p-000002 | `reclaim`, by the buyer, after a judgment that never landed | the payment to the seller and the bond to the buyer | [0xbc7fd996...](https://explorer-studio-dev.genlayer.com/tx/0xbc7fd996b751edc5d92706d935ff160fbed5fb2a3584d0c3fe2828dd010f6506) |
+
+On Studio Next, then, the honest path completes, and a dispute whose judgment
+never lands unwinds to the split `reclaim` applies. A contested buyer gets its
+verdict on chain and not its money. The contested path settles end to end on
+studionet, where the timings near the top of this file were measured.
+
+The refusals are on chain there too, recorded by
+`python scripts/evidence.py --network studio-next`:
+
+| what was attempted | what the chain says | transaction |
+| --- | --- | --- |
+| `settle` | `[EXPECTED] not authorised` | [0xac8c3c91...](https://explorer-studio-dev.genlayer.com/tx/0xac8c3c917f5a5ac08c5572f674a6cade5994c4dc35f23c4727ed9b1237f189fd) |
+| `set_judgeable` | `[EXPECTED] not authorised` | [0x6e1e82c2...](https://explorer-studio-dev.genlayer.com/tx/0x6e1e82c2432decf26cc98ddc93e3904f695140d54fd8b212e02b6a264bc4f6bc) |
+| `reclaim` | `[EXPECTED] not disputed` | [0x05c51cd8...](https://explorer-studio-dev.genlayer.com/tx/0x05c51cd8d68b2e150f61ae55b180ab107c54d4120488e273b7ca93ba05217001) |
+| `record_response` with a 402 character signature | `[EXPECTED] signature too long` | [0x11f94cb7...](https://explorer-studio-dev.genlayer.com/tx/0x11f94cb77b2e852a121603243126c8c3a3639b794fa9d62af477a175abc350c0) |
+
 ## What is verified, and how
 
+[docs/TESTING.md](docs/TESTING.md) is the same by hand: the commands a
+reviewer can run, each with what it printed when it was last run.
+
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 413 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 422 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
 RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle, 26 checks along it
 python eval/run.py --set v1 --runs 3    # the tuned set, on chain
 python eval/run.py --set v2 --runs 3 --out eval/results-v2.json   # the held out set
+python eval/run.py --network studio-next --set v1 --runs 3   # both sets again, on Studio Next
+python eval/run.py --network studio-next --set v2 --runs 3
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 413 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 422 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -328,30 +420,63 @@ machine. Without one it says so and offers nothing.
 The site is `web/`: `npm install && npm run dev` on port 4500, reading the
 frozen contracts through `web/.env.local`, which `prepare.py` writes.
 
+**Hosted.** The site is at https://recourse-site-seven.vercel.app, the promise
+linter at https://recourse-linter.vercel.app/api/lint and the MCP server at
+https://recourse-mcp-eight.vercel.app/api/mcp, three Vercel projects from these
+two repositories. [docs/HOSTING.md](docs/HOSTING.md) has every setting each one
+needs and a smoke test for each. The hosted linter has no model credential
+today, so its stage 2 answers that no model is configured.
+
 ## Contracts
 
-Two files, frozen at their bytes. The two hashes in
-`contracts/FROZEN.json` are a sha256 over each contract, and `scripts/check.py`
-fails the local gate on any edit to either file or on a deployment entry whose
-chain id does not match its name. There is one deployment, on studionet:
+Two pairs of files, each frozen at its bytes. `contracts/escrow.py` and
+`contracts/dispute.py` run on studionet under the runtime `py-genlayer:1jb45`.
+`contracts/v06/escrow.py` and `contracts/v06/dispute.py` run on Studio Next
+under `py-genlayer:5jycge4q`, the runtime Studio Next loads. The two pairs are
+the same logic, the same prompt and the same strings, with a published diff
+that touches only API names, running on two networks under two runtimes, with
+both pairs of hashes recorded.
 
-| network | chain id | escrow | dispute |
-| --- | --- | --- | --- |
-| [studionet](https://explorer-studio.genlayer.com) | 61999 | [`0x5125De939F7373eAE741B133FB32B7E9915C8F78`](https://explorer-studio.genlayer.com/address/0x5125De939F7373eAE741B133FB32B7E9915C8F78) | [`0x80A98929EcA334804dbB04d31F6050bca42C0Cc4`](https://explorer-studio.genlayer.com/address/0x80A98929EcA334804dbB04d31F6050bca42C0Cc4) |
+| network | chain id | pair | escrow | dispute |
+| --- | --- | --- | --- | --- |
+| [studionet](https://explorer-studio.genlayer.com) | 61999 | `contracts/` | [`0x5125De939F7373eAE741B133FB32B7E9915C8F78`](https://explorer-studio.genlayer.com/address/0x5125De939F7373eAE741B133FB32B7E9915C8F78) | [`0x80A98929EcA334804dbB04d31F6050bca42C0Cc4`](https://explorer-studio.genlayer.com/address/0x80A98929EcA334804dbB04d31F6050bca42C0Cc4) |
+| [Studio Next](https://explorer-studio-dev.genlayer.com) | 61997 | `contracts/v06/` | [`0x3d3fa7Fd2E143C4D6b47D31f15D19B102Ec9e0dA`](https://explorer-studio-dev.genlayer.com/address/0x3d3fa7Fd2E143C4D6b47D31f15D19B102Ec9e0dA) | [`0xba5f285FdB14E3e1d130b3C9346728aBfEC479f4`](https://explorer-studio-dev.genlayer.com/address/0xba5f285FdB14E3e1d130b3C9346728aBfEC479f4) |
 
-The record is keyed by network because the freeze is over the bytes rather than
-over where they live. studionet is its only key, every script defaults to it,
-and a `--network` naming anything else stops with the sentence that it has never
-been deployed. Every chain number published here was measured against this
-pair. The two evaluation scores were measured on instances of their own,
-deployed earlier the same day from the same `dispute.py`, and
-`scripts/verify.py` reads both back and compares them to the frozen bytes the
-same way it checks the pair.
+`contracts/FROZEN.json` records a sha256 over each of the four files:
 
-Verify with `python scripts/verify.py`, which reads the source back off the
-chain, diffs it against this repository, and runs the linter over the bytes that
-came back rather than over the file on disk. The deployment is the submission,
-and the repository is documentation of it.
+| file | sha256 |
+| --- | --- |
+| `contracts/escrow.py` | `d500b250355db5b87eb3014392444305e5a9c4e8fc78e58f49ad8312da8355cc` |
+| `contracts/dispute.py` | `7781e46eddb165156499d47a60b708efeb1978e92f2c3fb977c47cc148fbc008` |
+| `contracts/v06/escrow.py` | `a2ce0b8a53a6a7d9d7181cd6802ef04dfde653f941649b4151d868f17ae7e2c3` |
+| `contracts/v06/dispute.py` | `a1f824dbd7f1cd1305a0ad20fd445e5457a4d7018aa6a4a6330f3b9decba82a7` |
+
+The whole difference between the pairs is
+[contracts/v06/PORT.diff](contracts/v06/PORT.diff): the runtime header, two
+imports, and five API names, `gl.Contract`, `gl.get_contract_at`,
+`gl.vm.run_nondet_unsafe`, `gl.message_raw`, and the emit stage `accepted`,
+which consensus v0.6 calls `decided`. A contract pinned to the first pair's
+runtime finishes `invalid_contract runner malformed` on Studio Next, and the
+runtime Studio Next loads renamed those five. `scripts/port.py` generates the
+second pair and the diff from the first, and `scripts/check.py` fails the
+local gate on an edit to any of the four files, on a ported file that differs
+from what the port generates, or on a deployment entry whose chain id does
+not match its name.
+
+The record is keyed by network, and each deployment names the pair it runs.
+Every script defaults to studionet, takes `--network studio-next` for the
+second deployment, and stops on any other network with the sentence that it
+has never been deployed. Every chain number in this file names the network it
+was measured on. The evaluation scores were measured on judgment instances of
+their own, deployed from the `dispute.py` of each network's pair, and
+`scripts/verify.py` reads each back and compares it to its recorded bytes the
+same way it checks the pairs.
+
+Verify with `python scripts/verify.py`, or `python scripts/verify.py --network
+studio-next`, which reads the source back off the chain, diffs it against this
+repository, and runs the linter over the bytes that came back rather than over
+the file on disk. The deployment is the submission, and the repository is
+documentation of it.
 
 ### All three verdicts, on chain
 
@@ -506,6 +631,10 @@ down in this repository, read back from the chain rather than typed:
   `honored` (`p-000013`), one ruled `unclear` (`p-000014`), and one never
   disputed at all (`p-000001`: paid, answered, and withdrawn by the seller
   after the window closed, with no judgment anywhere in it).
+- [evidence/snapshot-studio-next.json](evidence/snapshot-studio-next.json)
+  and [evidence/receipts/studio-next/](evidence/receipts/studio-next/): the
+  same record of Studio Next, with the raw receipts of its honest cycle,
+  `p-000001`, the withdraw's payout among them.
 
 The feed and the case pages read the chain first. If it has not answered in
 twenty seconds, or answers with no payments where the snapshot has some, they
@@ -610,6 +739,13 @@ id turns up anywhere in what the chain kept. The buyer agent needed no flag
 either, because it reads the proof header out of the challenge the way 402 is
 meant to work, so the same agent buys from both endpoints.
 
+The same proof ran on Studio Next against the ported pair: payment p-000005,
+bought against the same settlement id, ruled `not_honored` on its case, with
+the id in none of the fifteen stored fields. It did not settle, for the reason
+[Settlement on Studio Next](#settlement-on-studio-next) gives, and
+[docs/rail-proof-studio-next.json](docs/rail-proof-studio-next.json) records
+both.
+
 The honest limit, since a rail claim invites the question: Recourse holds the
 disputed money itself today, in its own escrow. Judgment is rail-free now, and
 what a second rail changes is how buyer and seller reached the escrow, not who
@@ -641,6 +777,11 @@ its first check.
 echoed back, not work measured. So there
 is no fee on studionet to convert into a price, and any figure in dollars would
 be an inference presented as a measurement.
+
+Studio Next does charge. `evidence/snapshot-studio-next.json` keeps, for the
+first success of each method there and the first refusal, the deposit each
+paid, what consensus spent of it and what came back, in wei, as the chain
+reported them.
 
 What is countable is the work:
 
@@ -681,28 +822,9 @@ controls.
 
 Everything out of scope for this deployment, in one place.
 
-**Hosting.** The site, the linter and the MCP server run locally today and are
-written to deploy to Vercel as three projects from these two repositories
-(`web/`, the repository root for `api/lint.py` and `api/judge.py`, and `recourse-skill/mcp`). The
-team token available to this build can list that team's projects but cannot
-create one, so the three imports are a dashboard step for the account owner.
-[docs/HOSTING.md](docs/HOSTING.md) has every setting each import needs and a
-smoke test for each, and the skill's `reference/07-addresses.json` already
-names the URLs the linter and the MCP server will have.
-
 **A Telegram interface** is built in `bot/`, read only, and tested through
 injected dependencies. It has not been run against a live token, so it is not
 offered above as something a reader can use today.
-
-**A video.** [docs/SCRIPT.md](docs/SCRIPT.md) is a ninety second script for one:
-shot by shot, timed, every spoken number one this repository publishes, and
-`scripts/record.py` runs it as one command. It was not filmed.
-
-**A second network.** The freeze record, every script and the evaluation
-report are keyed by network because the freeze is over the bytes rather than
-over where they live. The same two files could go to Bradbury, which persists
-where Studio resets; that is a possibility the shape allows, not a plan, and
-nothing here reads anything but studionet.
 
 **Stage 2 in production.** The linter's judgeability question and the bot's
 dry run judge need a model credential on the linter's host. This build's

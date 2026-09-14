@@ -84,6 +84,11 @@ class Sources:
         self.cases = {c["id"]: c for c in json.loads(read(ROOT / "eval" / "cases.json"))}
         self.cases2 = json.loads(read(ROOT / "eval" / "cases-v2.json"))
         self.frozen = json.loads(read(ROOT / "contracts" / "FROZEN.json"))
+        # Studio Next's own measurements and record, beside studionet's.
+        self.r1n = json.loads(read(ROOT / "eval" / "results.studio-next.json"))
+        self.r2n = json.loads(read(ROOT / "eval" / "results-v2.studio-next.json"))
+        self.next = json.loads(read(ROOT / "evidence" / "snapshot-studio-next.json"))
+        self.validators = json.loads(read(ROOT / "eval" / "validators.json"))
         self.feed = json.loads(read(ROOT / "docs" / "images" / "feed.json"))["tiles"]
 
     @property
@@ -118,10 +123,42 @@ class Sources:
         return rows[-1][1] if rows else "not found"
 
     def row(self, pid: str) -> str:
-        payment = self.payments.get(pid)
-        if not payment:
-            return f"{pid} is not in the snapshot"
-        return f"{pid}: {payment['status_name']}, verdict {payment['verdict_name']}"
+        """A payment id names a different payment on each network, so both are shown."""
+        found = []
+        for name, snapshot in (("studionet", self.snapshot), ("studio-next", self.next)):
+            payment = next((p for p in snapshot["payments"] if p["pid"] == pid), None)
+            if payment:
+                found.append(f"{name} {payment['status_name']}, verdict {payment['verdict_name']}")
+        return f"{pid}: " + "; ".join(found) if found else f"{pid} is in neither snapshot"
+
+    def agreement(self) -> str:
+        def same(ours: dict, theirs: dict) -> str:
+            first = {row["id"]: (row["observed"] or ["error"])[0] for row in theirs["rows"]}
+            agree = sum(1 for row in ours["rows"] if (row["observed"] or ["error"])[0] == first.get(row["id"]))
+            return f"{agree} of {len(ours['rows'])}"
+
+        return f"first run verdicts agree on {same(self.r1, self.r1n)} tuned cases and {same(self.r2, self.r2n)} held out"
+
+    def validators_line(self) -> str:
+        nets = self.validators["networks"]
+        policies = {
+            name: {model.split(":")[-1].split("-", 1)[-1] for model in entry["models"] if "policy:" in model}
+            for name, entry in nets.items()
+        }
+        only = sorted(policies["studionet"] - policies["studio-next"])
+        return (
+            f"studionet {nets['studionet']['validators']}, studio-next {nets['studio-next']['validators']}; "
+            f"policies only on studionet: {', '.join(only)}"
+        )
+
+    def no_verdict_next(self) -> str:
+        runs = [f"{row['id']} run {i + 1}" for row in self.r1n["rows"] for i, v in enumerate(row["observed"]) if v == "error"]
+        return f"runs with no verdict on studio-next: {', '.join(runs)}"
+
+    def next_cases(self) -> str:
+        cases = "; ".join(f"{c['pid']} {c['verdict_name']}" for c in self.next["cases"])
+        settled = sum(1 for p in self.next["payments"] if p.get("case") and p["status_name"] == "resolved")
+        return f"{cases}; settled {settled}"
 
     def seller_promise(self, pid: str) -> str:
         payment = self.payments[pid]
@@ -198,6 +235,26 @@ Value = typing.Union[str, typing.Callable[[Sources], str]]
 #: (words that must be in the sentence, the number as written, which occurrence
 #: in that sentence or 0 for any, the file, what the file says). First match wins.
 RULES: list[tuple[str, str, int, str | None, Value]] = [
+    # Studio Next's numbers first, so the studionet rules below never claim them.
+    (r"Studio Next the same two sets score", r"16/18", 0, "eval/results.studio-next.json", lambda s: f"accuracy {s.r1n['accuracy']} of n {s.r1n['n']}"),
+    (r"Studio Next the same two sets score", r"2/3", 0, "eval/results-v2.studio-next.json", lambda s: f"accuracy {s.r2n['accuracy']} of n {s.r2n['n']}"),
+    (r"Studio Next the same two sets score", r"two", 0, "eval/cases.json, eval/cases-v2.json", "the tuned set and the held out set"),
+    (r"^16/18$", r"16/18", 0, "eval/results.studio-next.json", lambda s: f"accuracy {s.r1n['accuracy']}, stability {s.r1n['stability']} of n {s.r1n['n']}"),
+    (r"^2/18$", r"2/18", 0, "eval/results.studio-next.json", lambda s: f"unclear {s.r1n['unclear']} of n {s.r1n['n']}"),
+    (r"^2/3$", r"2/3", 0, "eval/results-v2.json, eval/results-v2.studio-next.json",
+     lambda s: f"studionet stability {s.r2['stability']} of {s.r2['n']}; studio-next accuracy {s.r2n['accuracy']}, stability {s.r2n['stability']} of {s.r2n['n']}"),
+    (r"networks agree on", r"17 of 18|2 of 3|two", 0, "eval/RESULTS.md, eval/RESULTS-V2.md", lambda s: s.agreement()),
+    (r"studionet has 20 validators", r"20|16|five", 0, "eval/validators.json", lambda s: s.validators_line()),
+    (r"two more such runs|cases 02 and 07", r"two|02", 0, "eval/results.studio-next.json", lambda s: s.no_verdict_next()),
+    (r"cases carry all three verdicts|none of the four has settled", r"four|three", 0, "evidence/snapshot-studio-next.json", lambda s: s.next_cases()),
+    (r"two networks under two runtimes", r"two", 0, "contracts/FROZEN.json",
+     lambda s: f"{len(s.frozen['deployments'])} deployments; runtimes {s.frozen['runtime']} and {s.frozen['v06']['runtime']}"),
+    (r"^Two networks$|Two networks sets", r"Two", 0, "contracts/FROZEN.json", lambda s: f"deployments: {', '.join(s.frozen['deployments'])}"),
+    (r"two imports, and five API names|renamed those five", r"two|five", 0, "contracts/v06/PORT.diff, contracts/FROZEN.json", lambda s: s.frozen["v06"]["diff_is"][:140]),
+    (r"sha256 over each of the four files", r"four", 0, "contracts/FROZEN.json", "escrow, dispute, v06 escrow, v06 dispute"),
+    (r"same cases were run three times each", r"three", 0, "eval/results.json, eval/results.studio-next.json",
+     lambda s: f"runs {s.r1['runs']} on studionet, {s.r1n['runs']} on studio-next"),
+    (r"61997", r"61997", 0, "contracts/FROZEN.json", lambda s: f"chain_id {s.frozen['deployments']['studio-next']['chain_id']}"),
     (r"Python 3\.12", r"3\.12", 0, ".github/workflows/test.yml",
      lambda s: "python-version " + literal(".github/workflows/test.yml", r'python-version: "([^"]+)"')),
     (r"11 September", r"11", 0, None, "a date: the day the clean clone ran, which no file records"),
@@ -206,7 +263,7 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
     (r"price it served was nine hours old|the price was nine hours old|on the nine hour old price", r"nine", 0,
      "evidence/snapshot.json", lambda s: s.stale("p-000014")),
     (r"nine hour|nine hours", r"nine", 0, "seller/main.py", lambda s: "STALE_HOURS = " + literal("seller/main.py", r"STALE_HOURS = (\d+)")),
-    (r"ninety second script for one", r"ninety", 0, "docs/SCRIPT.md", lambda s: f"its last shot ends at {s.script_end}"),
+    (r"ninety second recording script", r"ninety", 0, "docs/SCRIPT.md", lambda s: f"its last shot ends at {s.script_end}"),
     (r"read from the chain when the page opened", r"nineteen", 0, "evidence/snapshot.json",
      lambda s: f"totals.payments = {s.totals['payments']}; docs/images/feed.json shows {s.feed.get('Payments')}"),
     (r"read from the chain when the page opened", r"ten", 0, "evidence/snapshot.json",
@@ -264,7 +321,7 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
     (r"17 inside the promise", r"17", 0, "eval/cases.json", lambda s: s.case("17")),
     (r"18 inside the request", r"18", 0, "eval/cases.json", lambda s: s.case("18")),
     (r"three adversarial cases", r"three", 0, "eval/cases.json", lambda s: "; ".join(s.case(n) for n in ("16", "17", "18"))),
-    (r"direct tests", r"272", 0, "pytest, which scripts/test.py reads", lambda s: s.direct_tests),
+    (r"direct tests", r"\d{3}", 0, "pytest, which scripts/test.py reads", lambda s: s.direct_tests),
     (r"defences", r"32|32 of 32", 0, "docs/MUTATIONS.md", lambda s: literal("docs/MUTATIONS.md", r"\*\*(\d+ of \d+) defences verified")),
     (r"32 of 32 are caught", r"32 of 32", 0, "docs/MUTATIONS.md", lambda s: literal("docs/MUTATIONS.md", r"\*\*(\d+ of \d+) defences verified")),
     (r"26 checks", r"26", 0, None,
@@ -621,7 +678,7 @@ def judges_path(sources: Sources, rows: list[Number], ordinary: list[Link], host
     lines.append(f"3. **The numbers.** The first eight with a file behind them, in the order a reader meets them: {first_numbers}. The table below has all {len(rows)}, the ones with no single file behind them included.")
     if images:
         lines.append(f"4. **The one image.** {images[0].target}, captioned \"{images[0].text.removeprefix('image: ')}\". A second, {images[1].target if len(images) > 1 else ''}, sits directly under it.")
-    lines.append(f"5. **The live site.** {site}, which answered {results.get(site, 'not fetched')} on this run. Until the Vercel imports it does not exist, so a stranger today stops at the README, whose sections run in this order: {', '.join(headings)}.")
+    lines.append(f"5. **The live site.** {site}, which answered {results.get(site, 'not fetched')} on this run. The README's sections run in this order: {', '.join(headings)}.")
     return lines
 
 

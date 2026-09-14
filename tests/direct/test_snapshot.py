@@ -1,11 +1,13 @@
 """
-The recorded snapshot: what the chain held, written down so a testnet reset
+The recorded snapshots: what the chain held, written down so a testnet reset
 cannot take the evidence with it.
 
-These hold evidence/snapshot.json to the numbers the repository publishes
-elsewhere. Re-run the evaluation, cite a new transaction in the README, or
-change a refusal, and the gate fails here until python scripts/snapshot.py is
-run again. Nothing here touches a network.
+Each network has one. evidence/snapshot.json is studionet's, where the frozen
+pair runs, and evidence/snapshot-studio-next.json is Studio Next's, where the
+port runs. These hold both to the numbers the repository publishes elsewhere.
+Re-run an evaluation, cite a new transaction in the README, or change a
+refusal, and the gate fails here until python scripts/snapshot.py is run again
+for that network. Nothing here touches a network.
 """
 
 from __future__ import annotations
@@ -19,40 +21,64 @@ import subprocess
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SNAPSHOT_PATH = ROOT / "evidence" / "snapshot.json"
-SNAPSHOT = json.loads(SNAPSHOT_PATH.read_text(encoding="utf-8"))
 FROZEN = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
 README = (ROOT / "README.md").read_text(encoding="utf-8")
+
+#: Every network with a deployment has a snapshot of its own, studionet's under
+#: the name the README has always cited.
+NETWORKS = ("studionet", "studio-next")
+PATHS = {
+    network: ROOT / "evidence" / ("snapshot.json" if network == "studionet" else f"snapshot-{network}.json")
+    for network in NETWORKS
+}
+SNAPSHOTS = {network: json.loads(path.read_text(encoding="utf-8")) for network, path in PATHS.items()}
+RECEIPTS = {
+    network: ROOT / "evidence" / "receipts" if network == "studionet" else ROOT / "evidence" / "receipts" / network
+    for network in NETWORKS
+}
+SNAPSHOT_PATH = PATHS["studionet"]
+SNAPSHOT = SNAPSHOTS["studionet"]
 
 HASH = re.compile(r"0x[0-9a-f]{64}")
 
 
-def payments() -> list[dict]:
-    return SNAPSHOT["payments"]
+def payments(snapshot: dict | None = None) -> list[dict]:
+    return (snapshot or SNAPSHOT)["payments"]
 
 
-def decided() -> list[dict]:
-    return [p for p in payments() if int(p["status"]) == 3]
+def decided(snapshot: dict | None = None) -> list[dict]:
+    return [p for p in payments(snapshot) if int(p["status"]) == 3]
 
 
-def test_the_snapshot_is_of_the_frozen_pair_on_the_only_deployment():
-    assert SNAPSHOT["network"] == "studionet"
-    assert SNAPSHOT["chain_id"] == 61999
-    entry = FROZEN["deployments"]["studionet"]
-    assert SNAPSHOT["escrow"] == entry["escrow"]
-    assert SNAPSHOT["dispute"] == entry["dispute"]
-    assert SNAPSHOT["frozen"]["escrow_sha256"] == FROZEN["escrow"]["sha256"]
-    assert SNAPSHOT["frozen"]["dispute_sha256"] == FROZEN["dispute"]["sha256"]
-    assert SNAPSHOT["recorded_at_iso"].endswith("Z")
-    assert "temporary testnet" in SNAPSHOT["note"]
+def pair_record(network: str) -> dict:
+    """The recorded hashes of the pair this network runs: the frozen one, or the one its deployment names."""
+    pair = FROZEN["deployments"][network].get("pair", "frozen")
+    return FROZEN if pair == "frozen" else FROZEN[pair]
 
 
-def test_the_totals_are_recomputable_from_the_rows_by_the_feeds_rules():
-    totals = SNAPSHOT["totals"]
-    rows = payments()
-    assert totals["payments"] == len(rows) == int(SNAPSHOT["stats"]["payments"])
+@pytest.mark.parametrize("network", NETWORKS)
+def test_each_snapshot_is_of_its_recorded_pair_on_its_deployment(network):
+    snapshot = SNAPSHOTS[network]
+    entry = FROZEN["deployments"][network]
+    assert snapshot["network"] == network
+    assert snapshot["chain_id"] == entry["chain_id"]
+    assert snapshot["escrow"] == entry["escrow"]
+    assert snapshot["dispute"] == entry["dispute"]
+    record = pair_record(network)
+    assert snapshot["frozen"]["escrow_sha256"] == record["escrow"]["sha256"]
+    assert snapshot["frozen"]["dispute_sha256"] == record["dispute"]["sha256"]
+    assert snapshot["recorded_at_iso"].endswith("Z")
+    assert "temporary testnet" in snapshot["note"]
+
+
+@pytest.mark.parametrize("network", NETWORKS)
+def test_the_totals_are_recomputable_from_the_rows_by_the_feeds_rules(network):
+    snapshot = SNAPSHOTS[network]
+    totals = snapshot["totals"]
+    rows = payments(snapshot)
+    assert totals["payments"] == len(rows) == int(snapshot["stats"]["payments"])
     assert totals["disputes_opened"] == sum(1 for p in rows if int(p["status"]) in (2, 3))
-    judged = decided()
+    judged = decided(snapshot)
     assert totals["decided"] == len(judged)
     assert totals["upheld"] == sum(1 for p in judged if int(p["verdict"]) == 2)
     assert totals["unjudgeable"] == sum(1 for p in judged if int(p["verdict"]) == 3)
@@ -66,8 +92,8 @@ def test_the_totals_are_recomputable_from_the_rows_by_the_feeds_rules():
         if p.get("case") and p["case"]["decided_at"] > p["created_at"]
     )
     assert totals["median_pay_to_dispute_seconds"] == (elapsed[len(elapsed) // 2] if elapsed else None)
-    assert totals["transactions"] == len(SNAPSHOT["transactions"])
-    assert totals["refusals"] == len(SNAPSHOT["refusals"])
+    assert totals["transactions"] == len(snapshot["transactions"])
+    assert totals["refusals"] == len(snapshot["refusals"])
     for name in ("open", "withdrawn", "disputed", "resolved"):
         assert totals["by_status"][name] == sum(1 for p in rows if p["status_name"] == name)
 
@@ -86,8 +112,49 @@ def test_every_case_sits_on_a_decided_payment_and_agrees_with_it():
         assert payment["transactions"]["settle"], case["pid"]
 
 
-def test_every_payment_has_its_pay_transaction_and_only_settled_ones_have_settle():
-    for payment in payments():
+def test_on_studio_next_every_case_is_judged_and_none_settled_and_the_readme_says_why():
+    """
+    On Studio Next judgment runs and settlement cannot pay out: settle's
+    transfers sit two messages below the transaction that funds them, and
+    consensus v0.6 accepts an external message only at the root of the
+    allocation tree. The chain's own record says exactly that: every case
+    carries a verdict, all three verdicts among them, every payment behind a
+    case is still disputed, and every settle that ran ended on the allocation.
+    The README says it in the same words.
+    """
+    snapshot = SNAPSHOTS["studio-next"]
+    by_pid = {p["pid"]: p for p in payments(snapshot)}
+    assert snapshot["cases"], "Studio Next has no judged case to hold this to"
+    assert {case["verdict_name"] for case in snapshot["cases"]} == {"honored", "not_honored", "unclear"}
+    for case in snapshot["cases"]:
+        assert by_pid[case["pid"]]["status_name"] == "disputed", f"{case['pid']} settled"
+    txs = snapshot["transactions"]
+    settles = [t for t in txs if t["method"] == "settle" and not t["refusal"]]
+    assert settles, "no settle ran on Studio Next"
+    for t in settles:
+        assert t["execution"] == "ERROR" and t["vm_error"] == "fee no_matching_allocation # external", t["hash"]
+    assert not any(t["method"] == "settle" and t["execution"] == "SUCCESS" for t in txs)
+    assert snapshot["totals"]["median_dispute_to_money_back_seconds"] is None
+    assert "`fee no_matching_allocation # external`" in " ".join(README.split())
+
+
+def test_on_studio_next_the_payouts_sent_from_the_root_ran_and_the_readme_cites_them():
+    """withdraw and reclaim pay from the top of their own transaction, where the transfer can be allocated."""
+    snapshot = SNAPSHOTS["studio-next"]
+    by_pid = {p["pid"]: p for p in payments(snapshot)}
+    for pid, method, status in (("p-000004", "withdraw", "withdrawn"), ("p-000002", "reclaim", "resolved")):
+        assert by_pid[pid]["status_name"] == status, pid
+        ran = [
+            t for t in snapshot["transactions"]
+            if t["method"] == method and t.get("pid") == pid and t["execution"] == "SUCCESS"
+        ]
+        assert ran, f"no successful {method} of {pid}"
+        assert ran[0]["hash"] in README, f"the README does not cite the {method} of {pid}"
+
+
+@pytest.mark.parametrize("network", NETWORKS)
+def test_every_payment_has_its_pay_transaction_and_only_settled_ones_have_settle(network):
+    for payment in payments(SNAPSHOTS[network]):
         tx = payment["transactions"]
         assert tx["pay"] and HASH.fullmatch(tx["pay"]), payment["pid"]
         assert tx["pay"] in tx["every_attempt"]
@@ -97,47 +164,63 @@ def test_every_payment_has_its_pay_transaction_and_only_settled_ones_have_settle
             assert not tx["settle"] and not tx["withdraw"], payment["pid"]
 
 
-def test_every_transaction_the_readme_cites_is_in_the_snapshot():
+def test_every_transaction_the_readme_cites_is_in_a_snapshot():
     cited = set(HASH.findall(README))
     assert cited, "the README cites no transactions, which is not what it does"
-    have = {t["hash"] for t in SNAPSHOT["transactions"]}
+    have = {t["hash"] for snapshot in SNAPSHOTS.values() for t in snapshot["transactions"]}
     missing = sorted(cited - have)
-    assert not missing, f"the README cites transactions the snapshot does not have: {missing}. Run python scripts/snapshot.py"
+    assert not missing, f"the README cites transactions no snapshot has: {missing}. Run python scripts/snapshot.py"
 
 
-def test_the_readmes_refusal_table_is_in_the_snapshot_word_for_word():
-    table = re.findall(
-        r"\| `([a-z_]+)`[^|]*\| `(\[EXPECTED\][^`]*)` \| \[0x[0-9a-f]+\.\.\.\]\([^)]*/tx/(0x[0-9a-f]{64})\)",
-        README,
-    )
-    assert len(table) == 4, "the README publishes four refusals"
-    by_hash = {r["hash"]: r for r in SNAPSHOT["refusals"]}
+#: One row of a refusal table, with the explorer host that says which network it is on.
+REFUSAL_ROW = re.compile(
+    r"\| `([a-z_]+)`[^|]*\| `(\[EXPECTED\][^`]*)` \| \[0x[0-9a-f]+\.\.\.\]\(https://([^/)]+)/tx/(0x[0-9a-f]{64})\)"
+)
+HOSTS = {network: FROZEN["deployments"][network]["explorer"].removeprefix("https://") for network in NETWORKS}
+
+
+@pytest.mark.parametrize("network", NETWORKS)
+def test_each_networks_refusal_table_is_in_its_snapshot_word_for_word(network):
+    snapshot = SNAPSHOTS[network]
+    table = [(method, refusal, h) for method, refusal, host, h in REFUSAL_ROW.findall(README) if host == HOSTS[network]]
+    assert len(table) == 4, f"the README publishes four refusals on {network}"
+    by_hash = {r["hash"]: r for r in snapshot["refusals"]}
     for method, refusal, tx_hash in table:
-        assert tx_hash in by_hash, f"{method} refusal {tx_hash} is not a refusal in the snapshot"
+        assert tx_hash in by_hash, f"{method} refusal {tx_hash} is not a refusal in the {network} snapshot"
         assert by_hash[tx_hash]["method"] == method
         assert by_hash[tx_hash]["refusal"] == refusal
     # Every refusal in the snapshot is one the contract wrote, in its own words.
-    for refusal in SNAPSHOT["refusals"]:
+    for refusal in snapshot["refusals"]:
         assert refusal["refusal"].startswith("[EXPECTED]")
 
 
-def test_the_evaluation_numbers_match_the_measurement_files_and_the_reports():
-    for name, results, report in (("v1", "results.json", "RESULTS.md"), ("v2", "results-v2.json", "RESULTS-V2.md")):
-        measured = json.loads((ROOT / "eval" / results).read_text(encoding="utf-8"))
-        recorded = SNAPSHOT["evaluation"][name]
+@pytest.mark.parametrize("network", NETWORKS)
+def test_the_evaluation_numbers_match_the_measurement_files_and_the_reports(network):
+    snapshot = SNAPSHOTS[network]
+    suffix = "" if network == "studionet" else f".{network}"
+    for name, base, report in (("v1", "results", "RESULTS.md"), ("v2", "results-v2", "RESULTS-V2.md")):
+        measured = json.loads((ROOT / "eval" / f"{base}{suffix}.json").read_text(encoding="utf-8"))
+        recorded = snapshot["evaluation"][name]
         for key in ("instance", "network", "n", "runs", "accuracy", "stability", "unclear", "measured_at"):
-            assert recorded[key] == measured[key], f"{name}.{key}: snapshot {recorded[key]}, measurement {measured[key]}"
+            assert recorded[key] == measured[key], f"{network} {name}.{key}: snapshot {recorded[key]}, measurement {measured[key]}"
         text = (ROOT / "eval" / report).read_text(encoding="utf-8")
-        assert f"**{recorded['accuracy']}/{recorded['n']}**" in text, f"{report} does not carry the snapshot's accuracy"
-        assert f"| {recorded['stability']}/{recorded['n']} |" in text, f"{report} does not carry the snapshot's stability"
+        assert f"**{recorded['accuracy']}/{recorded['n']}**" in text, f"{report} does not carry {network}'s accuracy"
+        assert f"| {recorded['stability']}/{recorded['n']} |" in text, f"{report} does not carry {network}'s stability"
         assert f"`{recorded['instance']}`" in text
-    v1, v2 = SNAPSHOT["evaluation"]["v1"], SNAPSHOT["evaluation"]["v2"]
+    v1, v2 = snapshot["evaluation"]["v1"], snapshot["evaluation"]["v2"]
     assert f"{v1['accuracy']}/{v1['n']}" in README
     assert f"{v2['accuracy']}/{v2['n']}" in README
 
 
 #: What each labelled receipt set must be a cycle of: (status, verdict or None).
 #: A label present in the snapshot but not here is a label nobody defined.
+#: Fields a receipt carries only as the RPC returned it. Consensus v0.6 reports
+#: a transaction's state under lifecycle, where the earlier receipt had status.
+RAW_FIELDS = {
+    "studionet": ("consensus_data", "status", "from_address", "to_address", "created_at"),
+    "studio-next": ("consensus_data", "lifecycle", "from_address", "to_address", "created_at"),
+}
+
 CYCLE_SHAPES = {
     "contested": ("resolved", "not_honored"),
     "honest": ("withdrawn", None),
@@ -146,18 +229,21 @@ CYCLE_SHAPES = {
 }
 
 
-def test_the_receipts_are_raw_and_belong_to_the_cycles_named():
-    by_pid = {p["pid"]: p for p in payments()}
-    assert SNAPSHOT["receipts"], "the snapshot names no receipt sets"
-    for label, info in SNAPSHOT["receipts"].items():
+@pytest.mark.parametrize("network", NETWORKS)
+def test_the_receipts_are_raw_and_belong_to_the_cycles_named(network):
+    snapshot = SNAPSHOTS[network]
+    by_pid = {p["pid"]: p for p in payments(snapshot)}
+    assert snapshot["receipts"], "the snapshot names no receipt sets"
+    for label, info in snapshot["receipts"].items():
         assert label in CYCLE_SHAPES, f"{label} is a receipt set with no defined shape"
         status, verdict = CYCLE_SHAPES[label]
         payment = by_pid[info["pid"]]
         assert payment["status_name"] == status, f"{label}: {info['pid']} is {payment['status_name']}"
         if verdict:
             assert payment["verdict_name"] == verdict, f"{label}: {info['pid']} ruled {payment['verdict_name']}"
+            assert payment.get("case"), f"{label}: {info['pid']} carries no case, so no committee ruled it"
         assert info["files"], f"no {label} receipts"
-        folder = ROOT / "evidence" / "receipts" / f"{label}-{info['pid']}"
+        folder = RECEIPTS[network] / f"{label}-{info['pid']}"
         on_disk = sorted(str(p.relative_to(ROOT)).replace("\\", "/") for p in folder.glob("*.json"))
         assert on_disk == sorted(info["files"]), f"{label}: files on disk and files listed differ"
         for rel in info["files"]:
@@ -165,9 +251,9 @@ def test_the_receipts_are_raw_and_belong_to_the_cycles_named():
             assert receipt["hash"] in payment["transactions"]["every_attempt"], rel
             assert receipt["hash"][2:14] in rel
             # The RPC's own fields, present because nothing was edited out.
-            for key in ("consensus_data", "status", "from_address", "to_address", "created_at"):
+            for key in RAW_FIELDS[network]:
                 assert key in receipt, f"{rel} lacks {key}"
-    honest = by_pid[SNAPSHOT["receipts"]["honest"]["pid"]]
+    honest = by_pid[snapshot["receipts"]["honest"]["pid"]]
     assert not honest["transactions"]["open_dispute"], "the honest cycle was disputed"
     assert honest["transactions"]["withdraw"], "the honest cycle was never withdrawn"
 
@@ -187,8 +273,9 @@ def test_the_public_record_carries_all_three_verdicts():
         assert label in SNAPSHOT["receipts"], f"no raw receipts for the {label} cycle"
 
 
-def test_the_snapshot_carries_no_private_material():
-    text = SNAPSHOT_PATH.read_text(encoding="utf-8").lower()
+@pytest.mark.parametrize("network", NETWORKS)
+def test_the_snapshot_carries_no_private_material(network):
+    text = PATHS[network].read_text(encoding="utf-8").lower()
     keys = ROOT / ".accounts.json"
     if keys.exists():
         for account in json.loads(keys.read_text(encoding="utf-8")).values():

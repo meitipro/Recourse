@@ -4,6 +4,7 @@ Record what the chain holds about the frozen contracts, so the evidence
 survives a testnet reset.
 
     python scripts/snapshot.py                              # evidence/snapshot.json and evidence/receipts/
+    python scripts/snapshot.py --network studio-next        # evidence/snapshot-studio-next.json, receipts/studio-next/
     python scripts/snapshot.py --contested p-000003 --honest p-000001
 
 studionet's persistence is temporary. Every number this repository publishes
@@ -43,12 +44,23 @@ from genlayer_py import create_account  # noqa: E402
 from genlayer_py.abi.calldata.decoder import decode as decode_calldata  # noqa: E402
 
 from shared.chain import (  # noqa: E402
-    EXPLORERS, KNOWN_CHAIN_IDS, Chain, frozen_deployment, frozen_record, network_name, retry, select_network,
+    EXPLORERS, KNOWN_CHAIN_IDS, V06_NETWORKS, Chain, frozen_deployment, frozen_record, network_name, retry,
+    select_network,
 )
 
 EVIDENCE = ROOT / "evidence"
 SNAPSHOT = EVIDENCE / "snapshot.json"
 RECEIPTS = EVIDENCE / "receipts"
+
+
+def snapshot_path(network: str) -> pathlib.Path:
+    """studionet keeps evidence/snapshot.json, the file the README has always cited. Every other network gets its own."""
+    return SNAPSHOT if network == "studionet" else EVIDENCE / f"snapshot-{network}.json"
+
+
+def receipts_dir(network: str) -> pathlib.Path:
+    """studionet's receipts stay where snapshot.json names them. Every other network's go in a folder of its own."""
+    return RECEIPTS if network == "studionet" else RECEIPTS / network
 
 #: Studio allows about thirty requests a minute. Every RPC call here goes
 #: through paced(), which keeps the whole run under that without a 429.
@@ -101,7 +113,10 @@ def decoded_call(tx: dict) -> dict | None:
     if not isinstance(call, dict):
         return {"method": "?", "args": [], "undecodable": "calldata is not a call"}
     args = call.get("args") or []
-    return {"method": str(call.get("method", "?")), "args": [_short(a) for a in args]}
+    # Consensus v0.6 keeps the method name under the empty key, where the
+    # earlier ABI called it "method". Both are read.
+    method = call.get("method", call.get("", "?"))
+    return {"method": str(method), "args": [_short(a) for a in args]}
 
 
 def _short(value, limit: int = 200) -> str:
@@ -122,10 +137,10 @@ def leader_result(tx: dict) -> dict:
     if isinstance(leader, list):
         leader = leader[0] if leader else None
     if not isinstance(leader, dict):
-        return {"execution": "", "returned": None, "refusal": ""}
+        return {"execution": "", "returned": None, "refusal": "", "vm_error": ""}
     execution = str(leader.get("execution_result", "")).upper()
     raw = leader.get("result")
-    returned, refusal = None, ""
+    returned, refusal, vm_error = None, "", ""
     if isinstance(raw, str) and raw:
         try:
             payload = base64.b64decode(raw)
@@ -137,9 +152,13 @@ def leader_result(tx: dict) -> dict:
                 returned = value if isinstance(value, (str, int, bool, type(None))) else _short(value)
             except Exception:  # noqa: BLE001
                 returned = None
-        elif payload:
+        elif payload and payload[0] == 1:
             refusal = payload[1:].decode("utf-8", "replace")
-    return {"execution": execution, "returned": returned, "refusal": refusal}
+        elif payload:
+            # A VM error, byte 2: the runtime stopped the call, the contract did
+            # not refuse it. Kept apart so it is never read as a refusal.
+            vm_error = payload[1:].decode("utf-8", "replace")
+    return {"execution": execution, "returned": returned, "refusal": refusal, "vm_error": vm_error}
 
 
 def summarise(tx: dict, explorer: str) -> dict:
@@ -160,6 +179,7 @@ def summarise(tx: dict, explorer: str) -> dict:
         "execution": outcome["execution"],
         "returned": outcome["returned"],
         "refusal": outcome["refusal"],
+        "vm_error": outcome["vm_error"],
         "triggered_by": tx.get("triggered_by"),
         # When the committee accepted it, and how many validators voted on
         # its last round. The settlement timings and the committee are read
@@ -265,9 +285,14 @@ def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
     }
 
 
-def fee_sample(chain: Chain, transactions: list[dict]) -> dict:
+def fee_sample(chain: Chain, transactions: list[dict], raw_txs: dict[str, dict], network: str) -> dict:
     """
-    What studionet charges, read off the chain rather than asserted.
+    What the network charges, read off the chain rather than asserted.
+
+    On a fee charging network each transaction carries its own accounting:
+    the deposit it paid, what consensus consumed of it and what came back.
+    Those are kept exactly as the chain reported them, in wei. On studionet,
+    which charges nothing, the gas figures of each receipt are kept instead.
 
     The first success of each method on chain, and the first refusal, so the
     sample spans a transaction that ran the judgment and one refused on its
@@ -280,6 +305,21 @@ def fee_sample(chain: Chain, transactions: list[dict]) -> dict:
             continue
         key = e["method"] if e["execution"] == "SUCCESS" else "refused"
         picked.setdefault(key, e)
+    if network in V06_NETWORKS:
+        accounting = []
+        for key in sorted(picked):
+            e = picked[key]
+            fees = ((raw_txs.get(e["hash"]) or {}).get("data") or {}).get("fee_accounting") or {}
+            accounting.append({
+                "hash": e["hash"],
+                "method": e["method"],
+                "execution": e["execution"],
+                "paid_fee_value": str(fees.get("paid_fee_value")),
+                "primary_fee_spent": str(fees.get("primary_fee_spent")),
+                "total_refunded": str(fees.get("total_refunded")),
+            })
+        price = paced("eth_gasPrice", chain.client.provider.make_request, "eth_gasPrice", [])
+        return {"eth_gasPrice": price.get("result"), "fee_accounting": accounting}
     receipts = []
     for key in sorted(picked):
         e = picked[key]
@@ -299,7 +339,7 @@ def fee_sample(chain: Chain, transactions: list[dict]) -> dict:
 
 
 # --- the snapshot ------------------------------------------------------------
-def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
+def take(chain: Chain, escrow: str, dispute: str, explorer: str, network: str) -> dict:
     stats = paced("stats", chain.read_json, escrow, "stats")
     total = int(stats["payments"])
     rows = paced("recent_rows", chain.read_json, escrow, "recent_rows", [max(total, 1)]) if total else []
@@ -361,7 +401,7 @@ def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
         if e["execution"] == "ERROR" and e["refusal"].startswith("[EXPECTED]")
     ]
 
-    fees = fee_sample(chain, transactions)
+    fees = fee_sample(chain, transactions, raw_txs, network)
 
     decided = [p for p in payments if int(p["status"]) == 3]
     verdicts = {name: sum(1 for p in decided if p["verdict_name"] == name) for name in VERDICT_NAMES[1:]}
@@ -398,10 +438,11 @@ def take(chain: Chain, escrow: str, dispute: str, explorer: str) -> dict:
     }
 
 
-def evaluation() -> dict:
-    """The published evaluation numbers, copied from the measurement files so a drift is a test failure."""
+def evaluation(network: str) -> dict:
+    """This network's evaluation numbers, copied from its own measurement files so a drift is a test failure."""
     out = {}
-    for name, path in (("v1", ROOT / "eval" / "results.json"), ("v2", ROOT / "eval" / "results-v2.json")):
+    suffix = "" if network == "studionet" else f".{network}"
+    for name, path in (("v1", ROOT / "eval" / f"results{suffix}.json"), ("v2", ROOT / "eval" / f"results-v2{suffix}.json")):
         if not path.exists():
             continue
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -420,8 +461,8 @@ def cycle_hashes(payment: dict) -> list[tuple[str, str]]:
     return ordered
 
 
-def write_receipts(chain: Chain, label: str, payment: dict) -> list[str]:
-    folder = RECEIPTS / f"{label}-{payment['pid']}"
+def write_receipts(chain: Chain, label: str, payment: dict, base: pathlib.Path) -> list[str]:
+    folder = base / f"{label}-{payment['pid']}"
     if folder.exists():
         shutil.rmtree(folder)
     folder.mkdir(parents=True)
@@ -439,9 +480,14 @@ def write_receipts(chain: Chain, label: str, payment: dict) -> list[str]:
 #: reach. Each is (what the payment must look like, what to say when there is
 #: none yet). A label with no matching payment is skipped, and the snapshot
 #: names only the ones it actually wrote.
+#:
+#: A verdict cycle must also carry the committee's case. A payment unwound by
+#: reclaim is resolved with the unclear split and no case at all, and filing it
+#: as the cycle a committee ruled unclear would be a label the chain never
+#: gave it.
 CYCLES = {
     "contested": (
-        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "not_honored",
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "not_honored" and bool(p.get("case")),
         "no contested cycle has settled yet",
     ),
     "honest": (
@@ -449,11 +495,11 @@ CYCLES = {
         "no honest cycle has been withdrawn yet",
     ),
     "honored": (
-        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "honored",
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "honored" and bool(p.get("case")),
         "no dispute has been ruled honored yet",
     ),
     "unclear": (
-        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "unclear",
+        lambda p: p["status_name"] == "resolved" and p["verdict_name"] == "unclear" and bool(p.get("case")),
         "no dispute has been ruled unclear yet",
     ),
 }
@@ -474,6 +520,25 @@ def pick_cycles(payments: list[dict], chosen: dict[str, str | None]) -> dict[str
         if found:
             picked[label] = found
     return picked
+
+
+def pair_block(record: dict, deployment: dict) -> dict:
+    """The recorded pair this network runs: the frozen one on studionet, the port on Studio Next."""
+    pair = deployment.get("pair", "frozen")
+    source = record if pair == "frozen" else record[pair]
+    block = {
+        "pair": pair,
+        "runtime": source.get("runtime"),
+        "escrow_sha256": source["escrow"]["sha256"],
+        "dispute_sha256": source["dispute"]["sha256"],
+        "window_seconds": record.get("window_seconds"),
+        "bond_wei": record.get("bond_wei"),
+    }
+    if pair == "frozen":
+        block["frozen_at_commit"] = record.get("frozen_at_commit")
+    else:
+        block["diff"] = source.get("diff")
+    return block
 
 
 # --- main --------------------------------------------------------------------
@@ -519,13 +584,18 @@ def check(chain: Chain, escrow: str, dispute: str, out: pathlib.Path) -> int:
         print("No drift can be measured without the chain, so this is not a failure.")
         return 0
 
+    # Like with like: the chain's cases against the cases the snapshot kept. On
+    # studionet every case settles, so these are also the settled verdicts. On
+    # Studio Next a case is judged and never settled, and comparing the chain's
+    # cases with the settled totals reported a drift that was not there.
     live_verdicts = {name: sum(1 for case in cases if case["verdict_name"] == name) for name in VERDICT_NAMES[1:]}
+    kept = {name: sum(1 for case in recorded.get("cases", []) if case["verdict_name"] == name) for name in VERDICT_NAMES[1:]}
     drift = []
     if live_payments != totals["payments"]:
         drift.append(f"payments: snapshot {totals['payments']}, chain {live_payments}")
     for name, count in live_verdicts.items():
-        if count != totals["verdicts"].get(name):
-            drift.append(f"{name}: snapshot {totals['verdicts'].get(name)}, chain {count}")
+        if count != kept[name]:
+            drift.append(f"{name}: snapshot {kept[name]}, chain {count}")
 
     print(f"chain      {live_payments} payments, verdicts {live_verdicts}")
     if not drift:
@@ -547,7 +617,11 @@ def main() -> int:
         help="compare the recorded snapshot against the chain and report drift, writing nothing",
     )
     parser.add_argument("--network", default=None, help="the network to read; default studionet")
-    parser.add_argument("--out", default=str(SNAPSHOT), help="where to write the snapshot")
+    parser.add_argument(
+        "--out", default=None,
+        help="where to write the snapshot; default evidence/snapshot.json on studionet and "
+        "evidence/snapshot-<network>.json elsewhere",
+    )
     parser.add_argument("--contested", default=None, help="payment id of the contested cycle to keep raw receipts for")
     parser.add_argument("--honest", default=None, help="payment id of the honest cycle to keep raw receipts for")
     parser.add_argument("--honored", default=None, help="payment id of the dispute ruled honored")
@@ -555,6 +629,7 @@ def main() -> int:
     parser.add_argument("--no-receipts", action="store_true", help="write the snapshot only")
     args = parser.parse_args()
     network = select_network(args.network)
+    out_path = pathlib.Path(args.out) if args.out else snapshot_path(network)
 
     deployment = frozen_deployment(network)
     record = frozen_record()
@@ -566,17 +641,18 @@ def main() -> int:
     print(f"dispute   {deployment['dispute']}")
 
     if args.check:
-        return check(chain, deployment["escrow"], deployment["dispute"], pathlib.Path(args.out))
+        return check(chain, deployment["escrow"], deployment["dispute"], out_path)
 
     print("reading, paced to the rate limit ...")
 
-    body = take(chain, deployment["escrow"], deployment["dispute"], explorer)
+    body = take(chain, deployment["escrow"], deployment["dispute"], explorer, network)
     now = int(time.time())
+    kind = "frozen" if deployment.get("pair", "frozen") == "frozen" else "ported"
     snapshot = {
         "recorded_at": now,
         "recorded_at_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
         "note": (
-            f"What the chain held about the frozen contracts on {network} when this was recorded. "
+            f"What the chain held about the {kind} contracts on {network} when this was recorded. "
             f"{network} is a temporary testnet. The site reads the chain first and this file second, and "
             "says which one it is showing. Regenerate with: python scripts/snapshot.py"
         ),
@@ -586,16 +662,10 @@ def main() -> int:
         "explorer": explorer,
         "escrow": deployment["escrow"],
         "dispute": deployment["dispute"],
-        "frozen": {
-            "frozen_at_commit": record.get("frozen_at_commit"),
-            "escrow_sha256": record["escrow"]["sha256"],
-            "dispute_sha256": record["dispute"]["sha256"],
-            "window_seconds": record.get("window_seconds"),
-            "bond_wei": record.get("bond_wei"),
-        },
+        "frozen": pair_block(record, deployment),
         "stats": body["stats"],
         "totals": body["totals"],
-        "evaluation": evaluation(),
+        "evaluation": evaluation(network),
         "refusals": body["refusals"],
         "fees": body["fees"],
         "sellers": body["sellers"],
@@ -611,9 +681,9 @@ def main() -> int:
         # id. Without this the newest cycle of each kind silently replaced
         # them, which is how p-000003 was nearly lost as the contested cycle.
         previous: dict[str, str] = {}
-        if pathlib.Path(args.out).exists():
+        if out_path.exists():
             try:
-                recorded = json.loads(pathlib.Path(args.out).read_text(encoding="utf-8"))
+                recorded = json.loads(out_path.read_text(encoding="utf-8"))
                 previous = {label: info["pid"] for label, info in recorded.get("receipts", {}).items()}
             except (ValueError, KeyError, TypeError):
                 previous = {}
@@ -625,12 +695,12 @@ def main() -> int:
                     "pid": picked[label]["pid"],
                     "verdict": picked[label]["verdict_name"],
                     "status": picked[label]["status_name"],
-                    "files": write_receipts(chain, label, picked[label]),
+                    "files": write_receipts(chain, label, picked[label], receipts_dir(network)),
                 }
             else:
                 print(f"{CYCLES[label][1]}; no {label} receipts written")
 
-    out = pathlib.Path(args.out)
+    out = out_path
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snapshot, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
 
