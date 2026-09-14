@@ -54,14 +54,14 @@
       "chain_id": 61997,
       "rpc": "https://studio-next.genlayer.com/api",
       "explorer": "https://explorer-studio-dev.genlayer.com",
-      "escrow": "0x8D1BbDE6756f54e5846BF6a10454d4562E8bEA18",
-      "dispute": "0x78699831F3Fb60A8F5Fb47CC9e56811bf56C48Dc",
-      "deployed_at": 1789416582,
+      "escrow": "0x3d3fa7Fd2E143C4D6b47D31f15D19B102Ec9e0dA",
+      "dispute": "0xba5f285FdB14E3e1d130b3C9346728aBfEC479f4",
+      "deployed_at": 1789418090,
       "pair": "v06",
       "runtime": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng",
-      "deployed_from_commit": "8daae5d"
+      "deployed_from_commit": "44111a3"
     }
   },
   "deployments_note": "Each deployment runs one of the two pairs recorded above and names it in `pair`; an entry that names none runs the first. The two pairs are the same logic, the same prompt and the same strings, with a published diff that touches only API names, under two runtimes, and both pairs of hashes are recorded here. Each network's evaluation is published in its own column.",
-  "deployments_status": "Two deployments. studionet runs the frozen pair and Studio Next runs the v06 pair, deployed from commit 8daae5d. Every script refuses a network that has no entry here, by name."
+  "deployments_status": "Two deployments. studionet runs the frozen pair and Studio Next runs the v06 pair, deployed from commit 44111a3. A first deployment there, from 8daae5d, ran an escrow that emitted on the stage consensus v0.6 calls decided under its old name, accepted, and could not open a dispute; nothing was measured on it. Every script refuses a network that has no entry here, by name."
 }
