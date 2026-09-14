@@ -13,8 +13,15 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { createClient } from "genlayer-js";
-import { studioDevnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
+// Two lines of the SDK, one per consensus version. 2.0.0-rc.1 reads Studio
+// Next, which runs consensus v0.6, and fails every read on studionet with
+// "Missing or invalid parameters". 1.1.8, the line this site shipped with,
+// reads studionet and knows no chain 61997. Each network is read by the line
+// that reads it, which was measured, not assumed, on 14 September.
+import { createClient as createClientV06 } from "genlayer-js";
+import { studioDevnet } from "genlayer-js/chains";
+import { createClient as createClientV05 } from "genlayer-js-v1";
+import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js-v1/chains";
 
 import { loadSnapshot, snapshotEvidence, snapshotRows } from "./snapshot";
 
@@ -88,11 +95,20 @@ export const EXPLORER: Record<NetworkName, string> = {
   asimov: "https://explorer-asimov.genlayer.com",
 };
 
-let cached: ReturnType<typeof createClient> | null = null;
+/** The one method the feed calls, which both lines of the SDK provide in the same shape. */
+type Reader = {
+  readContract: (options: { address: `0x${string}`; functionName: string; args: unknown[] }) => Promise<unknown>;
+};
 
-function client() {
+let cached: Reader | null = null;
+
+function client(): Reader {
   if (!cached) {
-    cached = createClient({ chain: CHAINS[NETWORK] });
+    cached = (
+      NETWORK === "studio-next"
+        ? createClientV06({ chain: STUDIO_NEXT })
+        : createClientV05({ chain: CHAINS[NETWORK] as typeof studionet })
+    ) as unknown as Reader;
   }
   return cached;
 }

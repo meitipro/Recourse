@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "genlayer-js": "2.0.0-rc.1",
+    "genlayer-js-v1": "npm:genlayer-js@1.1.8",
     "next": "15.1.12",
     "react": "19.0.0",
     "react-dom": "19.0.0"
