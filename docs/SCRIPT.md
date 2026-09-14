@@ -101,7 +101,7 @@ Ninety seconds. About two hundred words.
   committed case. It says plainly that this is not the chain.* It is filmed at
   1:12, after the withdraw shot when both are recorded, and the edit keeps
   whichever the running time has room for.
-- **The live site**: read `https://recourse-site.vercel.app` if the imports are
+- **The live site**: read `https://recourse-site-seven.vercel.app` if the imports are
   done, `http://localhost:4500` otherwise. The script is the same.
 - **The withdraw shot** at 1:12, as marked.
 

@@ -3,7 +3,7 @@
 The hosted smoke tests, in one command, for after the three Vercel imports.
 
     python scripts/smoke.py
-    python scripts/smoke.py --site https://recourse-site.vercel.app
+    python scripts/smoke.py --site https://recourse-site-seven.vercel.app
 
 Every failure this can find is a dashboard setting, so each check names the
 setting that fixes it, chosen from what actually came back, and the person
@@ -287,9 +287,9 @@ def unhosted_sentences() -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--site", default="https://recourse-site.vercel.app")
+    parser.add_argument("--site", default="https://recourse-site-seven.vercel.app")
     parser.add_argument("--linter", default="https://recourse-linter.vercel.app")
-    parser.add_argument("--mcp", default="https://recourse-mcp.vercel.app/api/mcp")
+    parser.add_argument("--mcp", default="https://recourse-mcp-eight.vercel.app/api/mcp")
     args = parser.parse_args()
     site, linter = args.site.rstrip("/"), args.linter.rstrip("/")
 

@@ -605,7 +605,7 @@ def judges_path(sources: Sources, rows: list[Number], ordinary: list[Link], host
     images = [link for link in readme_links if link.text.startswith("image: ") and not link.target.endswith(".svg")]
     backed = [row for row in rows if row.source != NO_FILE]
     first_numbers = "; ".join(f"{row.written} ({row.now})" for row in backed[:8])
-    site = next((link.target for link in hosted if "recourse-site" in link.target), "https://recourse-site.vercel.app")
+    site = next((link.target for link in hosted if "recourse-site" in link.target), "https://recourse-site-seven.vercel.app")
     headings = re.findall(r"(?m)^## (.+)$", sources.readme)
     lines = [
         "## The judge's path",

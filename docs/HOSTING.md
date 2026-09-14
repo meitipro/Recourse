@@ -5,10 +5,13 @@ that wrote this could list the team's projects but not create one, so each is
 a dashboard import. Every setting that matters is below; nothing else needs
 changing.
 
-The project names matter. `recourse-skill/reference/07-addresses.json` and
-`recourse-skill/.claude-plugin/plugin.json` already name the URLs the projects
-will have if they are called exactly `recourse-linter` and `recourse-mcp`. Use
-those names, or update both files afterwards.
+The projects are `recourse-linter`, `recourse-site` and `recourse-mcp`. Two of
+the plain addresses were already taken when they were imported, so Vercel added
+a suffix: the linter is `recourse-linter.vercel.app`, the site
+`recourse-site-seven.vercel.app` and the MCP server
+`recourse-mcp-eight.vercel.app`. `recourse-skill/reference/07-addresses.json`
+and `recourse-skill/.claude-plugin/plugin.json` name those addresses; a project
+imported again under another name means updating both files.
 
 `ANTHROPIC_API_KEY` goes on `recourse-linter` and nowhere else. The site and
 the MCP server call no model themselves: every stage 2 lint and every dry run
@@ -77,9 +80,9 @@ Recourse Language, checked on 11 September. A project named `recourse` gets a
 team scoped address instead, and every smoke test aimed at the short name
 would be testing a stranger's site, where a case permalink returns nothing and
 reads as our bug. `recourse-site.vercel.app` was unclaimed the same day, and so
-were `recourse-linter` and `recourse-mcp`. If `recourse-site` is taken by the
-time you import, pick any free name and pass its address to the smoke script
-with `--site`.
+were `recourse-linter` and `recourse-mcp`. By the import two of the three had
+been taken, so the site's address is `recourse-site-seven.vercel.app`, which is
+what the smoke script now tests by default.
 
 | | |
 | --- | --- |
@@ -98,9 +101,9 @@ the judge's address from it.
 Smoke test by hand:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://recourse-site.vercel.app/
-curl -s https://recourse-site.vercel.app/case/RC-2026-0003 | grep -c "not honored"     # 1
-curl -s -X POST https://recourse-site.vercel.app/api/lint \
+curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://recourse-site-seven.vercel.app/
+curl -s https://recourse-site-seven.vercel.app/case/RC-2026-0003 | grep -c "not honored"     # 1
+curl -s -X POST https://recourse-site-seven.vercel.app/api/lint \
   -H "Content-Type: application/json" -d '{"promise": "High quality results."}'
 # a stage 1 refusal, not a 503 saying the linter is not configured
 ```
@@ -122,7 +125,7 @@ and the same miss leaves the How section's bond unnamed.
 Smoke test, with a real MCP client:
 
 ```bash
-cd recourse-skill/mcp && node test/probe.mjs https://recourse-mcp.vercel.app/api/mcp
+cd recourse-skill/mcp && node test/probe.mjs https://recourse-mcp-eight.vercel.app/api/mcp
 # lists five tools, calls each; "every tool answered"
 ```
 
