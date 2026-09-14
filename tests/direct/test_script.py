@@ -1,10 +1,10 @@
 """
-docs/SCRIPT.md is written to be read aloud and filmed, and every number in it
-comes from somewhere in this repository: the frozen record, the seller's stale
-mode, the agent's default payment, the evaluation results, the snapshot. A
-number that drifts from its source would go wrong on camera, where nothing
-fails. These hold each one to where it comes from, the way
-tests/direct/test_design.py holds docs/DESIGN.md.
+docs/SCRIPT.md is read aloud and filmed, and every number in it comes from
+somewhere in this repository: the frozen record, the seller's stale mode, the
+agent's default payment, the evaluation results, the snapshot. A number that
+drifts from its source goes wrong on camera, where nothing fails. These hold
+each one to where it comes from, the way tests/direct/test_design.py holds
+docs/DESIGN.md.
 """
 
 from __future__ import annotations

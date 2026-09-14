@@ -1,10 +1,9 @@
 # Demo runbook
 
-Print this. Two commands exercise the whole system: `python scripts/prepare.py`
-once, then `python scripts/demo.py`. Both write to studionet, so the tail below
-comes after the last of them.
+Print this. Walk the take with `python scripts/record.py --dry-run` three
+times, run it once for real, then record, as `docs/SCRIPT.md` says.
 
-## If you film it: the recording
+## When: the recording, then the tail
 
 The recording is the step immediately before the tail. It spends payments on
 studionet, so the snapshot and the feed image must both come after it, in that
@@ -17,11 +16,6 @@ key at every switch to a browser tab. `--dry-run` walks the same sequence
 without running anything or writing to the chain. It stops at the first shot
 whose line never prints, names the shot and what SCRIPT.md expects there, and
 retries nothing.
-
-Walk the take with `python scripts/record.py --dry-run` three times, run it
-once for real, then record, as `docs/SCRIPT.md` says.
-
-## The tail
 
 The tail, in this order, no step skipped:
 
