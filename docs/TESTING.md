@@ -137,8 +137,8 @@ curl -s -X POST https://recourse-linter.vercel.app/api/lint \
   -H "Content-Type: application/json" -d '{"promise":"Returns accurate market data."}'
 ```
 
-The site answered `200`. The linter refused the promise at stage 1, with no
-model:
+The site answered `200`, and its feed read studionet live, with no snapshot
+banner. The linter refused the promise at stage 1, with no model:
 
 ```
 {"judgeable": false, "reason": "Nothing here is measurable: no number, unit, time bound, count, named field or named source. Say what arrives and how fresh, not how good.", "failed_check": "no measurable term", "suggestion": null, "stage": 1}
@@ -157,9 +157,12 @@ curl -s https://recourse-mcp-eight.vercel.app/api/mcp \
 ```
 
 It answered with the escrow's and the dispute's live stats read from chain
-61997, and an evaluation block of `16/18` for the tuned set and `2/3` for the
-held out set on Studio Next, beside studionet's `17/18` and `1/3`, read from
-this repository's result files.
+61997, 7 payments, and an evaluation block of `16/18` for the tuned set and
+`2/3` for the held out set on Studio Next, beside studionet's `17/18` and
+`1/3`, read from this repository's result files. Asked for `studionet`, it read
+chain 61999 instead, 19 payments. Each network is read by its own line of
+genlayer-js: 2.0.0-rc.1 for Studio Next, and 1.1.8 for studionet, where every
+read through 2.0.0-rc.1 failed with `Missing or invalid parameters`.
 
 ## 9. The site, locally
 
@@ -172,6 +175,10 @@ for Studio Next, the feed read its payments from chain 61997 through
 genlayer-js 2.0.0-rc.1, and section 06 read `16 / 18`, `16 / 18`, `2 / 18` and
 `2 / 3`, each tile naming `eval/results.studio-next.json` or its v2 file, with
 "the two misses in the first set on studio-next are cases 07 and 12".
+Built for studionet, the feed read the escrow live through genlayer-js 1.1.8,
+19 payments, 10 disputes opened and 8/10 not honored, with no snapshot banner,
+and section 06 read `17 / 18`, `17 / 18`, `3 / 18` and `1 / 3` over
+`eval/results.json` and its v2 file.
 
 ## 10. The recording, rehearsed
 
