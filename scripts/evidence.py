@@ -75,7 +75,7 @@ def main() -> int:
 
     global EXPLORER
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet")
     args = parser.parse_args()
     select_network(args.network)
     EXPLORER = EXPLORERS[network_name()]

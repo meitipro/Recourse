@@ -324,7 +324,7 @@ def unjudgeable(chain, accounts, deployment, args) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--cycle", default="both", choices=["honored", "unjudgeable", "both"])
-    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet")
     parser.add_argument("--amount", type=int, default=4, help="payment in whole GEN")
     parser.add_argument("--timeout", type=int, default=300, help="seconds to wait for a verdict")
     parser.add_argument("--out", default="", help="also write the reports here as JSON")

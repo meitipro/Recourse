@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """
-Deploy the frozen contracts to a network that does not have them yet.
+Deploy a recorded pair of contracts to a network that does not have them yet.
 
     python scripts/deploy.py --network <name>
 
-studionet is the only deployment and no other is planned. This exists because
-the freeze is over the contract bytes, not over a network: the same two files
-could go to another network, once, and FROZEN.json would gain one entry under
-`deployments`. A network that already has an entry is refused unless
---unfreeze is passed, so the frozen pair cannot be redeployed by accident.
+contracts/FROZEN.json records two pairs: the frozen pair, deployed on
+studionet, and the ported pair in contracts/v06/, the same logic under the
+runtime Studio Next runs. Each network runs the pair shared/chain.py assigns
+it, and deploying extends FROZEN.json by one entry under `deployments`.
 
-Studio funds accounts over the RPC and this does it. A network whose faucet is
-a browser page stops here when the accounts are short and names the page and
-the addresses; nothing is retried and no faucet is called. It writes
-deployed.json for the chosen network, which the agent, the evaluation runner
-and the feed all read.
+Two guards, both before anything is sent. The files about to go on chain must
+hash to their record in FROZEN.json, so bytes nobody recorded cannot be
+deployed as if they were the frozen ones. A network that already has an entry
+is refused unless --unfreeze is passed, so a deployed pair cannot be replaced
+by accident on either network.
+
+Both Studios fund accounts over the RPC and this does it, one faucet call per
+account. A network whose faucet is a browser page stops here when the accounts
+are short and names the page and the addresses; nothing is retried and no
+faucet is called. It writes deployed.json for the chosen network, which the
+agent, the evaluation runner and the feed all read.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import pathlib
 import sys
@@ -33,8 +39,9 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from shared.chain import (
-    CHAINS, EXPLORERS, FROZEN, GEN, KNOWN_CHAIN_IDS, ROOT, Chain, frozen_record, load_accounts,
-    network_name, require_funds, save_deployment, select_network,
+    CHAINS, EXPLORERS, FROZEN, GEN, KNOWN_CHAIN_IDS, PAIR_OF_NETWORK, PROGRAMMATIC_FAUCET, ROOT,
+    Chain, frozen_record, load_accounts, network_name, pair_paths, require_funds,
+    save_deployment, select_network,
 )
 
 PROMISE = (
@@ -43,15 +50,38 @@ PROMISE = (
 )
 
 
+def recorded_hashes(record: dict, pair: str) -> dict[str, str]:
+    """The sha256 FROZEN.json holds for each file of one pair."""
+    source = record if pair == "frozen" else record[pair]
+    return {name: source[name]["sha256"] for name in ("escrow", "dispute")}
+
+
+def bytes_match_the_record(network: str, record: dict) -> list[str]:
+    """
+    Every file of this network's pair whose bytes differ from FROZEN.json.
+
+    Hashed over LF-normalised bytes, the form Chain.deploy reads the file in
+    and so the form that goes on chain.
+    """
+    pair = PAIR_OF_NETWORK.get(network, "frozen")
+    expected = recorded_hashes(record, pair)
+    wrong = []
+    for name, path in pair_paths(network).items():
+        now = hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        if now != expected[name]:
+            wrong.append(f"{path.relative_to(ROOT).as_posix()} is {now[:12]}, recorded {expected[name][:12]}")
+    return wrong
+
+
 def record_frozen_deployment(network: str, escrow: str, dispute: str) -> None:
     """
-    Extend the freeze record with where these bytes now live.
+    Extend the freeze record with where one pair now lives.
 
-    The freeze is over the bytes, and the two hashes are not touched here. What
-    gets added is one entry under `deployments` for this network: chain id, RPC,
-    both addresses, when, and the commit the bytes came from. The gate checks
-    the chain id against the name, so a wrong chain object fails there rather
-    than publishing addresses that are not where they say.
+    Neither pair's hashes are touched here. What gets added is one entry under
+    `deployments` for this network: chain id, RPC, both addresses, when, the
+    pair it runs and the commit it came from. The gate checks the chain id
+    against the name, so a wrong chain object fails there rather than
+    publishing addresses that are not where they say.
     """
     if not FROZEN.exists():
         return
@@ -62,18 +92,24 @@ def record_frozen_deployment(network: str, escrow: str, dispute: str) -> None:
         ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip() or "unknown"
     rpc = CHAINS[network].rpc_urls["default"]["http"][0]
-    record.setdefault("deployments", {})[network] = {
+    pair = PAIR_OF_NETWORK.get(network, "frozen")
+    entry = {
         "chain_id": KNOWN_CHAIN_IDS[network],
         "rpc": rpc,
         "explorer": EXPLORERS.get(network, ""),
         "escrow": escrow,
         "dispute": dispute,
         "deployed_at": int(time.time()),
-        "frozen_at_commit": record["frozen_at_commit"],
-        "deployed_from_commit": commit,
     }
+    if pair == "frozen":
+        entry["frozen_at_commit"] = record["frozen_at_commit"]
+    else:
+        entry["pair"] = pair
+        entry["runtime"] = record[pair]["runtime"]
+    entry["deployed_from_commit"] = commit
+    record.setdefault("deployments", {})[network] = entry
     FROZEN.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    print(f"  FROZEN.json -> deployments.{network}")
+    print(f"  FROZEN.json -> deployments.{network} ({pair} pair)")
 
 
 def write_feed_env(record: dict) -> None:
@@ -115,14 +151,14 @@ def main() -> int:
     )
     parser.add_argument(
         "--network", default=None,
-        help="a network from shared/chain.py; default studionet, the only deployment. "
-        "The same frozen bytes, deployed once per network",
+        help="a network from shared/chain.py; default studionet. Each network runs "
+        "the recorded pair shared/chain.py assigns it, deployed once",
     )
     parser.add_argument(
         "--unfreeze",
         action="store_true",
         help="deploy a NEW pair on a network that already has one in FROZEN.json. "
-        "Every published number for that network is tied to its frozen pair; see "
+        "Every published number for that network is tied to its deployment; see "
         "FROZEN.json for what a redeploy then has to redo",
     )
     parser.add_argument(
@@ -133,8 +169,9 @@ def main() -> int:
     # The one caller allowed to choose a network with no entry yet: deploying is
     # how an entry appears.
     network = select_network(args.network, allow_undeployed=True)
+    record = frozen_record() if FROZEN.exists() else {}
 
-    deployments = frozen_record().get("deployments", {}) if FROZEN.exists() else {}
+    deployments = record.get("deployments", {})
     if network in deployments and not args.unfreeze:
         entry = deployments[network]
         print(f"The contracts are already deployed on {network} and that deployment is frozen:")
@@ -147,18 +184,28 @@ def main() -> int:
         print("if_a_change_is_genuinely_required in FROZEN.json to the end.")
         return 1
 
+    wrong = bytes_match_the_record(network, record)
+    if wrong:
+        print(f"Refusing to deploy on {network}: these files are not the bytes FROZEN.json records.")
+        for line in wrong:
+            print(f"    {line}")
+        print("A pair goes on chain only as recorded. Restore the files, or, if the change")
+        print("is genuinely required, follow if_a_change_is_genuinely_required in FROZEN.json.")
+        return 1
+
     started = time.time()
     accounts = load_accounts()
     owner, seller, buyer = accounts["owner"], accounts["seller"], accounts["buyer"]
-    print(f"network  {network_name()}")
+    paths = pair_paths(network)
+    print(f"network  {network_name()}  ({PAIR_OF_NETWORK.get(network, 'frozen')} pair)")
     print(f"owner    {owner.address}")
     print(f"seller   {seller.address}")
     print(f"buyer    {buyer.address}")
 
     chain = Chain(owner)
 
-    print("\nfunding")
-    if network == "studionet":
+    print("\nfunding, one faucet call per account")
+    if network in PROGRAMMATIC_FAUCET:
         for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
             chain.fund(account.address, args.fund * GEN)
     else:
@@ -169,8 +216,8 @@ def main() -> int:
             print(f"  {name:6} {account.address[:10]} {chain.balance(account.address) / GEN:.2f} GEN")
 
     print("\ndeploying")
-    escrow = chain.deploy(ROOT / "contracts" / "escrow.py", [args.window, args.bond * GEN])
-    dispute = chain.deploy(ROOT / "contracts" / "dispute.py", [escrow])
+    escrow = chain.deploy(paths["escrow"], [args.window, args.bond * GEN])
+    dispute = chain.deploy(paths["dispute"], [escrow])
 
     print("\nwiring")
     chain.send(escrow, "set_dispute_contract", [dispute])
@@ -185,7 +232,7 @@ def main() -> int:
     row = chain.read_json(escrow, "get_seller", [seller.address])
     print(f"  promise stored, {len(row['promise'])} chars, judgeable {row['judgeable']}")
 
-    record = {
+    deployment = {
         "network": network_name(),
         "escrow": escrow,
         "dispute": dispute,
@@ -206,17 +253,17 @@ def main() -> int:
         # money. Its settle emission goes to an account rather than a contract
         # and fails as its own transaction, which is expected and harmless: the
         # case row is written before the message is emitted.
-        eval_dispute = chain.deploy(ROOT / "contracts" / "dispute.py", [owner.address])
-        record["eval_dispute"] = eval_dispute
+        eval_dispute = chain.deploy(paths["dispute"], [owner.address])
+        deployment["eval_dispute"] = eval_dispute
 
-    save_deployment(record)
-    write_feed_env(record)
+    save_deployment(deployment)
+    write_feed_env(deployment)
     record_frozen_deployment(network, escrow, dispute)
     print(f"\nwrote deployed.json in {time.time() - started:.0f}s")
     print(f"  escrow   {escrow}")
     print(f"  dispute  {dispute}")
     if args.eval_instance:
-        print(f"  eval     {record['eval_dispute']}")
+        print(f"  eval     {deployment['eval_dispute']}")
     return 0
 
 

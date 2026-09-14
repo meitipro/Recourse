@@ -546,7 +546,7 @@ def main() -> int:
         "--check", action="store_true",
         help="compare the recorded snapshot against the chain and report drift, writing nothing",
     )
-    parser.add_argument("--network", default=None, help="the network to read; default studionet, the only deployment")
+    parser.add_argument("--network", default=None, help="the network to read; default studionet")
     parser.add_argument("--out", default=str(SNAPSHOT), help="where to write the snapshot")
     parser.add_argument("--contested", default=None, help="payment id of the contested cycle to keep raw receipts for")
     parser.add_argument("--honest", default=None, help="payment id of the honest cycle to keep raw receipts for")

@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-Get a clean clone ready to run the demo against the FROZEN contracts.
+Get a clean clone ready to run the demo against a deployed pair of contracts.
 
-    python scripts/prepare.py                       # studionet, the only deployment
+    python scripts/prepare.py --network studio-next     # the ported pair on Studio Next
+    python scripts/prepare.py                           # the frozen pair on studionet
 
-Deploys nothing. The contracts are frozen at the bytes in contracts/FROZEN.json
-and live at one address pair per network under its `deployments`; every
-published number is tied to those. What a clone needs is three accounts of its
-own with GEN on the chosen network, a seller among them registered on that
-network's escrow, and a deployed.json naming that network's pair, which is
-what this writes.
+Deploys nothing. The contracts live at one address pair per network under
+`deployments` in contracts/FROZEN.json, each running one of the two recorded
+pairs, and every published number for a network is tied to its pair. What a
+clone needs is three accounts of its own with GEN on the chosen network, a
+seller among them registered on that network's escrow, and a deployed.json
+naming that network's pair, which is what this writes.
 
-Studio funds accounts over the RPC and this does it for you. On a network with
-a browser faucet this would stop and name the page and the addresses when they
-are short, and do nothing else.
+Both Studios fund accounts over the RPC and this does it for you, one faucet
+call per account that is short. On a network with a browser faucet this would
+stop and name the page and the addresses when they are short, and do nothing
+else.
 
 Idempotent. Run it twice and it funds nothing twice and registers nobody
 twice.
@@ -33,8 +35,8 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from shared.chain import (  # noqa: E402
-    GEN, Chain, frozen_deployment, frozen_record, load_accounts, network_name,
-    require_funds, save_deployment, select_network,
+    GEN, PAIR_OF_NETWORK, PROGRAMMATIC_FAUCET, Chain, frozen_deployment, frozen_record,
+    load_accounts, require_funds, save_deployment, select_network,
 )
 
 MIN_BALANCE = 50 * GEN
@@ -58,7 +60,7 @@ def write_feed_env(record: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--network", default=None, help="the network to run against; default studionet, the only deployment")
+    parser.add_argument("--network", default=None, help="the network to run against; default studionet")
     args = parser.parse_args()
     network = select_network(args.network)
 
@@ -66,16 +68,17 @@ def main() -> int:
 
     entry = frozen_deployment(network)
     escrow, dispute = entry["escrow"], entry["dispute"]
+    pair = entry.get("pair", "frozen")
 
     accounts = load_accounts()
     owner, seller, buyer = accounts["owner"], accounts["seller"], accounts["buyer"]
     chain = Chain(owner)
-    print(f"network  {network}  (chain {entry['chain_id']})")
-    print(f"escrow   {escrow}  (frozen)")
-    print(f"dispute  {dispute}  (frozen)")
+    print(f"network  {network}  (chain {entry['chain_id']}, {PAIR_OF_NETWORK.get(network, 'frozen')} pair)")
+    print(f"escrow   {escrow}  ({pair})")
+    print(f"dispute  {dispute}  ({pair})")
 
     print("\nfunding, where a balance is below 50 GEN")
-    if network == "studionet":
+    if network in PROGRAMMATIC_FAUCET:
         for name, account in (("owner", owner), ("seller", seller), ("buyer", buyer)):
             balance = chain.balance(account.address)
             if balance >= MIN_BALANCE:
@@ -126,6 +129,7 @@ def main() -> int:
             "chain_id": entry["chain_id"],
             "escrow": escrow,
             "dispute": dispute,
+            "pair": pair,
             "owner": owner.address,
             "seller": seller.address,
             "buyer": buyer.address,
