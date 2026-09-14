@@ -126,10 +126,15 @@ async function LiveFeed() {
 
 export default async function Page() {
   const frozen = readOutside<Frozen>(["contracts/FROZEN.json"]);
-  const results = readOutside<Results>(["eval/results.json"]);
-  const heldOut = readOutside<Results>(["eval/results-v2.json"]);
+  // Every figure on the page is this network's own: studionet's files carry no
+  // suffix, and any other network's are named for it, so a page built for one
+  // network never prints another's evaluation or settlement timings.
+  const suffix = NETWORK === "studionet" ? "" : `.${NETWORK}`;
+  const results = readOutside<Results>([`eval/results${suffix}.json`]);
+  const heldOut = readOutside<Results>([`eval/results-v2${suffix}.json`]);
+  const snapshotName = NETWORK === "studionet" ? "snapshot.json" : `snapshot-${NETWORK}.json`;
   const settlement: SettlementTotals =
-    readOutside<{ totals?: SettlementTotals }>(["evidence/snapshot.json"])?.totals ?? {};
+    readOutside<{ totals?: SettlementTotals }>([`evidence/${snapshotName}`])?.totals ?? {};
   // The clerk offers the committed cases to load. They are the answer key, so
   // they come from the file git proves was committed before the judge existed,
   // never from anything typed here.
@@ -199,7 +204,7 @@ export default async function Page() {
         </div>
 
         {results && heldOut ? (
-          <EvaluationSection results={results} heldOut={heldOut} />
+          <EvaluationSection results={results} heldOut={heldOut} network={NETWORK} />
         ) : null}
 
         <LimitsSection committee={settlement.committee ?? null} />
