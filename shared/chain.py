@@ -193,6 +193,38 @@ CASCADES = {
     "open_dispute": {"adjudicate": [("settle", "escrow", False)]},
 }
 
+#: Writes that pay out from the top of their own transaction. Studio cannot
+#: simulate them ("execution failed"), and the flat allocation funds no
+#: message, so each payout needs an External node at the root of the tree:
+#: the payee as recipient and the unnamed call key of a plain value transfer.
+#: Consensus v0.6 accepts an external message only at the root, which is why
+#: this works here and cannot work for settle's payouts, two messages down.
+#: Measured on Studio Next: withdraw with no such node finished "fee
+#: no_matching_allocation # external", and with one it paid the seller.
+ROOT_PAYOUTS = ("withdraw", "reclaim")
+EXTERNAL_BUDGET = 10**15
+EXTERNAL_GAS = {"gasLimit": 100000, "maxGasPrice": 10**9}
+
+
+def _external_node(recipient: str) -> dict:
+    """One External allocation at the root of the tree, for a value transfer to recipient."""
+    from genlayer_py.transactions.fees import (
+        MESSAGE_ALLOCATION_ROOT_PARENT_INDEX,
+        MessageType,
+        derive_external_message_call_key,
+        encode_external_message_fee_params,
+    )
+
+    return {
+        "messageType": int(MessageType.External),
+        "onAcceptance": False,
+        "parentIndex": MESSAGE_ALLOCATION_ROOT_PARENT_INDEX,
+        "recipient": recipient,
+        "callKey": derive_external_message_call_key("0x"),
+        "budget": EXTERNAL_BUDGET,
+        "feeParams": encode_external_message_fee_params(EXTERNAL_GAS),
+    }
+
 FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
 
 
@@ -519,12 +551,37 @@ class Chain:
             )
         except RuntimeError:
             raise
-        except Exception:  # noqa: BLE001  a write Studio expects to be refused
-            estimate = retry("flat fee estimate", self.client.estimate_transaction_fees, WRITE_FEES)
+        except Exception:  # noqa: BLE001  a write Studio expects to be refused, or cannot simulate
+            flat = dict(WRITE_FEES)
+            payees = self._root_payees(address, method, args) if method in ROOT_PAYOUTS else []
+            if payees:
+                # The SDK derives the message total from the allocations. A
+                # stated 0 beside a budget reverts at submission with
+                # MessageAllocationsNotEqualBudget.
+                del flat["totalMessageFees"]
+                flat["messageAllocations"] = [_external_node(payee) for payee in payees]
+            estimate = retry("flat fee estimate", self.client.estimate_transaction_fees, flat)
         else:
             if method in CASCADES:
                 estimate = self._cascade(estimate, CASCADES[method])
         return _fee_options(estimate)
+
+    def _root_payees(self, address: str, method: str, args: list) -> list[str]:
+        """
+        Who a top-level payout pays. withdraw pays its caller, who must be the
+        seller. reclaim pays the payment to the seller and the bond to the
+        buyer. A payment that cannot be read gets no allocation, and the write
+        goes on chain to be refused there, where the refusal is recorded.
+        """
+        if method == "withdraw" and self.account is not None:
+            return [self.account.address]
+        if method == "reclaim" and args:
+            try:
+                row = self.read_json(address, "get_payment", [args[0]])
+            except Exception:  # noqa: BLE001
+                return []
+            return [row["seller"], row["buyer"]]
+        return []
 
     def _cascade(self, estimate: dict, cascade: dict) -> dict:
         """

@@ -1,0 +1,44 @@
+{
+  "method": "sim_getAllValidators",
+  "networks": {
+    "studio-next": {
+      "models": {
+        "llm-router/policy:dev-deepseek": 2,
+        "llm-router/policy:dev-gemini": 2,
+        "llm-router/policy:dev-gpt-5-4": 3,
+        "llm-router/policy:dev-gpt-oss": 1,
+        "llm-router/policy:dev-grok": 1,
+        "llm-router/policy:dev-mistral": 1,
+        "llm-router/policy:dev-sonnet": 2,
+        "openrouter/anthropic/claude-sonnet-4.6": 1,
+        "openrouter/google/gemini-3-flash-preview": 1,
+        "openrouter/openai/gpt-5.4": 2
+      },
+      "rpc": "https://studio-next.genlayer.com/api",
+      "validators": 16
+    },
+    "studionet": {
+      "models": {
+        "llm-router/policy:prd-deepseek": 1,
+        "llm-router/policy:prd-gemini": 2,
+        "llm-router/policy:prd-gemma": 1,
+        "llm-router/policy:prd-glm": 1,
+        "llm-router/policy:prd-gpt-5-4": 3,
+        "llm-router/policy:prd-gpt-oss": 1,
+        "llm-router/policy:prd-grok": 1,
+        "llm-router/policy:prd-kimi": 1,
+        "llm-router/policy:prd-minimax": 1,
+        "llm-router/policy:prd-mistral": 1,
+        "llm-router/policy:prd-qwen": 1,
+        "llm-router/policy:prd-sonnet": 2,
+        "openrouter/anthropic/claude-sonnet-4.6": 1,
+        "openrouter/google/gemini-3-flash-preview": 1,
+        "openrouter/openai/gpt-5.4": 2
+      },
+      "rpc": "https://studio.genlayer.com/api",
+      "validators": 20
+    }
+  },
+  "read_at": 1789421947,
+  "read_at_iso": "2026-09-14T21:39:07Z"
+}

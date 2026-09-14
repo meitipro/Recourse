@@ -138,33 +138,51 @@ def wait_for_verdict(chain: Chain, escrow: str, dispute: str, pid: str, timeout:
     return row, case
 
 
-#: Who the settlement table pays, per verdict. Waiting on the right party is the
-#: whole difficulty: the buyer's balance has already moved by the time a verdict
-#: lands, because it paid and posted a bond, so "did any balance change" answers
-#: yes immediately and reports a payout still in flight as one that never came.
-PAYEES = {"honored": ("seller",), "not_honored": ("buyer",), "unclear": ("seller", "buyer")}
+def owed(verdict: str, amount_wei: int, bond_wei: int) -> dict[str, int]:
+    """
+    What the settlement table pays each party for this verdict.
+
+    Waiting on the right party is the whole difficulty: the buyer's balance has
+    already moved by the time a verdict lands, because it paid and posted a
+    bond, so "did any balance change" answers yes immediately and reports a
+    payout still in flight as one that never came. A verdict outside the table,
+    pending among them, owes nobody anything, because nothing was settled.
+    """
+    table = {
+        "honored": {"seller": amount_wei + bond_wei},
+        "not_honored": {"buyer": amount_wei + bond_wei},
+        "unclear": {"seller": amount_wei, "buyer": bond_wei},
+    }
+    return table.get(verdict, {})
 
 
 def settle_balances(
-    chain: Chain, who: dict[str, str], verdict: str, seconds: int = 180,
+    chain: Chain, who: dict[str, str], due: dict[str, int], seconds: int = 180,
 ) -> tuple[dict[str, int], bool]:
     """
-    Wait for the payouts this verdict implies to land, and say whether they did.
+    Wait for the payouts a verdict implies to land, and say whether they did.
 
     Each payout is an emitted message that becomes its own transaction and lands
     when the settling transaction finalizes, about half a minute later. The
     baseline is taken here, after the verdict, so what is being waited on is the
-    money and nothing else.
+    money and nothing else. A payout has landed when each payee has gained at
+    least what it is owed: on a network that charges fees, a deposit refunded at
+    finalization raises a balance too, by far less. Nothing owed means nothing
+    was settled, and that is never reported as a payout that landed. It was, on
+    Studio Next, until this checked the amount.
     """
     at_verdict = {name: chain.balance(address) for name, address in who.items()}
-    expected = [name for name in PAYEES.get(verdict, ()) if name in who]
-    deadline = time.time() + seconds
+    due = {name: amount for name, amount in due.items() if name in who}
+
+    def arrived(current: dict[str, int]) -> bool:
+        return bool(due) and all(current[name] - at_verdict[name] >= amount for name, amount in due.items())
+
+    deadline = time.time() + seconds if due else time.time()
     current = dict(at_verdict)
-    while time.time() < deadline and not all(current[name] > at_verdict[name] for name in expected):
+    while time.time() < deadline and not arrived(current):
         time.sleep(5)
         current = {name: chain.balance(address) for name, address in who.items()}
-    landed = all(current[name] > at_verdict[name] for name in expected) if expected else True
-    return current, landed
+    return current, arrived(current)
 
 
 def run_cycle(
@@ -244,8 +262,9 @@ def run_cycle(
     if report["reason"]:
         print(f"reason     {report['reason']}")
 
+    due = owed(verdict, amount_gen * GEN, bond_wei)
     after, landed = settle_balances(
-        buyer, {"buyer": buyer_account.address, "seller": seller_address}, verdict,
+        buyer, {"buyer": buyer_account.address, "seller": seller_address}, due,
     )
     report["balance_after"] = {k: str(v) for k, v in after.items()}
     report["payout_landed"] = landed
@@ -253,7 +272,10 @@ def run_cycle(
     report["moved_gen"] = {k: round(v, 2) for k, v in moved.items()}
     print(f"buyer      {before['buyer'] / GEN:.2f} -> {after['buyer'] / GEN:.2f} GEN  ({moved['buyer']:+.2f})")
     print(f"seller     {before['seller'] / GEN:.2f} -> {after['seller'] / GEN:.2f} GEN  ({moved['seller']:+.2f})")
-    print(f"payout     {'landed' if landed else 'NOT LANDED within the wait; it moves on finalization'}")
+    if not due:
+        print("payout     none: the escrow has not settled this payment, so nobody is owed yet")
+    else:
+        print(f"payout     {'landed' if landed else 'NOT LANDED within the wait; it moves on finalization'}")
 
     report["as_expected"] = verdict == expected
     print(
