@@ -26,11 +26,11 @@
   "v06": {
     "ported_on": "2026-09-14",
     "runtime": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng",
-    "why": "Studio Next runs this runtime. The first pair's runtime finishes invalid_contract runner malformed there whatever the file's first line says, and this runtime's standard library renamed four of the APIs the first pair calls.",
+    "why": "Studio Next runs this runtime. The first pair's runtime finishes invalid_contract runner malformed there whatever the file's first line says, and this runtime's standard library renamed five of the APIs the first pair uses.",
     "escrow": {
       "path": "contracts/v06/escrow.py",
-      "sha256": "8edc65d12e9b3d3aac8c6102ff71ace53cf9b65b55bae60d4ceb117050c2030f",
-      "bytes": 28626
+      "sha256": "a2ce0b8a53a6a7d9d7181cd6802ef04dfde653f941649b4151d868f17ae7e2c3",
+      "bytes": 28625
     },
     "dispute": {
       "path": "contracts/v06/dispute.py",
@@ -38,7 +38,7 @@
       "bytes": 21450
     },
     "diff": "contracts/v06/PORT.diff",
-    "diff_is": "The whole difference from the first pair: the runtime header, two imports, and four API names (gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe, gl.message_raw). The logic, the prompt and every string are the first pair's. scripts/port.py generates both files and the diff from the first pair, and the gate regenerates them on every run."
+    "diff_is": "The whole difference from the first pair: the runtime header, two imports, and five API names (gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe, gl.message_raw, and the emit stage \"accepted\", which consensus v0.6 calls \"decided\"). The logic, the prompt and every string are the first pair's. scripts/port.py generates both files and the diff from the first pair, and the gate regenerates them on every run."
   },
   "deployments": {
     "studionet": {

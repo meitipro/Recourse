@@ -1,6 +1,6 @@
 """
 The ported pair is the frozen pair with the runtime header, two imports and
-four API names changed, and nothing else.
+five API names changed, and nothing else.
 
 scripts/port.py generates contracts/v06/ from contracts/. These tests hold the
 files on disk to that, hold FROZEN.json's second record to the files, and read

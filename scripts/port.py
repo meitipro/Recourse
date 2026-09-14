@@ -6,14 +6,15 @@ The ported pair, generated from the frozen one.
     python scripts/port.py --check   # exit 1 unless contracts/v06/ is exactly that
 
 Studio Next runs a newer GenVM runtime, py-genlayer:5jycge4q. Its standard
-library renamed four APIs and stopped exporting `gl`, `TreeMap`, `DynArray`
-and the storage decorator through `from genlayer import *`, so the frozen pair
-cannot load there: a deploy finishes `invalid_contract runner malformed`, and
-no first line changes that. This writes a second pair beside the first.
+library renamed APIs the contracts call and stopped exporting `gl`,
+`TreeMap`, `DynArray` and the storage decorator through
+`from genlayer import *`, so the frozen pair cannot load there: a deploy
+finishes `invalid_contract runner malformed`, and no first line changes that.
+This writes a second pair beside the first.
 
 The port is a function of the frozen pair, not a second copy edited by hand.
 Everything it changes is in the tables below: the runtime header, two import
-lines, and four API names. The logic, the prompt and every string are the
+lines, and five API names. The logic, the prompt and every string are the
 frozen pair's. The gate runs this with --check, so contracts/v06/ cannot drift
 from what the tables produce, and contracts/v06/PORT.diff, which this also
 writes, is always the whole difference.
@@ -48,16 +49,23 @@ HEADER_PORTED = "# v0.3.0" + NL + '# { "Depends": "' + RUNTIME_PORTED + '" }'
 #: through the alias, which is also the name genvm-lint's storage rule reads.
 STAR = "from genlayer import *"
 
-#: The four renames. Each is the same function under its new name:
+#: The five renames. Each is the same thing under its new name:
 #: run_nondet_unsafe and run_nondet have the same body line for line, and so do
 #: allow_storage and allow; message_raw and message.raw are the same decoded
 #: dict; contract.Contract and contract.get_at are the names the standard
 #: library's own module docstring gives for declaring and calling a contract.
+#: The fifth is the stage an emitted message waits for. Consensus v0.6 calls
+#: the committee's decision "decided" where the first runtime said "accepted",
+#: and its ON type admits only "decided" and "finalized": an emit on "accepted"
+#: is refused by the host as invalid, which is how open_dispute failed on
+#: Studio Next the first time it ran. validate loads a contract and never
+#: emits, so only running it could find this one.
 RENAMES = (
     ("gl.Contract)", "gl.contract.Contract)"),
     ("gl.get_contract_at", "gl.contract.get_at"),
     ("gl.vm.run_nondet_unsafe", "gl.vm.run_nondet"),
     ("gl.message_raw", "gl.message.raw"),
+    ('emit(on="accepted")', 'emit(on="decided")'),
 )
 
 DIFF_HEADER = (
@@ -69,8 +77,10 @@ DIFF_HEADER = (
     "# " + RUNTIME_PORTED + ".",
     "#",
     "# Every changed line is the runtime header, an import, or differs only in one",
-    "# of four API names: gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe",
-    "# and gl.message_raw. The logic, the prompt and every string are unchanged.",
+    "# of five API names: gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe,",
+    "# gl.message_raw, and the stage an emitted message waits for, which consensus",
+    '# v0.6 calls "decided" where the first runtime said "accepted". The logic,',
+    "# the prompt and every string are unchanged.",
     "",
 )
 

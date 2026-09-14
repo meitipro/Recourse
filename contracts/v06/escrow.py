@@ -442,7 +442,7 @@ class RecourseEscrow(gl.contract.Contract):
         # If an appeal later overturns this transaction the dispute is rolled
         # back, and the settlement message that judgment emitted is refused by
         # settle's own status check, because the payment is no longer DISPUTED.
-        gl.contract.get_at(self.dispute_contract).emit(on="accepted").adjudicate(
+        gl.contract.get_at(self.dispute_contract).emit(on="decided").adjudicate(
             pid, promise, payment.request, payment.response, timing
         )
 

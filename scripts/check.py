@@ -176,7 +176,7 @@ def frozen_contracts() -> list[str]:
 
     The ported pair is held two ways: to its own hashes, and to being exactly
     what scripts/port.py makes of the first pair. The second is what proves
-    that nothing but the header, two imports and four API names moved.
+    that nothing but the header, two imports and five API names moved.
 
     Hashes are taken over LF-normalised bytes. deploy.py reads with universal
     newlines, so that is what is on chain, and it is the only form that is the

@@ -6,8 +6,10 @@
 # py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng.
 #
 # Every changed line is the runtime header, an import, or differs only in one
-# of four API names: gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe
-# and gl.message_raw. The logic, the prompt and every string are unchanged.
+# of five API names: gl.Contract, gl.get_contract_at, gl.vm.run_nondet_unsafe,
+# gl.message_raw, and the stage an emitted message waits for, which consensus
+# v0.6 calls "decided" where the first runtime said "accepted". The logic,
+# the prompt and every string are unchanged.
 
 --- contracts/escrow.py
 +++ contracts/v06/escrow.py
@@ -32,7 +34,7 @@
 +        return u64(_seconds(gl.message.raw["datetime"]))
 @@ -442 +445 @@
 -        gl.get_contract_at(self.dispute_contract).emit(on="accepted").adjudicate(
-+        gl.contract.get_at(self.dispute_contract).emit(on="accepted").adjudicate(
++        gl.contract.get_at(self.dispute_contract).emit(on="decided").adjudicate(
 @@ -513 +516 @@
 -        gl.get_contract_at(self.dispute_contract).emit(on="finalized").check_promise(
 +        gl.contract.get_at(self.dispute_contract).emit(on="finalized").check_promise(
