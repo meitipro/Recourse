@@ -38,7 +38,7 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import Chain, load_accounts, load_deployment, select_network  # noqa: E402
+from shared.chain import Chain, load_accounts, load_deployment, pair_paths, select_network  # noqa: E402
 
 PORT = 4502
 ENDPOINT = f"http://localhost:{PORT}"
@@ -77,14 +77,14 @@ def wait_for_endpoint(seconds: int = 20) -> bool:
     return False
 
 
-def contracts_mention_a_rail() -> list[str]:
-    """Any settlement vocabulary in either contract, which would sink the claim."""
+def contracts_mention_a_rail(network: str) -> list[str]:
+    """Any settlement vocabulary in either contract this network runs, which would sink the claim."""
     found = []
-    for name in ("escrow", "dispute"):
-        text = (ROOT / "contracts" / f"{name}.py").read_text(encoding="utf-8").lower()
+    for path in pair_paths(network).values():
+        text = path.read_text(encoding="utf-8").lower()
         for term in ("x402", "settlement_id", "x-payment", "stripe", "card", "rail"):
             if term in text:
-                found.append(f"{name}.py contains {term!r}")
+                found.append(f"{path.relative_to(ROOT).as_posix()} contains {term!r}")
     return found
 
 
@@ -94,7 +94,7 @@ def main() -> int:
     parser.add_argument("--keep", action="store_true", help="leave the endpoint running")
     parser.add_argument("--network", default=None, help="the network to run against; default studionet")
     args = parser.parse_args()
-    select_network(args.network)
+    network = select_network(args.network)
 
     deployment = load_deployment()
     accounts = load_accounts()
@@ -102,7 +102,7 @@ def main() -> int:
     escrow = deployment["escrow"]
 
     rule("1. Neither contract knows what a rail is")
-    findings = contracts_mention_a_rail()
+    findings = contracts_mention_a_rail(network)
     if findings:
         # Reported, not patched. A contract that names a settlement method is
         # the whole claim failing, and hiding it behind a rename would leave the
@@ -111,7 +111,8 @@ def main() -> int:
         for item in findings:
             print(f"    {item}")
         return 1
-    print("  escrow.py and dispute.py mention no settlement method at all")
+    names = " and ".join(p.relative_to(ROOT).as_posix() for p in pair_paths(network).values())
+    print(f"  {names} mention no settlement method at all")
     print("  pay(seller, request) takes no payment reference: the escrow is the settlement")
 
     rule(f"2. A seller settling somewhere else, on port {PORT}")
@@ -153,6 +154,14 @@ def main() -> int:
 
         elapsed = time.time() - started
         pid = report.get("pid", "")
+        # The dispute contract's case row holds the verdict the moment judgment
+        # lands. The escrow's copy arrives with the settlement, which on Studio
+        # Next cannot run: the transfers it sends sit two messages below the
+        # transaction that funds them. So an unsettled verdict is read from the
+        # case, and the record says it did not settle.
+        if pid and not report.get("settled"):
+            case = reader.read_json(deployment["dispute"], "get_case", [pid])
+            report["verdict"] = case.get("verdict_name", report.get("verdict"))
         print(f"  rail negotiated  {report.get('rail', {}).get('scheme')}")
         print(f"  presented        {report.get('settlement_reference')}")
         print(f"  payment          {pid}")
@@ -183,6 +192,8 @@ def main() -> int:
         print("  It decided nothing about what was judged.")
 
         record = {
+            "network": network,
+            "settled": bool(report.get("settled")),
             "rail": "external-settlement",
             "settlement_id": SETTLEMENT_ID,
             "pid": pid,
@@ -192,7 +203,7 @@ def main() -> int:
                        if report.get(k)},
             "contracts_changed": False,
         }
-        out = ROOT / "docs" / "rail-proof.json"
+        out = ROOT / "docs" / ("rail-proof.json" if network == "studionet" else f"rail-proof-{network}.json")
         out.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(f"\n  wrote {out.relative_to(ROOT)}")
         return 0

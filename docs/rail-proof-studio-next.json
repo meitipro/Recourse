@@ -1,0 +1,15 @@
+{
+  "contracts_changed": false,
+  "hashes": {
+    "dispute_hash": "0x945f4343245ddd946756172cf447e04b98a4a4b9090089a1b128f7ea74b7cd45",
+    "pay_hash": "0xa219be9f8e0d4926328396989cb2c42fee768442ee6f97b5ea31105eadfa22c6",
+    "record_hash": "0x7420f114cb530f5ec71b59db58dfa0f52b2f56fd13a895997e958c6c9836e365"
+  },
+  "network": "studio-next",
+  "pid": "p-000005",
+  "rail": "external-settlement",
+  "seconds": 286,
+  "settled": false,
+  "settlement_id": "set_3PxQrLbGk29fVn",
+  "verdict": "not_honored"
+}
