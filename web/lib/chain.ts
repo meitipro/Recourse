@@ -14,12 +14,23 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { createClient } from "genlayer-js";
-import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
+import { studioDevnet, studionet, testnetAsimov, testnetBradbury } from "genlayer-js/chains";
 
 import { loadSnapshot, snapshotEvidence, snapshotRows } from "./snapshot";
 
+/**
+ * Studio Next is the SDK's studioDevnet: studio-next.genlayer.com and
+ * studio-dev.genlayer.com are one network, chain 61997. The organisers name
+ * the first, so its RPC is pinned here rather than taken from the SDK.
+ */
+const STUDIO_NEXT = {
+  ...studioDevnet,
+  rpcUrls: { default: { http: ["https://studio-next.genlayer.com/api"] } },
+} as typeof studioDevnet;
+
 const CHAINS = {
   studionet,
+  "studio-next": STUDIO_NEXT,
   bradbury: testnetBradbury,
   asimov: testnetAsimov,
 } as const;
@@ -27,9 +38,9 @@ const CHAINS = {
 export type NetworkName = keyof typeof CHAINS;
 
 /**
- * studionet, the only deployment, unless the environment names another network
- * that contracts/FROZEN.json has an entry for. A network without one gets the
- * error in loadFeed rather than a guess.
+ * studionet unless the environment names another network that
+ * contracts/FROZEN.json has an entry for, such as studio-next. A network
+ * without one gets the error in loadFeed rather than a guess.
  */
 export const NETWORK: NetworkName =
   (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "studionet";
@@ -72,6 +83,7 @@ export const DISPUTE = process.env.NEXT_PUBLIC_RECOURSE_DISPUTE || frozen.disput
  */
 export const EXPLORER: Record<NetworkName, string> = {
   studionet: "https://explorer-studio.genlayer.com",
+  "studio-next": "https://explorer-studio-dev.genlayer.com",
   bradbury: "https://explorer-bradbury.genlayer.com",
   asimov: "https://explorer-asimov.genlayer.com",
 };
@@ -196,7 +208,8 @@ async function readLive(limit = 50): Promise<FeedData> {
       ...base,
       error:
         `The frozen contracts have never been deployed on ${NETWORK}; contracts/FROZEN.json has no entry for it. ` +
-        "The only deployment is studionet: unset NEXT_PUBLIC_RECOURSE_NETWORK, or set it to studionet.",
+        "The deployments are studionet and studio-next: unset NEXT_PUBLIC_RECOURSE_NETWORK for studionet, " +
+        "or set it to studio-next.",
     };
   }
 

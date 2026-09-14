@@ -9,9 +9,9 @@ const nextConfig = {
   // RPC directly. Studio drops connections in bursts and the retry that fixes
   // that lives on the server side.
   experimental: { serverActions: { bodySizeLimit: "1mb" } },
-  // The page reads four files from OUTSIDE this directory at request time:
-  // the two committed evaluation results, the frozen deployment record and
-  // the recorded snapshot the feed falls back to when the testnet has reset. A
+  // The page reads files from OUTSIDE this directory at request time: the
+  // committed evaluation results of each network, the frozen deployment record
+  // and the recorded snapshot the feed falls back to when the testnet has reset. A
   // hosted function ships only what the build traced, and a plain fs.read of
   // ../eval/results.json is invisible to that trace, so without these lines
   // the live site would say "the evaluation has not been run yet" while the
@@ -21,11 +21,14 @@ const nextConfig = {
     "/": [
       "../eval/results.json",
       "../eval/results-v2.json",
+      "../eval/results.studio-next.json",
+      "../eval/results-v2.studio-next.json",
       "../contracts/FROZEN.json",
       "../evidence/snapshot.json",
+      "../evidence/snapshot-studio-next.json",
       "../eval/cases.json",
     ],
-    "/case/[id]": ["../contracts/FROZEN.json", "../evidence/snapshot.json"],
+    "/case/[id]": ["../contracts/FROZEN.json", "../evidence/snapshot.json", "../evidence/snapshot-studio-next.json"],
   },
 };
 export default nextConfig;

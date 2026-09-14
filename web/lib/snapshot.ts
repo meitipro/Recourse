@@ -8,8 +8,10 @@
  * read first; this file is read second, and whatever is built from it says
  * so, with the time it was recorded. Nothing here ever looks live.
  *
- * evidence/snapshot.json is traced into the hosted function by
- * next.config.mjs, the same way the evaluation results are.
+ * Each network has its own file: studionet's is evidence/snapshot.json, the
+ * one the README has always cited, and every other network's is
+ * evidence/snapshot-<network>.json. Both are traced into the hosted
+ * function by next.config.mjs, the same way the evaluation results are.
  */
 
 import fs from "node:fs";
@@ -56,7 +58,9 @@ let cached: Snapshot | null | undefined;
 export function loadSnapshot(): Snapshot | null {
   if (cached !== undefined) return cached;
   cached = null;
-  for (const candidate of ["../evidence/snapshot.json", "../../evidence/snapshot.json"]) {
+  const network = process.env.NEXT_PUBLIC_RECOURSE_NETWORK || "studionet";
+  const name = network === "studionet" ? "snapshot.json" : `snapshot-${network}.json`;
+  for (const candidate of [`../evidence/${name}`, `../../evidence/${name}`]) {
     try {
       const file = path.join(process.cwd(), candidate);
       if (fs.existsSync(file)) {
