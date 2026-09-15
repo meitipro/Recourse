@@ -207,8 +207,8 @@ def run(site: str, linter: str, mcp: str) -> tuple[list[tuple[str, bool]], list[
         "site renders a case permalink",
         code == 200 and "not honored" in shown,
         f"HTTP {code}",
-        "The case page did not render p-000003: leave NEXT_PUBLIC_RECOURSE_NETWORK unset or studionet, and check the outside root switch, "
-        "which also ships evidence/snapshot.json for when the chain is slow.",
+        "The case page did not render p-000003 on studio-next, the network the site reads unless asked: check the outside root switch, "
+        "which also ships the network's snapshot for when the chain is slow.",
     )
     if code == 200 and RECORDED in shown:
         unread.append("the case page came from the recorded snapshot")
@@ -264,9 +264,9 @@ def blind_spots(key_proven: bool, unread: list[str], mcp_ran: bool, mcp: str) ->
         ))
     if unread:
         spots.append((
-            "the site's own read of studionet",
+            "the site's own read of studio-next",
             f"{' and '.join(unread)}, so this run never saw the server read the chain. Run it again in a minute: "
-            "a page still saying so means the server cannot reach studionet.",
+            "a page still saying so means the server cannot reach studio-next.",
         ))
     if not mcp_ran:
         spots.append(("the MCP server", f"the probe was skipped. Run it by hand: cd recourse-skill/mcp && node test/probe.mjs {mcp}"))

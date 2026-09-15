@@ -344,7 +344,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 424 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 426 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -356,7 +356,7 @@ python eval/run.py --network studio-next --set v2 --runs 3
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
-The 424 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 426 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -423,7 +423,8 @@ for a private key. Stage 2 of the linter needs a model behind the service:
 machine. Without one it says so and offers nothing.
 
 The site is `web/`: `npm install && npm run dev` on port 4500, reading the
-frozen contracts through `web/.env.local`, which `prepare.py` writes.
+frozen contracts from `contracts/FROZEN.json`: Studio Next by default, and
+studionet when the address asks, `/?network=studionet`.
 
 **Hosted.** The site is at https://recourse-site-seven.vercel.app, the promise
 linter at https://recourse-linter.vercel.app/api/lint and the MCP server at

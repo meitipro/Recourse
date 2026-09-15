@@ -8,6 +8,10 @@
  * genlayer-js builds its transport with retryCount 0, so a single dropped
  * connection fails the whole call. Against Studio that is the difference
  * between working and not, so every read here retries.
+ *
+ * Every read names its network. A page reads Studio Next unless its address
+ * asks for another network the freeze record deploys, and lib/networks.ts
+ * holds that rule where the browser can see it too.
  */
 
 import fs from "node:fs";
@@ -23,7 +27,11 @@ import { studioDevnet } from "genlayer-js/chains";
 import { createClient as createClientV05 } from "genlayer-js-v1";
 import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js-v1/chains";
 
+import { DEFAULT_NETWORK, type NetworkName } from "./networks";
 import { loadSnapshot, snapshotEvidence, snapshotRows } from "./snapshot";
+
+export { DEFAULT_NETWORK, networkQuery, settlementMoves } from "./networks";
+export type { NetworkName } from "./networks";
 
 /**
  * Studio Next is the SDK's studioDevnet: studio-next.genlayer.com and
@@ -40,57 +48,71 @@ const CHAINS = {
   "studio-next": STUDIO_NEXT,
   bradbury: testnetBradbury,
   asimov: testnetAsimov,
-} as const;
-
-export type NetworkName = keyof typeof CHAINS;
+} satisfies Record<NetworkName, unknown>;
 
 /**
- * studionet unless the environment names another network that
- * contracts/FROZEN.json has an entry for, such as studio-next. A network
- * without one gets the error in loadFeed rather than a guess.
+ * One deployment of the pair, from contracts/FROZEN.json, which
+ * next.config.mjs traces into the hosted functions. The freeze record is the
+ * only source of addresses: a page can never point at a pair the repository
+ * does not publish, and no environment variable can move it to another.
  */
-export const NETWORK: NetworkName =
-  (process.env.NEXT_PUBLIC_RECOURSE_NETWORK as NetworkName) || "studionet";
-
-/**
- * Whether a verdict's settlement pays out on this network. On Studio Next,
- * consensus v0.6 funds a value transfer only at the root of a transaction's
- * allocation tree, and settle's transfers sit two messages below the one that
- * funds them, so the verdict is written to the case and the escrow keeps the
- * money. shared/chain.py settlement_moves says the same for the scripts.
- */
-export const SETTLEMENT_MOVES = NETWORK !== "studio-next";
-
-/**
- * The frozen pair's addresses on this network, from contracts/FROZEN.json,
- * which next.config.mjs traces into the hosted function. The environment can
- * still override them, but nothing needs to set them: the freeze record is the
- * source, so a deployment can never point at addresses the repository does
- * not publish.
- */
-type FrozenRecord = {
-  deployments?: Record<string, { chain_id: number; escrow: string; dispute: string; explorer?: string }>;
+export type Deployment = {
+  network: NetworkName;
+  chainId: number;
+  escrow: string;
+  dispute: string;
+  /** Where the pair's bytes come from: the freeze commit, or the commit the port was deployed from. */
+  provenance: string;
 };
 
-function readFrozenDeployment(): { escrow: string; dispute: string } {
+type FrozenRecord = {
+  deployments?: Record<
+    string,
+    { chain_id: number; escrow: string; dispute: string; frozen_at_commit?: string; deployed_from_commit?: string }
+  >;
+};
+
+let recorded: Deployment[] | null = null;
+
+/** Every deployment the freeze record holds, in its order. Read once per process. */
+export function deployments(): Deployment[] {
+  if (recorded) return recorded;
+  recorded = [];
   for (const candidate of ["../contracts/FROZEN.json", "../../contracts/FROZEN.json"]) {
     try {
       const file = path.join(process.cwd(), candidate);
-      if (fs.existsSync(file)) {
-        const record = JSON.parse(fs.readFileSync(file, "utf8")) as FrozenRecord;
-        const entry = record.deployments?.[NETWORK];
-        if (entry) return { escrow: entry.escrow, dispute: entry.dispute };
-      }
+      if (!fs.existsSync(file)) continue;
+      const record = JSON.parse(fs.readFileSync(file, "utf8")) as FrozenRecord;
+      recorded = Object.entries(record.deployments ?? {})
+        .filter(([name]) => name in CHAINS)
+        .map(([name, entry]) => ({
+          network: name as NetworkName,
+          chainId: entry.chain_id,
+          escrow: entry.escrow,
+          dispute: entry.dispute,
+          provenance: entry.frozen_at_commit
+            ? `frozen at ${entry.frozen_at_commit}`
+            : entry.deployed_from_commit
+              ? `deployed from ${entry.deployed_from_commit}`
+              : "",
+        }));
+      break;
     } catch {
-      // fall through to the environment
+      // an unreadable record is the same as none: every read then says so by name
     }
   }
-  return { escrow: "", dispute: "" };
+  return recorded;
 }
 
-const frozen = readFrozenDeployment();
-export const ESCROW = process.env.NEXT_PUBLIC_RECOURSE_ESCROW || frozen.escrow;
-export const DISPUTE = process.env.NEXT_PUBLIC_RECOURSE_DISPUTE || frozen.dispute;
+export function deploymentOf(network: NetworkName): Deployment | undefined {
+  return deployments().find((one) => one.network === network);
+}
+
+/** The network a request asked for when the freeze record deploys it, and Studio Next otherwise. */
+export function networkFor(asked: string | string[] | null | undefined): NetworkName {
+  const value = Array.isArray(asked) ? asked[0] : asked;
+  return deployments().find((one) => one.network === value)?.network ?? DEFAULT_NETWORK;
+}
 
 /**
  * The SDK carries genlayer-explorer.vercel.app for studionet, which answers 503
@@ -109,17 +131,19 @@ type Reader = {
   readContract: (options: { address: `0x${string}`; functionName: string; args: unknown[] }) => Promise<unknown>;
 };
 
-let cached: Reader | null = null;
+const readers = new Map<NetworkName, Reader>();
 
-function client(): Reader {
-  if (!cached) {
-    cached = (
-      NETWORK === "studio-next"
+function client(network: NetworkName): Reader {
+  let reader = readers.get(network);
+  if (!reader) {
+    reader = (
+      network === "studio-next"
         ? createClientV06({ chain: STUDIO_NEXT })
-        : createClientV05({ chain: CHAINS[NETWORK] as typeof studionet })
+        : createClientV05({ chain: CHAINS[network] as typeof studionet })
     ) as unknown as Reader;
+    readers.set(network, reader);
   }
-  return cached;
+  return reader;
 }
 
 async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 6): Promise<T> {
@@ -140,9 +164,9 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 6): P
 /** Every argument this feed ever passes is a payment id or a row count. */
 type ReadArg = string | number;
 
-async function read<T = unknown>(address: string, functionName: string, args: ReadArg[] = []) {
+async function read<T = unknown>(network: NetworkName, address: string, functionName: string, args: ReadArg[] = []) {
   return withRetry(functionName, () =>
-    client().readContract({ address: address as `0x${string}`, functionName, args }),
+    client(network).readContract({ address: address as `0x${string}`, functionName, args }),
   ) as Promise<T>;
 }
 
@@ -209,32 +233,38 @@ export type FeedData = {
   };
 };
 
+function emptyFeed(network: NetworkName, error?: string): FeedData {
+  const pair = deploymentOf(network);
+  return {
+    ok: false,
+    source: "live",
+    readAt: Date.now(),
+    network,
+    escrow: pair?.escrow ?? "",
+    dispute: pair?.dispute ?? "",
+    windowSeconds: 0,
+    bondWei: "0",
+    totalPayments: 0,
+    rows: [],
+    ...(error ? { error } : {}),
+  };
+}
+
 /**
  * The chain, read now. Nothing is invented, and an empty chain produces an
  * empty feed rather than a placeholder row; loadFeed decides whether an empty
  * or failed answer is replaced by the recorded snapshot.
  */
-async function readLive(limit = 50): Promise<FeedData> {
-  const base: FeedData = {
-    ok: false,
-    source: "live",
-    readAt: Date.now(),
-    network: NETWORK,
-    escrow: ESCROW,
-    dispute: DISPUTE,
-    windowSeconds: 0,
-    bondWei: "0",
-    totalPayments: 0,
-    rows: [],
-  };
-
-  if (!ESCROW || !DISPUTE) {
+async function readLive(network: NetworkName, limit = 50): Promise<FeedData> {
+  const base = emptyFeed(network);
+  const pair = deploymentOf(network);
+  if (!pair) {
+    const offered = deployments().map((one) => one.network).join(" and ");
     return {
       ...base,
       error:
-        `The frozen contracts have never been deployed on ${NETWORK}; contracts/FROZEN.json has no entry for it. ` +
-        "The deployments are studionet and studio-next: unset NEXT_PUBLIC_RECOURSE_NETWORK for studionet, " +
-        "or set it to studio-next.",
+        `The frozen contracts have never been deployed on ${network}; contracts/FROZEN.json has no entry for it. ` +
+        `The deployments are ${offered || "missing from this build"}.`,
     };
   }
 
@@ -245,10 +275,10 @@ async function readLive(limit = 50): Promise<FeedData> {
     // allows thirty requests a minute, so a dozen rows rate limited the page on
     // an ordinary load and it rendered an error over an empty table. The
     // contract now answers a whole page in a single view.
-    const stats = JSON.parse(await read<string>(ESCROW, "stats"));
-    const payments = JSON.parse(await read<string>(ESCROW, "recent_rows", [limit])) as Payment[];
+    const stats = JSON.parse(await read<string>(network, pair.escrow, "stats"));
+    const payments = JSON.parse(await read<string>(network, pair.escrow, "recent_rows", [limit])) as Payment[];
     const verdicts = JSON.parse(
-      await read<string>(DISPUTE, "recent_verdicts", [limit]),
+      await read<string>(network, pair.dispute, "recent_verdicts", [limit]),
     ) as Case[];
 
     const byPid = new Map(verdicts.map((entry) => [entry.pid, entry]));
@@ -264,7 +294,7 @@ async function readLive(limit = 50): Promise<FeedData> {
     const sellerAddress = rows[0]?.seller;
     if (sellerAddress) {
       try {
-        seller = JSON.parse(await read<string>(ESCROW, "get_seller", [sellerAddress]));
+        seller = JSON.parse(await read<string>(network, pair.escrow, "get_seller", [sellerAddress]));
       } catch {
         seller = undefined;
       }
@@ -306,22 +336,6 @@ function withDeadline<T>(promise: Promise<T>, ms: number, onTimeout: () => T): P
   });
 }
 
-function emptyFeed(error: string): FeedData {
-  return {
-    ok: false,
-    source: "live",
-    readAt: Date.now(),
-    network: NETWORK,
-    escrow: ESCROW,
-    dispute: DISPUTE,
-    windowSeconds: 0,
-    bondWei: "0",
-    totalPayments: 0,
-    rows: [],
-    error,
-  };
-}
-
 /**
  * Every number on the page comes from here: the chain first, the recorded
  * snapshot second, and the result says which.
@@ -332,13 +346,13 @@ function emptyFeed(error: string): FeedData {
  * above the table. A live answer with rows is always what is shown, and a
  * repository without a snapshot behaves as it did before there was one.
  */
-export async function loadFeed(limit = 50): Promise<FeedData> {
-  const live = await withDeadline(readLive(limit), LIVE_DEADLINE_MS, () =>
-    emptyFeed(`the chain did not answer within ${LIVE_DEADLINE_MS / 1000} seconds`),
+export async function loadFeed(limit = 50, network: NetworkName = DEFAULT_NETWORK): Promise<FeedData> {
+  const live = await withDeadline(readLive(network, limit), LIVE_DEADLINE_MS, () =>
+    emptyFeed(network, `the chain did not answer within ${LIVE_DEADLINE_MS / 1000} seconds`),
   );
   if (live.ok && live.totalPayments > 0) return live;
-  const snapshot = loadSnapshot();
-  if (!snapshot || snapshot.network !== NETWORK || snapshot.totals.payments === 0) return live;
+  const snapshot = loadSnapshot(network);
+  if (!snapshot || snapshot.network !== network || snapshot.totals.payments === 0) return live;
   const why = live.ok
     ? "the chain answered with no payments, which is what a reset looks like"
     : `the chain could not be read: ${live.error ?? "no answer"}`;
@@ -351,7 +365,7 @@ export async function loadFeed(limit = 50): Promise<FeedData> {
     recordedAt: snapshot.recorded_at * 1000,
     why,
     readAt: Date.now(),
-    network: NETWORK,
+    network,
     escrow: snapshot.escrow,
     dispute: snapshot.dispute,
     windowSeconds: Number(snapshot.stats?.window_seconds ?? 0),
@@ -383,14 +397,15 @@ export type Evidence = {
   case?: Case;
 };
 
-async function readEvidenceLive(pid: string): Promise<Evidence> {
-  if (!ESCROW) return { ok: false, source: "live", error: "no contract configured" };
+async function readEvidenceLive(network: NetworkName, pid: string): Promise<Evidence> {
+  const pair = deploymentOf(network);
+  if (!pair) return { ok: false, source: "live", error: `no contract deployed on ${network}` };
   try {
-    const payment = JSON.parse(await read<string>(ESCROW, "get_payment", [pid])) as Payment;
+    const payment = JSON.parse(await read<string>(network, pair.escrow, "get_payment", [pid])) as Payment;
     let decided: Case | undefined;
     if (payment.status === 2 || payment.status === 3) {
       try {
-        decided = JSON.parse(await read<string>(DISPUTE, "get_case", [pid])) as Case;
+        decided = JSON.parse(await read<string>(network, pair.dispute, "get_case", [pid])) as Case;
       } catch {
         decided = undefined;
       }
@@ -402,15 +417,15 @@ async function readEvidenceLive(pid: string): Promise<Evidence> {
 }
 
 /** One payment's evidence: the chain first, the snapshot second, and the answer says which. */
-export async function loadEvidence(pid: string): Promise<Evidence> {
-  const live = await withDeadline(readEvidenceLive(pid), LIVE_DEADLINE_MS, () => ({
+export async function loadEvidence(pid: string, network: NetworkName = DEFAULT_NETWORK): Promise<Evidence> {
+  const live = await withDeadline(readEvidenceLive(network, pid), LIVE_DEADLINE_MS, () => ({
     ok: false,
     source: "live" as const,
     error: `the chain did not answer within ${LIVE_DEADLINE_MS / 1000} seconds`,
   }));
   if (live.ok && live.payment) return live;
-  const snapshot = loadSnapshot();
-  const recorded = snapshot && snapshot.network === NETWORK ? snapshotEvidence(snapshot, pid) : null;
+  const snapshot = loadSnapshot(network);
+  const recorded = snapshot && snapshot.network === network ? snapshotEvidence(snapshot, pid) : null;
   if (!snapshot || !recorded) return live;
   return {
     ok: true,

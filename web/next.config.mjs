@@ -29,6 +29,7 @@ const nextConfig = {
       "../eval/cases.json",
     ],
     "/case/[id]": ["../contracts/FROZEN.json", "../evidence/snapshot.json", "../evidence/snapshot-studio-next.json"],
+    "/api/case/[pid]": ["../contracts/FROZEN.json", "../evidence/snapshot.json", "../evidence/snapshot-studio-next.json"],
   },
 };
 export default nextConfig;

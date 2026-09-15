@@ -110,8 +110,9 @@ Ninety seconds. About two hundred words.
   1:12, after the withdraw shot when both are recorded, and the edit keeps
   whichever the running time has room for.
 - **The live site**: the hosted site at `https://recourse-site-seven.vercel.app`
-  reads studionet, so this take uses `http://localhost:4500`, a production
-  build made for Studio Next. `--hosted` is for a take on studionet.
+  reads Studio Next unless its address asks for studionet, the same as
+  `http://localhost:4500`, the production build this take uses. `--hosted`
+  films the hosted site instead.
 - **The withdraw shot** at 1:12, as marked.
 
 The lane in the first shot is disabled under a reduced motion setting and

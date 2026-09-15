@@ -93,7 +93,7 @@ what the record does:
 | "eval/results.json" under every tile | each network's file, one per line | The studio-next row is read from `eval/results.studio-next.json` |
 | studio-next's case 07 chip, "Expected unclear - answered not honored - one run returned no verdict" | the same, ending "one run returned no verdict and the other two disagreed" | Its runs were not_honored, no verdict, unclear. Every chip title is computed from the runs the file records |
 | "from studionet, one of two temporary testnets; ... in evidence/snapshot.json" | the network shown, and that network's snapshot file | studio-next's snapshot is `evidence/snapshot-studio-next.json` |
-| the feed view's four contract cards, studio-next's pair noted "ported from 44111a3" | not built | The site has no separate feed view for them to sit in, and the hero's foot already names this network's pair. `44111a3` is the commit studio-next's pair was deployed from; the pair itself is a port of the frozen one at `ccc470a` |
+| the feed view's four contract cards, studio-next's pair noted "ported from 44111a3" | the four cards, under the feed: the pair being read marked, the other linking to it, and studio-next's noted "deployed from 44111a3" | Both pairs stay published whichever network the page reads. `44111a3` is the commit studio-next's pair was deployed from; the pair itself is a port of the frozen one at `ccc470a` |
 | the header's wide bar or menu button chosen by a viewport width held in state | two classes and a media query | The server's HTML is then right on a phone, rather than drawing the wide bar there until the script runs |
 | the closing line: the index, the eyebrow and a rule stacked above it, a rule below | a closing panel centred on both axes: the eyebrow between two rules, the line in larger type with "missing" underlined in the dashed accent of the gap section's Missing row, the mark as a seal, and the hero's lane along its foot with the middle tick in the accent | Asked for by the owner on 2026-09-15: centred, and more formal |
 | each tile's network and figure held on one line | the same, with the figure wrapping under the network's name when the tile is too narrow for both | Measured: at 1280 pixels wide the figure ran 24 pixels past its row, at 1366 eight. Wrapped, nothing runs past at any width measured from 320 to 1440 |
@@ -143,6 +143,16 @@ Every state says "Recorded on chain: no", before a verdict and beside it, and
 both are literals rather than values so no later edit can flip them.
 `tests/direct/test_linter.py` holds the route to never logging and the panel to
 both disclaimers.
+
+Four more came off it on 2026-09-15, each a sentence or a snippet the panel
+cannot back:
+
+| the clerk artboard showed | the site shows | why |
+| --- | --- | --- |
+| an Integration section: `recourse.serve`, `recourse.pay`, `res.satisfies` and `res.contest` | nothing; the section is cut | No such wrapper exists in either repository, and a snippet that reads as a shipped SDK is a claim with no code behind it |
+| "Judge one case, or run the whole committed set" | one case at a time | The set mode was never built, for the reason above |
+| "a single model in your browser" | one model on the linter service, running judge() from `contracts/dispute.py` unchanged | The browser runs nothing; `/api/clerk` does |
+| the curl call titled "Read the judge prompt your agent will be held to", "version pinned per case" | the same call, titled for what it does: it puts a case to the judge | The call returns a verdict, not the prompt, and nothing pins a prompt version per case |
 
 The two call to action blocks in the how and evaluation sections are still off
 the page. They return when the clerk answers on the live site, which needs the

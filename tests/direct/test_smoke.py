@@ -30,7 +30,7 @@ def test_the_blind_spots_name_what_a_run_left_unproven_and_nothing_it_proved():
     assert "not hosted" in everything["the bot"] and "key of its own" in everything["the bot"]
     little = dict(module.blind_spots(key_proven=False, unread=["the feed came from the recorded snapshot"], mcp_ran=False, mcp="https://m/api/mcp"))
     assert "stage 2" in little["the model key"] and "verdict" in little["the model key"]
-    assert "recorded snapshot" in little["the site's own read of studionet"]
+    assert "recorded snapshot" in little["the site's own read of studio-next"]
     assert little["the MCP server"].endswith("node test/probe.mjs https://m/api/mcp")
 
 

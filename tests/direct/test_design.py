@@ -9,6 +9,7 @@ check by hand found there.
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 
@@ -138,3 +139,45 @@ def test_the_boot_screen_names_only_what_the_page_did():
     assert "Loading Source Serif 4, Work Sans, Geist Mono" in code
     for family in ("Source Serif 4", "Work Sans"):
         assert re.search(r'@font-face \{[^}]*font-family: "' + family + r'";', CSS), f"no face answers to {family!r}"
+
+
+def test_the_page_reads_studio_next_unless_its_address_asks():
+    """
+    The hackathon requires Studio Next, and the hosted site opened on studionet
+    because the network came from an environment variable that defaulted to
+    it. The default is now a literal and no environment variable can move the
+    network or an address. The footer names the network being read and every
+    other deployment, and both pairs of addresses stay published.
+    """
+    web = ROOT / "web"
+    networks = (web / "lib" / "networks.ts").read_text(encoding="utf-8")
+    assert 'export const DEFAULT_NETWORK: NetworkName = "studio-next";' in networks
+    for name in ("lib/networks.ts", "lib/chain.ts", "lib/snapshot.ts", "app/page.tsx", "components/site/LaneCanvas.tsx"):
+        source = (web / name).read_text(encoding="utf-8")
+        assert "NEXT_PUBLIC_RECOURSE" not in source, f"web/{name} takes the network or an address from the environment"
+    page = (web / "app" / "page.tsx").read_text(encoding="utf-8")
+    assert "networkFor((await searchParams).network)" in page, "the page no longer reads the network its address asks for"
+    assert "<ContractCards pairs={pairs} reading={network} />" in page, "one pair of addresses is no longer published"
+    footer = (web / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
+    assert "Reading {network} / chain" in footer and "Also deployed on" in footer
+    frozen = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
+    assert {"studio-next", "studionet"} <= set(frozen["deployments"]), "a network the page offers has no deployment"
+
+
+def test_the_site_shows_no_api_the_repository_does_not_have():
+    """
+    The clerk's Integration section showed recourse.serve, recourse.pay,
+    res.satisfies and res.contest: a wrapper nobody built, and the worst kind
+    of claim, because it read as a shipped SDK. It is cut. So are the clerk's
+    set mode, which was never built, and "in your browser", where the judge
+    runs on the server. The curl call to /api/clerk is real and stays.
+    """
+    web = ROOT / "web"
+    for path in [*web.joinpath("components").rglob("*.tsx"), *web.joinpath("app").rglob("*.tsx")]:
+        text = path.read_text(encoding="utf-8")
+        for name in ("recourse.serve", "recourse.pay", ".satisfies(", ".contest("):
+            assert name not in text, f"{path.relative_to(ROOT).as_posix()} shows {name}, which nothing in the repository provides"
+    clerk = (web / "components" / "site" / "Clerk.tsx").read_text(encoding="utf-8")
+    for claim in ("run the whole committed set", "in your browser", "pinned per case"):
+        assert claim not in clerk, f"the clerk says {claim!r} again, and the panel does not do it"
+    assert "curl -s -X POST" in clerk and "/api/clerk" in clerk, "the real curl call to the clerk is gone"

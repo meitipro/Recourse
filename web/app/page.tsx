@@ -18,6 +18,7 @@ import path from "node:path";
 import { Suspense, cache } from "react";
 
 import Boot from "@/components/site/Boot";
+import ContractCards from "@/components/site/ContractCards";
 import FeedPanel from "@/components/site/FeedPanel";
 import FeedSkeleton from "@/components/site/FeedSkeleton";
 import Clerk from "@/components/site/Clerk";
@@ -34,7 +35,7 @@ import {
 } from "@/components/site/Sections";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
-import { DISPUTE, ESCROW, EXPLORER, NETWORK, SETTLEMENT_MOVES, loadFeed } from "@/lib/chain";
+import { EXPLORER, deploymentOf, deployments, loadFeed, networkFor, settlementMoves, type NetworkName } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,7 +54,6 @@ type Case = {
 type Frozen = {
   window_seconds?: number;
   bond_wei?: string;
-  deployments?: Record<string, { chain_id: number }>;
 };
 
 /**
@@ -67,8 +67,8 @@ type SettlementTotals = {
   committee?: number | null;
 };
 
-/** One chain read per request, shared by the hero and the feed. */
-const getFeed = cache(() => loadFeed(50));
+/** One chain read per request and network, shared by the hero and the feed. */
+const getFeed = cache((network: NetworkName) => loadFeed(50, network));
 
 function readOutside<T>(names: string[]): T | null {
   // next.config.mjs traces these into the hosted function. Without that a
@@ -87,8 +87,8 @@ function readOutside<T>(names: string[]): T | null {
   return null;
 }
 
-async function HeroWithTotals() {
-  const data = await getFeed();
+async function HeroWithTotals({ network, networks }: { network: NetworkName; networks: NetworkName[] }) {
+  const data = await getFeed(network);
   // Decided means a committee ruled, and a ruling is a case. On studionet
   // every case settled, so this is also every settled dispute. On Studio Next a
   // case is judged and the escrow keeps the money, and the count still shows
@@ -104,9 +104,11 @@ async function HeroWithTotals() {
   const known = data.ok;
   return (
     <Hero
-      escrow={data.escrow || ESCROW}
-      dispute={data.dispute || DISPUTE}
-      explorer={EXPLORER[NETWORK]}
+      network={network}
+      networks={networks}
+      escrow={data.escrow}
+      dispute={data.dispute}
+      explorer={EXPLORER[network]}
       stats={{
         payments: known ? String(data.totalPayments || data.rows.length) : "-",
         disputes: known ? String(data.rows.filter((row) => row.status === 2 || row.status === 3).length) : "-",
@@ -117,26 +119,30 @@ async function HeroWithTotals() {
   );
 }
 
-async function LiveFeed() {
-  const data = await getFeed();
+async function LiveFeed({ network }: { network: NetworkName }) {
+  const data = await getFeed(network);
   return <FeedPanel data={data} limit={6} />;
 }
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ network?: string | string[] }> }) {
+  // Studio Next, unless the address asks for another deployment the freeze
+  // record holds: /?network=studionet. Everything below that reads a chain
+  // reads this one, and the footer names it.
+  const network = networkFor((await searchParams).network);
+  const pairs = deployments();
+  const names = pairs.map((one) => one.network);
+  const pair = deploymentOf(network);
   const frozen = readOutside<Frozen>(["contracts/FROZEN.json"]);
-  // Every network the freeze record names, in its order. The evaluation gives
-  // each one its own column, never merged and never averaged. The hero, the
-  // feed and the settlement timings are this build's network alone, so a page
-  // built for one network never prints another's chain state.
-  const networks = Object.keys(frozen?.deployments ?? {});
-  const columns: EvaluationColumn[] = (networks.length ? networks : [NETWORK]).flatMap((name) => {
+  // The evaluation gives every deployment its own column, never merged and
+  // never averaged, whichever network the rest of the page is reading.
+  const columns: EvaluationColumn[] = (names.length ? names : [network]).flatMap((name) => {
     // studionet's files carry no suffix, and any other network's are named for it.
     const suffix = name === "studionet" ? "" : `.${name}`;
     const results = readOutside<Results>([`eval/results${suffix}.json`]);
     const heldOut = readOutside<Results>([`eval/results-v2${suffix}.json`]);
     return results && heldOut ? [{ network: name, results, heldOut }] : [];
   });
-  const snapshotName = NETWORK === "studionet" ? "snapshot.json" : `snapshot-${NETWORK}.json`;
+  const snapshotName = network === "studionet" ? "snapshot.json" : `snapshot-${network}.json`;
   const settlement: SettlementTotals =
     readOutside<{ totals?: SettlementTotals }>([`evidence/${snapshotName}`])?.totals ?? {};
   // The clerk offers the committed cases to load. They are the answer key, so
@@ -150,7 +156,6 @@ export default async function Page() {
     timing: one.timing,
     expected: one.expected,
   }));
-  const chainId = frozen?.deployments?.[NETWORK]?.chain_id ?? 0;
 
   return (
     // The canvas's page wrapper: it carries the type, the colour and the
@@ -168,7 +173,7 @@ export default async function Page() {
     >
       {/* The boot screen steps through what this render read: the case ids
           and the networks the freeze record names. */}
-      <Boot cases={cases.map((one) => one.id)} networks={networks} />
+      <Boot cases={cases.map((one) => one.id)} networks={names} />
       <SiteHeader />
       <main id="top">
         {/*
@@ -179,14 +184,16 @@ export default async function Page() {
         <Suspense
           fallback={
             <Hero
-              escrow={ESCROW}
-              dispute={DISPUTE}
-              explorer={EXPLORER[NETWORK]}
+              network={network}
+              networks={names}
+              escrow={pair?.escrow ?? ""}
+              dispute={pair?.dispute ?? ""}
+              explorer={EXPLORER[network]}
               stats={{ payments: "-", disputes: "-", upheld: "-", median: "-" }}
             />
           }
         >
-          <HeroWithTotals />
+          <HeroWithTotals network={network} networks={names} />
         </Suspense>
 
         <GapSection />
@@ -196,15 +203,18 @@ export default async function Page() {
           bondWei={frozen?.bond_wei ?? null}
           moneyBackSeconds={settlement.median_dispute_to_money_back_seconds ?? null}
           finalitySeconds={settlement.median_finality_seconds ?? null}
-          network={NETWORK}
-          settlementMoves={SETTLEMENT_MOVES}
+          network={network}
+          settlementMoves={settlementMoves(network)}
         />
 
         <div id="feed">
           <FeedSectionShell>
             <Suspense fallback={<FeedSkeleton />}>
-              <LiveFeed />
+              <LiveFeed network={network} />
             </Suspense>
+            {/* Both pairs of addresses stay on the page whichever network is
+                being read: the two networks are the strongest evidence here. */}
+            <ContractCards pairs={pairs} reading={network} />
           </FeedSectionShell>
         </div>
 
@@ -217,7 +227,7 @@ export default async function Page() {
         <LimitsSection committee={settlement.committee ?? null} />
         <ClosingSection />
       </main>
-      <SiteFooter network={NETWORK} chainId={chainId} />
+      <SiteFooter network={network} deployments={pairs.map((one) => ({ network: one.network, chainId: one.chainId }))} />
     </div>
   );
 }

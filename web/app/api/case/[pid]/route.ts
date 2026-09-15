@@ -5,14 +5,15 @@
  * case's verdict and reason but not the strings, which are the long part. The
  * drawer promises "the three frozen strings the validators were given", so it
  * asks here when a contested row is opened: one case, read from the chain the
- * way the case page reads it, and nothing else about the request is kept.
+ * way the case page reads it, on the network the page is reading, and nothing
+ * else about the request is kept.
  */
 
-import { loadEvidence, toPid } from "@/lib/chain";
+import { loadEvidence, networkFor, toPid } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ pid: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ pid: string }> }) {
   const { pid: raw } = await params;
   let pid: string;
   try {
@@ -20,10 +21,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pid
   } catch {
     return Response.json({ error: "not a payment id or citation" }, { status: 400 });
   }
-  const evidence = await loadEvidence(pid);
+  const network = networkFor(new URL(request.url).searchParams.get("network"));
+  const evidence = await loadEvidence(pid, network);
   if (!evidence.ok || !evidence.case) {
     return Response.json({ error: evidence.error ?? "no case for this payment" }, { status: 404 });
   }
-  const { promise, request, response, timing } = evidence.case;
-  return Response.json({ pid, source: evidence.source, promise, request, response, timing });
+  const { promise, request: asked, response, timing } = evidence.case;
+  return Response.json({ pid, network, source: evidence.source, promise, request: asked, response, timing });
 }

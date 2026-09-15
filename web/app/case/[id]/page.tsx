@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EXPLORER, NETWORK, loadEvidence, toCitation, toPid, SETTLEMENT_MOVES } from "@/lib/chain";
+import { EXPLORER, loadEvidence, networkFor, networkQuery, settlementMoves, toCitation, toPid } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,8 @@ const VERDICT = ["pending", "honored", "not_honored", "unclear"] as const;
  * /case/RC-2026-0003 and /case/p-000003 are the same page. The citation is
  * derived off chain from the payment id and the year the verdict landed, so
  * the site, the bot and the MCP server print the same one without a contract
- * change. Everything on this page is read from the chain when it is opened.
+ * change. Everything on this page is read from the chain when it is opened,
+ * on Studio Next unless the address asks for studionet: ?network=studionet.
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -31,20 +32,28 @@ function gen(wei: string) {
   return `${value / 10n ** 18n}.${String((value % 10n ** 18n) / 10n ** 16n).padStart(2, "0")} GEN`;
 }
 
-export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CasePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ network?: string | string[] }>;
+}) {
   const { id } = await params;
+  const network = networkFor((await searchParams).network);
+  const home = `/${networkQuery(network)}#feed`;
   let pid: string;
   try {
     pid = toPid(decodeURIComponent(id));
   } catch {
     notFound();
   }
-  const evidence = await loadEvidence(pid);
+  const evidence = await loadEvidence(pid, network);
   if (!evidence.ok || !evidence.payment) {
     return (
       <main className="case-page">
         <p className="eyebrow">
-          <Link href="/#feed">Recourse</Link> / case
+          <Link href={home}>Recourse</Link> / case
         </p>
         <h1 className="case-title">{pid}</h1>
         <div className="notice bad">The chain could not be read. {evidence.error}</div>
@@ -63,17 +72,17 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   return (
     <main className="case-page">
       <p className="eyebrow">
-        <Link href="/#feed">Recourse</Link> / case
+        <Link href={home}>Recourse</Link> / case
       </p>
       <h1 className="case-title">{citation ?? pid}</h1>
       <p className="case-sub">
-        {citation ? `${pid} on ${NETWORK}` : `never disputed, so there is no case; payment ${pid} on ${NETWORK}`}
+        {citation ? `${pid} on ${network}` : `never disputed, so there is no case; payment ${pid} on ${network}`}
       </p>
       {evidence.source === "snapshot" ? (
         <div className="notice recorded" role="status">
           <strong>Recorded snapshot, not a live read.</strong> Taken{" "}
           {evidence.recordedAt ? new Date(evidence.recordedAt).toUTCString() : "at an unrecorded time"} from{" "}
-          {NETWORK}, a temporary testnet; {evidence.why}. Everything on this page is what the chain
+          {network}, a temporary testnet; {evidence.why}. Everything on this page is what the chain
           held then.
         </div>
       ) : null}
@@ -83,7 +92,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <dd>
           {status}
           {payment.status === 2 && decided
-            ? SETTLEMENT_MOVES
+            ? settlementMoves(network)
               ? " (verdict written, money moves on finalization)"
               : " (verdict written; on this runtime the settlement does not move)"
             : ""}
@@ -137,7 +146,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               : "Read from chain when this page was opened."}{" "}
             The verdict is the committee&apos;s; the reason is the leader&apos;s display string and was never
             compared.{" "}
-            <a href={`${EXPLORER[NETWORK]}`} rel="noreferrer">
+            <a href={`${EXPLORER[network]}`} rel="noreferrer">
               Explorer
             </a>
           </p>

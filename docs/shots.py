@@ -169,10 +169,10 @@ async def main() -> int:
             # A photograph of the chain is true the day it is taken and goes
             # false with nothing failing. What it shows is written beside it,
             # so tests/direct/test_snapshot.py can hold it to the snapshot.
-            # The network the page was built for, as its footer prints it, so
+            # The network the page read, as its footer names it, so
             # the test holds the picture to that network's snapshot.
             network = await tab.js(
-                "(() => { const m = document.body.innerText.match(/(studionet|studio-next)\\s*\\/\\s*chain\\s*\\d+/i);"
+                "(() => { const m = document.body.innerText.match(/Reading\\s+(studionet|studio-next)\\s*\\/\\s*chain\\s*\\d+/i);"
                 " return m ? m[1].toLowerCase() : null; })()"
             )
             if not network:

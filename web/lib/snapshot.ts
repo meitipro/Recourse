@@ -52,26 +52,26 @@ export type Snapshot = {
   cases: Case[];
 };
 
-let cached: Snapshot | null | undefined;
+const cached = new Map<string, Snapshot | null>();
 
-/** The snapshot, or null when the repository has none. Read once per process. */
-export function loadSnapshot(): Snapshot | null {
-  if (cached !== undefined) return cached;
-  cached = null;
-  const network = process.env.NEXT_PUBLIC_RECOURSE_NETWORK || "studionet";
+/** A network's snapshot, or null when the repository has none for it. Read once per process. */
+export function loadSnapshot(network: string): Snapshot | null {
+  if (cached.has(network)) return cached.get(network) ?? null;
+  let found: Snapshot | null = null;
   const name = network === "studionet" ? "snapshot.json" : `snapshot-${network}.json`;
   for (const candidate of [`../evidence/${name}`, `../../evidence/${name}`]) {
     try {
       const file = path.join(process.cwd(), candidate);
       if (fs.existsSync(file)) {
-        cached = JSON.parse(fs.readFileSync(file, "utf8")) as Snapshot;
+        found = JSON.parse(fs.readFileSync(file, "utf8")) as Snapshot;
         break;
       }
     } catch {
       // an unreadable snapshot is the same as none: the live answer stands
     }
   }
-  return cached;
+  cached.set(network, found);
+  return found;
 }
 
 /** The feed's rows from the snapshot, newest first, the way the contract's recent_rows answers. */

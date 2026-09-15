@@ -4,10 +4,11 @@
  * The hero's lane, ported from the design canvas.
  *
  * A stream of payments scrolls past as hairlines. Every so often one grows,
- * is marked CONTESTED, then travels back and fades as RETURNED. On a network
- * where the settlement does not move, Studio Next, it fades as JUDGED instead:
- * a lane that said RETURNED there would show a refund that runtime cannot pay.
- * It is the product in one gesture, and it is the only animation on the site.
+ * is marked CONTESTED, then travels back and fades with the word the hero
+ * hands it: RETURNED where a verdict's settlement pays out, JUDGED on Studio
+ * Next, where it does not. A lane that said RETURNED there would show a refund
+ * that runtime cannot pay. It is the product in one gesture, and it is the only
+ * animation on the site.
  *
  * Under prefers-reduced-motion, and anywhere a 2d context is unavailable, the
  * canvas removes itself and the static fallback behind it shows instead. The
@@ -15,9 +16,6 @@
  */
 
 import { useEffect, useRef } from "react";
-
-/** What the returning tick says. The build's network is inlined here at build time. */
-export const RETURN_LABEL = process.env.NEXT_PUBLIC_RECOURSE_NETWORK === "studio-next" ? "JUDGED" : "RETURNED";
 
 let markStarted: () => void = () => {};
 
@@ -30,7 +28,14 @@ export const laneStarted: Promise<void> = new Promise((resolve) => {
   markStarted = resolve;
 });
 
-export default function LaneCanvas({ onFallback }: { onFallback: (fallback: boolean) => void }) {
+export default function LaneCanvas({
+  onFallback,
+  returnLabel,
+}: {
+  onFallback: (fallback: boolean) => void;
+  /** What the returning tick says, for the network the page reads. */
+  returnLabel: string;
+}) {
   const ref = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -125,7 +130,7 @@ export default function LaneCanvas({ onFallback }: { onFallback: (fallback: bool
       } else if (event.phase === "return") {
         const p = Math.min(1, elapsed / 900);
         h = 150;
-        label = RETURN_LABEL;
+        label = returnLabel;
         shift = (width < 720 ? 110 : 220) * ease(p);
         alpha = p > 0.6 ? 1 - (p - 0.6) / 0.4 : 1;
         labelAlpha = alpha;
@@ -180,7 +185,7 @@ export default function LaneCanvas({ onFallback }: { onFallback: (fallback: bool
       cancelAnimationFrame(raf);
       observer.disconnect();
     };
-  }, [onFallback]);
+  }, [onFallback, returnLabel]);
 
   return <canvas id="rc-lane" ref={ref} style={{ display: "block", width: "100%", height: "100%" }} />;
 }
