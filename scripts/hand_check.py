@@ -306,6 +306,8 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
      lambda s: s.feed_caption("disputes opened")),
     (r"read from the chain when the page opened", CAPTION[2], 0, "the snapshot docs/images/feed.json names",
      lambda s: s.feed_caption("not honored")),
+    (r"dispute to verdict written", r"37", 0, "evidence/snapshot-studio-next.json",
+     lambda s: f"totals.median_dispute_to_case_seconds = {s.next['totals'].get('median_dispute_to_case_seconds')}"),
     (r"dispute to verdict", r"67", 0, "evidence/snapshot.json", lambda s: f"totals.median_dispute_to_verdict_seconds = {s.totals['median_dispute_to_verdict_seconds']}"),
     (r"dispute to money back", r"100", 0, "evidence/snapshot.json", lambda s: f"totals.median_dispute_to_money_back_seconds = {s.totals['median_dispute_to_money_back_seconds']}"),
     (r"finalizes a median of", r"30", 0, "evidence/snapshot.json", lambda s: f"totals.median_finality_seconds = {s.totals['median_finality_seconds']}"),

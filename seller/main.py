@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import pathlib
 import sys
 import threading
@@ -207,7 +208,9 @@ class Handler(BaseHTTPRequestHandler):
                         "accepts": [
                             {
                                 "scheme": rail["scheme"],
-                                "network": "genlayer-studionet",
+                                # The network the run is on: demo.py selects it
+                                # before starting this process, which inherits it.
+                                "network": f"genlayer-{os.environ.get('RECOURSE_NETWORK', 'studionet')}",
                                 "description": rail["description"],
                                 "header": rail["header"],
                             }

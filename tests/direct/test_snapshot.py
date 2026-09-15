@@ -346,6 +346,20 @@ def test_the_settlement_timings_the_site_and_readme_state_are_the_chains_own():
     assert f"dispute to money back {totals['median_dispute_to_money_back_seconds']} seconds" in flat
     assert f"finalizes a median of {totals['median_finality_seconds']} seconds" in flat
     assert f"committee {totals['committee']} nodes per round" in flat
+    # Studio Next's settles all fail, so the verdict is written to the case and
+    # never reaches the escrow, and its one timing is the dispute to the
+    # adjudication's acceptance. It heads the README's timing block, because
+    # the site reads Studio Next unless its address asks for studionet.
+    studio = SNAPSHOTS["studio-next"]
+    linked = {t["hash"]: t for t in studio["transactions"]}
+    to_case = [
+        t["accepted_at"] - _epoch(linked[t["triggered_by"]]["created_at"])
+        for t in studio["transactions"]
+        if t["method"] == "adjudicate" and t["execution"] == "SUCCESS" and t.get("accepted_at") and t.get("triggered_by") in linked
+    ]
+    assert to_case, "the Studio Next snapshot predates its verdict timing; re-take it"
+    assert studio["totals"]["median_dispute_to_case_seconds"] == median(to_case)
+    assert f"dispute to verdict written {studio['totals']['median_dispute_to_case_seconds']} seconds" in flat
     # And typed nowhere on the site.
     sections = (ROOT / "web" / "components" / "site" / "Sections.tsx").read_text(encoding="utf-8")
     for typed in ("about 90 seconds", "half a minute", "committee of five", "ten model calls"):

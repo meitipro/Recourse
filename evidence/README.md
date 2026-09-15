@@ -1,8 +1,9 @@
 # Evidence that survives a testnet reset
 
-studionet keeps state for a while and then does not. Every number the
-repository publishes was measured against the frozen pair there, so what the
-chain held is written down here, read back from the chain rather than typed.
+Both testnets keep state for a while and then do not. Every number the
+repository publishes was measured against one of the two pairs, the frozen one
+on studionet or the port on Studio Next, so what each chain held is written
+down here, read back from the chain rather than typed.
 
 ## snapshot.json
 

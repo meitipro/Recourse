@@ -58,21 +58,26 @@ and says so on camera rather than cutting around it.
 [Settlement on Studio Next](#settlement-on-studio-next) gives the reason; the
 money coming back, described above, happens on studionet.
 
-![The live feed on Studio Next, read from the chain when the page opened: nine payments, six disputes opened, three of five not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
+![The live feed on Studio Next, the network the site opens on, read from the chain when the page opened: eleven payments, seven disputes opened, four of six not honored, and the latest payments beneath, each contested one a case that links to its own page](docs/images/feed.png)
 
 ![The promise linter refusing. The promise typed into it is the one payment p-000014 ran on chain on studionet, and stage 1 answers without asking a model, as the line under the verdict says: not judgeable, because nothing in it is measurable](docs/images/linter.png)
 
-Measured on studionet, as medians over every dispute on the public record in
-`evidence/snapshot.json`, and printed by the demo for its own run:
+Measured as medians over every dispute on each network's public record, in
+`evidence/snapshot-studio-next.json` and `evidence/snapshot.json`, and the
+demo prints its own two lines for each run. On Studio Next, the network the
+site reads, the verdict is written to the case and the settlement does not
+move; on studionet the settlement completes:
 
 ```
-dispute to verdict      67 seconds
-dispute to money back   100 seconds
+Studio Next   dispute to verdict written   37 seconds
+              dispute to money back        does not move on this runtime
+studionet     dispute to verdict           67 seconds
+              dispute to money back        100 seconds
 ```
 
-The verdict reaches the escrow first. The money follows once the settlement
-transaction finalizes, and a transaction here finalizes a median of 30
-seconds after its committee accepts it. That ordering is deliberate:
+On studionet the verdict reaches the escrow first. The money follows once the
+settlement transaction finalizes, and a transaction there finalizes a median
+of 30 seconds after its committee accepts it. That ordering is deliberate:
 **judgment starts on acceptance and money moves on finalization.** Paying out
 on acceptance would be faster and would mean a successful appeal could reverse
 a verdict after the money had already gone. The honest number for "money back"
@@ -621,8 +626,8 @@ never the same question as succeeded.
 
 ### If the testnet has reset
 
-studionet keeps state for a while and then does not. Every chain number above
-was measured against the frozen pair there, so what the chain held is also written
+Both testnets keep state for a while and then do not. Every chain number above
+names the network it was measured on, so what each chain held is also written
 down in this repository, read back from the chain rather than typed:
 
 - [evidence/snapshot.json](evidence/snapshot.json): every payment row with its

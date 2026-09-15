@@ -7,9 +7,9 @@ survives a testnet reset.
     python scripts/snapshot.py --network studio-next        # evidence/snapshot-studio-next.json, receipts/studio-next/
     python scripts/snapshot.py --contested p-000003 --honest p-000001
 
-studionet's persistence is temporary. Every number this repository publishes
-was measured against the frozen pair there, and the feed, the case pages and
-the README's transaction links all point at it. This script reads everything
+Both testnets' persistence is temporary. Every number this repository
+publishes was measured against one of the two pairs, and the feed, the case
+pages and the README's transaction links all point at them. This script reads everything
 back and writes it down: every payment row with its frozen strings, every
 case, every transaction the two contracts ever received or sent, decoded to
 its method and the payment it concerns, the four refusals, the totals the feed
@@ -238,6 +238,10 @@ def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
       on finalization, over both such hops, judgment to settle and settle to
       payout
     - committee: how many validators each adjudication started with
+    - dispute to verdict written: from the dispute to the adjudication being
+      accepted, the moment the case holds the committee's verdict. On Studio
+      Next it is the only one of these that exists: every settle there fails,
+      so the verdict is written to the case and never reaches the escrow
     """
 
     def epoch(value: str) -> float:
@@ -250,6 +254,7 @@ def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
     verdict = {p["pid"]: p["verdict_name"] for p in payments}
     by_hash = {e["hash"]: e for e in transactions}
     to_verdict: list[float] = []
+    to_case: list[float] = []
     money_back: list[float] = []
     finality: list[float] = []
     committee: list[float] = []
@@ -259,6 +264,8 @@ def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
         if judged.get("validators"):
             committee.append(judged["validators"])
         opener = by_hash.get(judged.get("triggered_by") or "")
+        if opener and judged.get("accepted_at"):
+            to_case.append(judged["accepted_at"] - epoch(opener["created_at"]))
         settle = next(
             (
                 e for e in transactions
@@ -279,6 +286,7 @@ def settlement_timings(transactions: list[dict], payments: list[dict]) -> dict:
             money_back.append(min(epoch(e["created_at"]) for e in payouts) - epoch(opener["created_at"]))
     return {
         "median_dispute_to_verdict_seconds": median(to_verdict),
+        "median_dispute_to_case_seconds": median(to_case),
         "median_dispute_to_money_back_seconds": median(money_back),
         "median_finality_seconds": median(finality),
         "committee": median(committee),
@@ -605,7 +613,8 @@ def check(chain: Chain, escrow: str, dispute: str, out: pathlib.Path) -> int:
     for line in drift:
         print(f"  {line}")
     print("\nEvery published total comes from the snapshot, so re-take it before publishing:")
-    print("  python scripts/snapshot.py")
+    network = recorded.get("network", "studionet")
+    print("  python scripts/snapshot.py" + ("" if network == "studionet" else f" --network {network}"))
     print("Then check the numbers in README.md and eval/RESULTS.md against it.")
     return 1
 

@@ -2,7 +2,7 @@
  * The recorded snapshot: what the chain held about the frozen contracts when
  * scripts/snapshot.py last ran. Server side only.
  *
- * studionet's persistence is temporary. A judge who opens the feed after a
+ * Both testnets' persistence is temporary. A judge who opens the feed after a
  * reset would otherwise find an empty table or a dash that never resolves,
  * and both would misrepresent a deployment that ran. The chain is always
  * read first; this file is read second, and whatever is built from it says

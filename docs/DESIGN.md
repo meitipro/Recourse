@@ -519,8 +519,9 @@ the feed.
 - **Eyebrow**: "Recourse / case", the first word a link back to the feed on
   the home page.
 - **Title**: the citation when a case exists, else the payment id.
-- **Subtitle**: "{pid} on studionet", or "never disputed, so there is no case;
-  payment {pid} on studionet".
+- **Subtitle**: "{pid} on {network}", or "never disputed, so there is no case;
+  payment {pid} on {network}", the network the page reads: Studio Next unless
+  its address asks for studionet.
 - **Facts** as a definition list: status (with "verdict written, money moves on
   finalization" or "money moved" appended where true), verdict (or "not
   contested"), amount, bond, paid, responded, decided, buyer, seller.

@@ -189,7 +189,7 @@ def slow_down(bucket, chat_id: int, cost: float) -> str:
             f"/seller only read the chain and cost less. Try again in about {wait} seconds."
         )
     return (
-        "Slow down: this chat is reading faster than the shared studionet node allows. The limit protects "
+        "Slow down: this chat is reading faster than the shared Studio node allows. The limit protects "
         f"that node, which rate limits every reader at once. Try again in about {wait} seconds."
     )
 
