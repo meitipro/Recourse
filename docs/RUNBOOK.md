@@ -105,7 +105,7 @@ Run this after the last cycle that touched the chain, and read the answer:
 
 ```bash
 .venv\Scripts\python scripts\snapshot.py --network studio-next --check
-python scripts/snapshot.py --check      # studionet, from an interpreter whose genlayer-py reads it
+python scripts/snapshot.py --network studionet --check   # from an interpreter whose genlayer-py reads it
 ```
 
 Each compares its network's snapshot, its payment count and verdict

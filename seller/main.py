@@ -210,7 +210,7 @@ class Handler(BaseHTTPRequestHandler):
                                 "scheme": rail["scheme"],
                                 # The network the run is on: demo.py selects it
                                 # before starting this process, which inherits it.
-                                "network": f"genlayer-{os.environ.get('RECOURSE_NETWORK', 'studionet')}",
+                                "network": f"genlayer-{os.environ.get('RECOURSE_NETWORK', 'studio-next')}",
                                 "description": rail["description"],
                                 "header": rail["header"],
                             }

@@ -9,8 +9,8 @@ afterwards.
 
 Two networks are covered. studionet runs the frozen pair in `contracts/`;
 Studio Next runs the port in `contracts/v06/`. The site reads Studio Next
-unless its address asks for studionet. Every script defaults to studionet and
-takes `--network studio-next`. Reading studionet needs genlayer-py 0.16.3 and
+unless its address asks for studionet. Every script defaults to Studio Next
+and takes `--network studionet`. Reading studionet needs genlayer-py 0.16.3 and
 reading Studio Next needs 0.19.0rc2, which is what `requirements.txt` pins;
 the two cannot share one environment, so here the Studio Next commands run
 from `.venv`, which has 0.19.0rc2, and the studionet ones from the system
@@ -61,7 +61,7 @@ five API names, `gl.Contract`, `gl.get_contract_at`, `gl.vm.run_nondet_unsafe`,
 ## 3. The deployments are these files
 
 ```bash
-python scripts/prepare.py && python scripts/verify.py
+python scripts/prepare.py --network studionet && python scripts/verify.py --network studionet
 .venv\Scripts\python scripts\prepare.py --network studio-next
 .venv\Scripts\python scripts\verify.py --network studio-next
 ```
@@ -94,7 +94,7 @@ the deployment matches this repository
 ## 4. The recorded evidence still describes the chain
 
 ```bash
-python scripts/snapshot.py --check
+python scripts/snapshot.py --network studionet --check
 .venv\Scripts\python scripts\snapshot.py --network studio-next --check
 ```
 
@@ -216,10 +216,12 @@ curl -s -X POST https://recourse-site-seven.vercel.app/api/clerk \
 ```
 
 It answered HTTP 503 with
-`{"error":"no model is configured, so judgeability cannot be asked"}`. Once a
-key is set on the linter's host, stage 2 and the clerk answer with a verdict
-instead; until then neither can be checked, and the clerk's panel on the site
-shows that error.
+`{"error":"a judgment needs a model, and none is configured. Compare against the committed expectation instead: every committed case carries one, in eval/cases.json"}`.
+That is the judge's sentence rather than the linter's, because a judgment is
+a different question from judgeability. The clerk's panel on the site shows
+it with the verdict a loaded committed case expects, to compare against
+instead. Once a key is set on the linter's host, stage 2 and the clerk answer
+with a verdict; until then neither can be checked.
 
 The MCP server:
 
@@ -286,4 +288,4 @@ none comes.
   file if any mutant escapes, and it takes long enough that it was not run
   again.
 - The linter's stage 2 and the clerk were not run with a model: the hosted
-  linter has no key, and both answer `no model is configured`.
+  linter has no key, and each says so in its own sentence.

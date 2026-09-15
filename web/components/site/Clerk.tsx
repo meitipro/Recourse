@@ -213,10 +213,18 @@ export default function Clerk({ cases }: { cases: Case[] }) {
     expectedColor: matched === null ? "#7C8798" : matched ? "#4ADE80" : "#F87171",
     // The route answers "not configured" only when the build has no
     // LINTER_URL, so that is the one case that gets the offline sentence.
-    // Anything else is a real failure and says so, with a way to retry.
+    // A judge with no model says so in its own words, and the panel points at
+    // what can still be compared without one: the verdict the loaded case was
+    // committed with. Anything else is a real failure and says so, with a way
+    // to retry.
     errorText: error.includes("not configured")
       ? "This copy of the site has no judge behind it, so the clerk cannot rule here. The feed and the evaluation do not need one."
-      : error,
+      : error.startsWith("a judgment needs a model")
+        ? "A judgment needs a model, and none is configured here. Compare against the committed expectation instead: " +
+          (expectation
+            ? `case ${loaded} expects ${expectation.replace("_", " ")}.`
+            : "load a committed case and this names the verdict it expects.")
+        : error,
     curlCmd,
     copyCurl: () => {
       navigator.clipboard?.writeText(curlCmd);

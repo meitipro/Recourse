@@ -3,9 +3,8 @@
 The recording, driven from one window: docs/SCRIPT.md's shots, in its order.
 
     python scripts/record.py --dry-run             walk every shot, run nothing
-    python scripts/record.py                       the take
+    python scripts/record.py                       the take, on Studio Next, which SCRIPT.md films
     python scripts/record.py --linter --withdraw   with those OPTIONAL shots
-    python scripts/record.py --network studio-next the take on Studio Next
 
 This window is Terminal A. Each shot's label is printed before it runs, in
 block figures a screen capture can read. A terminal shot waits for the line
@@ -416,7 +415,7 @@ class Take:
             field("OPTIONAL", ", ".join(flags) if flags else "none in this run; each has its own flag")
             field("Terminal B", f"opens at 0:36 in {stopwatch_mechanism()}")
             field("the site", self.site)
-            field("network", self.args.network or "studionet, the default")
+            field("network", self.args.network or "studio-next, the default")
         self.before()
         later: dict[str, list[tuple[Shot, list[Step]]]] = {}
         for time_range, steps in PLAN:
@@ -626,7 +625,7 @@ def main() -> int:
     parser.add_argument("--clerk", action="store_true", help="OPTIONAL: the clerk at 1:12; needs a key behind the linter")
     parser.add_argument("--withdraw", action="store_true", help="OPTIONAL: the withdraw at 1:12, once the honest window has closed")
     parser.add_argument("--hosted", action="store_true", help=f"the live site at {HOSTED_SITE} instead of {LOCAL_SITE}")
-    parser.add_argument("--network", default=None, help="the network the take runs on, passed to demo.py and withdraw.py; default studionet")
+    parser.add_argument("--network", default=None, help="the network the take runs on, passed to demo.py and withdraw.py; default studio-next")
     args = parser.parse_args()
 
     text = SCRIPT_MD.read_text(encoding="utf-8")

@@ -190,7 +190,7 @@
     "window_seconds": 300
   },
   "network": "studionet",
-  "note": "What the chain held about the frozen contracts on studionet when this was recorded. studionet is a temporary testnet. The site reads the chain first and this file second, and says which one it is showing. Regenerate with: python scripts/snapshot.py",
+  "note": "What the chain held about the frozen contracts on studionet when this was recorded. studionet is a temporary testnet. The site reads the chain first and this file second, and says which one it is showing. Regenerate with: python scripts/snapshot.py --network studionet",
   "payments": [
     {
       "amount": "4000000000000000000",

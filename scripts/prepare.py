@@ -2,8 +2,8 @@
 """
 Get a clean clone ready to run the demo against a deployed pair of contracts.
 
-    python scripts/prepare.py --network studio-next     # the ported pair on Studio Next
-    python scripts/prepare.py                           # the frozen pair on studionet
+    python scripts/prepare.py                           # the ported pair on Studio Next
+    python scripts/prepare.py --network studionet       # the frozen pair on studionet
 
 Deploys nothing. The contracts live at one address pair per network under
 `deployments` in contracts/FROZEN.json, each running one of the two recorded
@@ -60,7 +60,7 @@ def write_feed_env(record: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--network", default=None, help="the network to run against; default studionet")
+    parser.add_argument("--network", default=None, help="the network to run against; default studio-next")
     args = parser.parse_args()
     network = select_network(args.network)
 

@@ -17,7 +17,7 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from linter.judgment import dry_run, timing_now  # noqa: E402
+from linter.judgment import answer, dry_run, timing_now  # noqa: E402
 from linter.service import ModelUnavailable, NoModel  # noqa: E402
 
 
@@ -67,8 +67,14 @@ def test_two_malformed_answers_are_an_error_not_a_verdict():
 
 
 def test_no_model_raises():
-    with pytest.raises(ModelUnavailable):
+    with pytest.raises(ModelUnavailable, match="^a judgment needs a model, and none is configured"):
         dry_run("P", "R", "X", timing="T", model=NoModel())
+    # The judge's own sentence rather than the linter's, pointing at what can
+    # still be compared without a model. The clerk's panel keys on its start.
+    status, body = answer({"promise": "P", "request": "R", "response": "X"}, model=NoModel())
+    assert status == 503
+    assert body["error"].startswith("a judgment needs a model") and "eval/cases.json" in body["error"]
+    assert "judgeability" not in body["error"]
 
 
 def test_the_timing_block_names_now_as_both_stamps():

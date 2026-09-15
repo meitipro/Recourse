@@ -151,7 +151,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--network", default=None,
-        help="a network from shared/chain.py; default studionet. Each network runs "
+        help="a network from shared/chain.py; default studio-next. Each network runs "
         "the recorded pair shared/chain.py assigns it, deployed once",
     )
     parser.add_argument(

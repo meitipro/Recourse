@@ -337,6 +337,10 @@ def test_the_offline_sentence_follows_linter_url_alone():
     # Each panel gives the offline sentence on its own route's words and no other.
     assert 'error.includes("linter not configured")' in hero and "has no linter behind it" in hero
     assert 'error.includes("not configured")' in panel and "has no judge behind it" in panel
+    # A judge with no model answers in its own words, and the panel points the
+    # reader at the verdict the loaded case was committed with instead.
+    assert 'error.startsWith("a judgment needs a model")' in panel
+    assert "Compare against the committed expectation instead" in panel
 
 
 def test_the_promise_limit_a_reader_sees_is_the_contracts():
@@ -414,7 +418,7 @@ def test_the_judge_answers_one_shape_and_says_when_there_is_no_model():
     assert answer({**case, "response": " "}, model=Agreeing())[0] == 400
     assert answer({**case, "promise": "x" * 4001}, model=Agreeing())[0] == 413
     code, body = answer(case, model=NoModel())
-    assert code == 503 and "no model" in body["error"]
+    assert code == 503 and body["error"].startswith("a judgment needs a model, and none is configured")
 
 
 def test_the_hosted_judge_function_answers_the_way_vercel_serves_it(monkeypatch):
@@ -451,7 +455,7 @@ def test_the_hosted_judge_function_answers_the_way_vercel_serves_it(monkeypatch)
     try:
         case = {"promise": "Returns the spot price within five seconds.", "request": "GET /quote", "response": '{"price": 1}'}
         code, body = post(case)
-        assert code == 503 and "no model" in body["error"]
+        assert code == 503 and body["error"].startswith("a judgment needs a model, and none is configured")
         code, body = post({**case, "request": ""})
         assert code == 400 and "request" in body["error"]
     finally:

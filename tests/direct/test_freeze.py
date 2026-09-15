@@ -131,8 +131,8 @@ def test_load_deployment_refuses_a_record_for_another_network(monkeypatch, tmp_p
 
 def test_two_deployments_each_running_its_own_pair(monkeypatch):
     monkeypatch.delenv("RECOURSE_NETWORK", raising=False)
-    assert chain.network_name() == "studionet"
-    assert chain.DEFAULT_NETWORK == "studionet"
+    assert chain.network_name() == "studio-next"
+    assert chain.DEFAULT_NETWORK == "studio-next"
     assert list(RECORD["deployments"]) == ["studionet", "studio-next"]
     assert chain.deployed_networks() == ["studio-next", "studionet"]
     # studionet runs the first pair and names none; Studio Next runs the port.

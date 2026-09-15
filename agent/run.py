@@ -11,7 +11,8 @@ time it runs. The judgment belongs to the validators and never to this agent: if
 the agent were smart, the demo would be showing an agent's opinion rather than
 the network's verdict, and a judge would notice.
 
-No human is involved between paying and being refunded.
+No human is involved between paying and the verdict, nor on studionet between
+the verdict and the refund.
 """
 
 from __future__ import annotations

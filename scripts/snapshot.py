@@ -3,8 +3,8 @@
 Record what the chain holds about the frozen contracts, so the evidence
 survives a testnet reset.
 
-    python scripts/snapshot.py                              # evidence/snapshot.json and evidence/receipts/
-    python scripts/snapshot.py --network studio-next        # evidence/snapshot-studio-next.json, receipts/studio-next/
+    python scripts/snapshot.py                              # evidence/snapshot-studio-next.json, receipts/studio-next/
+    python scripts/snapshot.py --network studionet          # evidence/snapshot.json and evidence/receipts/
     python scripts/snapshot.py --contested p-000003 --honest p-000001
 
 Both testnets' persistence is temporary. Every number this repository
@@ -563,7 +563,7 @@ def check(chain: Chain, escrow: str, dispute: str, out: pathlib.Path) -> int:
     A chain that cannot be reached is not a drift. It says so and exits zero.
     """
     if not out.exists():
-        print(f"{out.name} does not exist yet. Run: python scripts/snapshot.py")
+        print(f"{out.name} does not exist yet. Run the same command without --check to write it.")
         return 1
     recorded = json.loads(out.read_text(encoding="utf-8"))
     totals = recorded["totals"]
@@ -613,8 +613,9 @@ def check(chain: Chain, escrow: str, dispute: str, out: pathlib.Path) -> int:
     for line in drift:
         print(f"  {line}")
     print("\nEvery published total comes from the snapshot, so re-take it before publishing:")
-    network = recorded.get("network", "studionet")
-    print("  python scripts/snapshot.py" + ("" if network == "studionet" else f" --network {network}"))
+    # Named outright, so the hint holds whichever network is the default. A
+    # snapshot from before the network was recorded is studionet's.
+    print(f"  python scripts/snapshot.py --network {recorded.get('network', 'studionet')}")
     print("Then check the numbers in README.md and eval/RESULTS.md against it.")
     return 1
 
@@ -625,7 +626,7 @@ def main() -> int:
         "--check", action="store_true",
         help="compare the recorded snapshot against the chain and report drift, writing nothing",
     )
-    parser.add_argument("--network", default=None, help="the network to read; default studionet")
+    parser.add_argument("--network", default=None, help="the network to read; default studio-next")
     parser.add_argument(
         "--out", default=None,
         help="where to write the snapshot; default evidence/snapshot.json on studionet and "
@@ -663,7 +664,7 @@ def main() -> int:
         "note": (
             f"What the chain held about the {kind} contracts on {network} when this was recorded. "
             f"{network} is a temporary testnet. The site reads the chain first and this file second, and "
-            "says which one it is showing. Regenerate with: python scripts/snapshot.py"
+            f"says which one it is showing. Regenerate with: python scripts/snapshot.py --network {network}"
         ),
         "network": network,
         "chain_id": KNOWN_CHAIN_IDS.get(network, deployment.get("chain_id")),

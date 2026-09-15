@@ -228,8 +228,10 @@ def _external_node(recipient: str) -> dict:
 FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
 
 
-#: The network everything defaults to when no --network is given.
-DEFAULT_NETWORK = "studionet"
+#: The network everything defaults to when no --network is given: Studio Next,
+#: the network the site reads. --network studionet runs the first pair, where
+#: a verdict's settlement moves.
+DEFAULT_NETWORK = "studio-next"
 
 
 def network_name() -> str:
@@ -261,7 +263,8 @@ def sdk_problem(name: str) -> str | None:
     if name in V06_NETWORKS and _studio_devnet is None:
         return (
             f"{name} runs consensus v0.6, which needs genlayer-py 0.19.0rc2; this interpreter "
-            f"has {SDK_VERSION}. Install requirements.txt in a virtual environment and run from it."
+            f"has {SDK_VERSION}. Install requirements.txt in a virtual environment and run from it, "
+            "or pass --network studionet, which this interpreter can read."
         )
     return None
 

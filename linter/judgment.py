@@ -30,12 +30,21 @@ import types
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tests" / "direct"))
 
-from linter.service import Model, ModelUnavailable, default_model  # noqa: E402
+from linter.service import Model, ModelUnavailable, NoModel, default_model  # noqa: E402
 
 #: The longest any one of the three strings may be. The escrow caps the
 #: response at 4000 and refuses more, so nothing longer could ever have been
 #: judged on chain and there is no point asking a model about it.
 MAX_STRING = 4000
+
+#: What a judgment answers with no model to ask. "Judgeability cannot be
+#: asked" is the linter's sentence, about its own question. A judgment asks a
+#: different one, and without a model what is left to compare against is the
+#: verdict each committed case was committed with.
+NO_MODEL = (
+    "a judgment needs a model, and none is configured. Compare against the committed "
+    "expectation instead: every committed case carries one, in eval/cases.json"
+)
 
 
 def _load() -> tuple[types.ModuleType, object]:
@@ -70,8 +79,10 @@ def dry_run(
     returns on chain. Raises ModelUnavailable with no model and ValueError when
     the model never produced a usable verdict.
     """
-    module, gl = _load()
     asked = model if model is not None else default_model()
+    if isinstance(asked, NoModel):
+        raise ModelUnavailable(NO_MODEL)
+    module, gl = _load()
     gl.nondet.exec_prompt = lambda prompt, **_config: asked.ask(prompt)
     try:
         return module.judge(promise, request, response, timing or timing_now())
