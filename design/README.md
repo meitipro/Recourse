@@ -95,6 +95,7 @@ what the record does:
 | "from studionet, one of two temporary testnets; ... in evidence/snapshot.json" | the network shown, and that network's snapshot file | studio-next's snapshot is `evidence/snapshot-studio-next.json` |
 | the feed view's four contract cards, studio-next's pair noted "ported from 44111a3" | not built | The site has no separate feed view for them to sit in, and the hero's foot already names this network's pair. `44111a3` is the commit studio-next's pair was deployed from; the pair itself is a port of the frozen one at `ccc470a` |
 | the header's wide bar or menu button chosen by a viewport width held in state | two classes and a media query | The server's HTML is then right on a phone, rather than drawing the wide bar there until the script runs |
+| the closing line: the index, the eyebrow and a rule stacked above it, a rule below | a closing panel centred on both axes: the eyebrow between two rules, the line in larger type with "missing" underlined in the dashed accent of the gap section's Missing row, the mark as a seal, and the hero's lane along its foot with the middle tick in the accent | Asked for by the owner on 2026-09-15: centred, and more formal |
 | each tile's network and figure held on one line | the same, with the figure wrapping under the network's name when the tile is too narrow for both | Measured: at 1280 pixels wide the figure ran 24 pixels past its row, at 1366 eight. Wrapped, nothing runs past at any width measured from 320 to 1440 |
 
 ## Two things the first port got wrong

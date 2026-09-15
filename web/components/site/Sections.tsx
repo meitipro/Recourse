@@ -303,18 +303,43 @@ export function LimitsSection({ committee }: { committee: number | null }) {
 }
 
 export function ClosingSection() {
-  // The second export centred this: the index, the eyebrow and a short rule
-  // stacked above the line, and a second rule under it.
+  // The page's last word, set as a closing panel centred on both axes: the
+  // index and the eyebrow between two rules, the line itself in the largest
+  // serif on the page after the hero, and the mark as a seal. Along its foot
+  // runs the hero's lane, a tick for every payment, and the one in the middle
+  // stands up in the accent: the payment somebody contested. "missing" is
+  // underlined in the dashed accent the gap section gives its Missing row.
+  const rule = { height: "1px", background: "#263048", flex: "0 0 auto" } as React.CSSProperties;
   return (
     <>
-    <section style={{ borderTop: "1px solid #1B2130", borderBottom: "1px solid #1B2130", background: "#0C1018" } as React.CSSProperties}>
-      <div style={{ position: "relative", padding: "clamp(52px, 7vw, 96px) clamp(20px, 5vw, 100px)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", overflow: "hidden" } as React.CSSProperties}>
-        <div style={{ font: "500 clamp(26px, 2.8vw, 40px)/1 'Geist Mono', ui-monospace, monospace", letterSpacing: "-0.02em", color: "#7C8798" } as React.CSSProperties}>08</div>
-        <div style={{ marginTop: "12px", font: "500 10.5px 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.16em", textTransform: "uppercase", color: "#22D3EE" } as React.CSSProperties}>In one line</div>
-        <div style={{ width: "108px", height: "1px", marginTop: "14px", background: "#1B2130" } as React.CSSProperties}></div>
-        <p style={{ marginTop: "clamp(26px, 4vw, 40px)", fontFamily: "'Source Serif 4', Georgia, serif", fontWeight: "600", fontSize: "clamp(28px, 5.4vw, 62px)", lineHeight: "1.08", letterSpacing: "-0.03em", color: "#EEF3F8" } as React.CSSProperties}>The rail is finished.<br /><em style={{ fontStyle: "italic", color: "#EEF3F8" } as React.CSSProperties}>The right is missing.</em></p>
-        <div style={{ width: "108px", height: "1px", marginTop: "clamp(26px, 4vw, 38px)", background: "#263048" } as React.CSSProperties}></div>
+    <section aria-labelledby="rc-closing" style={{ position: "relative", overflow: "hidden", borderTop: "1px solid #1B2130", borderBottom: "1px solid #1B2130", background: "radial-gradient(ellipse 70% 60% at 50% 42%, #0E1119 0%, #0A0C12 72%)", minHeight: "clamp(460px, 76svh, 780px)", display: "grid", placeItems: "center", padding: "clamp(72px, 10vw, 128px) clamp(20px, 5vw, 100px) clamp(116px, 13vw, 156px)" } as React.CSSProperties}>
+      <div style={{ position: "relative", zIndex: "1", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: "100%" } as React.CSSProperties}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", font: "500 10.5px 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.3em", textTransform: "uppercase" } as React.CSSProperties}>
+          <span aria-hidden="true" style={{ ...rule, width: "clamp(20px, 6vw, 64px)" } as React.CSSProperties}></span>
+          <span style={{ color: "#7C8798" } as React.CSSProperties}>08</span>
+          <span aria-hidden="true" style={{ ...rule, width: "14px" } as React.CSSProperties}></span>
+          <span style={{ color: "#22D3EE" } as React.CSSProperties}>In one line</span>
+          <span aria-hidden="true" style={{ ...rule, width: "clamp(20px, 6vw, 64px)" } as React.CSSProperties}></span>
+        </div>
+        <h2 id="rc-closing" style={{ marginTop: "clamp(34px, 5vw, 56px)", fontFamily: "'Source Serif 4', Georgia, serif", fontWeight: "500", fontSize: "clamp(40px, 7.6vw, 108px)", lineHeight: "1.02", letterSpacing: "-0.035em", color: "#EEF3F8" } as React.CSSProperties}>
+          <span style={{ display: "block", textWrap: "balance" } as React.CSSProperties}>The rail is finished.</span>
+          <span style={{ display: "block", marginTop: "0.08em", fontStyle: "italic", textWrap: "balance" } as React.CSSProperties}>The right is <span className="rc-missing">missing</span>.</span>
+        </h2>
+        <div aria-hidden="true" style={{ marginTop: "clamp(40px, 6vw, 64px)", display: "flex", alignItems: "center", gap: "16px" } as React.CSSProperties}>
+          <span style={{ ...rule, width: "clamp(40px, 8vw, 88px)" } as React.CSSProperties}></span>
+          <span style={{ width: "40px", height: "40px", borderRadius: "50%", border: "1px solid rgba(34,211,238,0.5)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: "'Source Serif 4', Georgia, serif", fontStyle: "italic", fontWeight: "600", fontSize: "16px", color: "#EEF3F8" } as React.CSSProperties}>R</span>
+          <span style={{ ...rule, width: "clamp(40px, 8vw, 88px)" } as React.CSSProperties}></span>
+        </div>
       </div>
+      <svg aria-hidden="true" width="100%" height="96" style={{ position: "absolute", left: "0", right: "0", bottom: "0", display: "block" } as React.CSSProperties}>
+        <defs>
+          <pattern id="rc-closing-ticks" x="50%" y="0" width={56} height={96} patternUnits="userSpaceOnUse">
+            <rect x="0" y={68} width={1} height={28} fill="rgba(70,84,104,0.6)"></rect>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="100%" height={96} fill="url(#rc-closing-ticks)"></rect>
+        <rect x="50%" y={24} width={1} height={72} fill="#22D3EE"></rect>
+      </svg>
     </section>
     </>
   );

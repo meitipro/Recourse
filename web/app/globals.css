@@ -1130,3 +1130,42 @@ a:hover {
 @media (prefers-reduced-motion: reduce) {
   .rc-boot { display: none !important; }
 }
+
+/* The closing line's "missing", underlined in the dashed accent the gap
+   section gives its Missing row. Where the browser can tie an animation to
+   scrolling, the dashes draw in from the left as the line comes into view;
+   everywhere else, and under reduced motion, they are simply there. The
+   global reduced motion rule above does not reach a pseudo element, so this
+   one says it again. */
+
+.rc-missing { position: relative; }
+
+.rc-missing::after {
+  content: "";
+  position: absolute;
+  left: 0.02em;
+  right: 0;
+  bottom: 0;
+  height: 0.04em;
+  min-height: 2px;
+  background-image: linear-gradient(to right, #22D3EE 58%, transparent 58%);
+  background-size: 0.28em 100%;
+  background-repeat: repeat-x;
+}
+
+@keyframes rc-missing-draw {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@supports (animation-timeline: view()) {
+  .rc-missing::after {
+    animation: rc-missing-draw linear both;
+    animation-timeline: view();
+    animation-range: entry 40% cover 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-missing::after { animation: none !important; clip-path: none; }
+}
