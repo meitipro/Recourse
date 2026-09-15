@@ -11,7 +11,8 @@
 > buttons of 5.1 and the table of 6.3, describe that earlier build. The
 > canvas in `design/Recourse.dc.html` now decides those, and
 > `design/README.md` lists every place the port departed from the canvas and
-> why.
+> why. The canvas was exported again on 2026-09-15 and its changes carried in
+> by hand, and the same file lists where that second port departed from it.
 
 What the page at `web/` must contain, how each part behaves, and the rules
 that decide every colour, word and button. Written from the site as built, so a
@@ -40,8 +41,10 @@ who will click every number. Nothing is decorative. Every element either
 carries information from the chain or explains how to read it.
 
 **Every number is read, never typed.** Feed tiles come from the contract's
-views. Evaluation figures come from `eval/results.json` and
-`eval/results-v2.json`. The settlement window comes from `contracts/FROZEN.json`.
+views. Evaluation figures come from each network's own files,
+`eval/results.json` and `eval/results-v2.json` for studionet and the same
+names with `.studio-next` for studio-next, one column per network, never
+merged. The settlement window comes from `contracts/FROZEN.json`.
 There is no number on the page that a person keyed in, and the one exception
 is the three failure cards, which are illustrations and are labelled as such by
 being example JSON, not chain rows.
@@ -129,7 +132,9 @@ and reads as neither. See 6.4.
 | `--mono` | Geist Mono, ui-monospace | every number, every address, every hash, every label, every button, eyebrows, pills, badges |
 
 Fonts are self hosted through `@fontsource`. Google Fonts is not reachable from
-the build machine and must not be reintroduced.
+the build machine and must not be reintroduced. The ported sections name
+'Source Serif 4' and 'Work Sans' inline, as the canvas does, and
+`globals.css` answers those two names with the same files the tokens load.
 
 Body is 15px, line height 1.6. Paragraph measure is capped at 62ch. `h1` is
 `clamp(2rem, 6vw, 3.4rem)`; `h2` is `clamp(1.3rem, 3.2vw, 1.75rem)`; headline
@@ -239,18 +244,20 @@ specified in section 6.
 Eyebrow "Verdict quality". `h2` "The answers were committed one commit before
 the judge."
 
-Four headline numbers in a grid, all the same size: accuracy, stability,
-landed on unclear, and the held out set. Each is `N` large with `/M` small and
-dim beside it, and a label in muted text under it. Then a grid of eighteen case
-chips, `01` to `18`, each green when the judge matched the committed answer and
-red when it did not, with a title attribute naming the expected verdict and
-whether the case was stable. A caption states how many runs each case took, on
-which network, and points at `eval/RESULTS.md`.
+Four headline tiles, all the same size: accuracy, stability, landed on
+unclear, and the held out set. Each gives every network its own row, `N` large
+with `/M` smaller beside it, and names under it the files its numbers came
+from. Then a row of case chips for each network, `01` to `18`, each green when
+the judge matched the committed answer and red when it did not, with a title
+naming the expected verdict, what the case landed on, and whether its runs
+agreed. A caption states how many runs each case took and points at
+`eval/RESULTS.md`.
 
 Then the **two sets notice**, in a dashed box: "Two sets, always together."
 followed by which set the question was narrowed against and which was held
-out, and the one miss where the judge has the better argument than the answer
-key and is still counted as a miss.
+out, the miss both networks share, where the judge has the better argument
+than the answer key and is still counted as a miss, and how many cases the two
+networks landed on the same verdict.
 
 If `results.json` is absent the whole section shows one notice: "The
 evaluation has not been run against this deployment yet. The number goes here
@@ -260,8 +267,9 @@ when it has, whatever it is." No placeholder number, ever.
 
 Eyebrow "Scope". `h2` "What this is."
 
-Three short paragraphs: one adjudication is ten model calls and studionet
-charges nothing, so the page states work rather than a price; a vague promise
+Three short paragraphs: one adjudication is ten model calls, studionet charges
+nothing for them and studio-next a fee in testnet GEN, so the page states work
+rather than a price; a vague promise
 produces a vague verdict and the system says so through unclear; Recourse is a
 candidate for the arbiter slot, not a competitor to an escrow.
 
@@ -356,7 +364,7 @@ of `live` or `snapshot`, and the page prints it. There are exactly four states:
 | --- | --- | --- | --- |
 | loading | four dashes | "Reading the chain", then "Studio answers in one to ten seconds; the page is not waiting on anything else. If it has not answered in twenty, the recorded snapshot takes over and says so." | none |
 | live | numbers | a notice, "Chain, reading the escrow contract", then "The table below reads payments, statuses and elapsed times straight from the escrow contract when this page was opened. It renders its skeleton first and its empty state second, and never a row that did not happen." | "Click a row for the three frozen strings the validators were given" |
-| snapshot | numbers from the snapshot | the recorded notice, "Recorded snapshot, not a live read", then "Taken {time} from studionet, a temporary testnet; {why}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json." | "From the recorded snapshot; the chain was tried at {time}." |
+| snapshot | numbers from the snapshot | the recorded notice, "Recorded snapshot, not a live read", then "Taken {time} from {network}, one of two temporary testnets; {why}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/{file}.", where the file is `snapshot.json` on studionet and `snapshot-{network}.json` elsewhere | "From the recorded snapshot; the chain was tried at {time}." |
 | failed, no snapshot | four dashes | a dashed red notice, "The chain could not be read", then "{error} No snapshot covers this network, so nothing is shown rather than something invented. Attempted at {time}." | none |
 
 A live answer with rows always wins. The snapshot takes over only when the

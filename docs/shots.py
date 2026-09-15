@@ -81,6 +81,14 @@ class Tab:
         print(f"  wrote {path.name}  {box['width']:.0f}x{box['height']:.0f} css px at {scale}x")
 
 
+# The boot screen covers the page for its first second or so, and a picture
+# taken under it is a picture of the boot screen.
+BOOT_GONE = (
+    "(() => { const boot = document.getElementById('rc-boot');"
+    " return !boot || getComputedStyle(boot).display === 'none'; })()"
+)
+
+
 # React tracks its own value on the input node, so assigning .value directly is
 # ignored on the next render. This is the documented way round it.
 SET_VALUE = """
@@ -151,6 +159,7 @@ async def main() -> int:
             )
             print(f"  feed tiles read: {' '.join(value for _, value in tiles)}")
             await asyncio.sleep(1.5)
+            await tab.wait_for(BOOT_GONE, "the boot screen to leave", seconds=15)
             box = await tab.js(
                 "(() => { const r = document.getElementById('feed').getBoundingClientRect();"
                 " return { x: r.x + window.scrollX, y: r.y + window.scrollY,"
@@ -222,6 +231,7 @@ async def main() -> int:
             )
             print(f"  panel says: {reason[:120]}")
             await asyncio.sleep(1.0)
+            await tab.wait_for(BOOT_GONE, "the boot screen to leave", seconds=15)
             # The panel from the form down, not from the wordmark: the
             # picture is of the linter refusing, and the hero's headline is a
             # different picture.

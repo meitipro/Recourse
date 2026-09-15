@@ -128,7 +128,7 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
           edge: "solid rgba(217,165,65,0.55)",
           tone: "#D9A441",
           title: "Recorded snapshot, not a live read",
-          body: `Taken ${data.recordedAt ? new Date(data.recordedAt).toUTCString() : "at an unrecorded time"} from ${data.network}, a temporary testnet; ${data.why ?? "the chain did not answer"}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json.`,
+          body: `Taken ${data.recordedAt ? new Date(data.recordedAt).toUTCString() : "at an unrecorded time"} from ${data.network}, one of two temporary testnets; ${data.why ?? "the chain did not answer"}. Every row below is what the chain held then, and every transaction hash behind it is in evidence/${data.network === "studionet" ? "snapshot.json" : `snapshot-${data.network}.json`}.`,
           foot: `From the recorded snapshot; the chain was tried at ${new Date(data.readAt).toUTCString()}.`,
         }
       : {

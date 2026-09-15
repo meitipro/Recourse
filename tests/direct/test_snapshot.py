@@ -428,16 +428,29 @@ def test_the_feed_image_and_its_caption_are_of_the_totals_the_snapshot_keeps():
 
 def test_the_evaluation_prose_on_the_site_is_held_to_what_it_describes():
     """
-    The evaluation section names the one miss and the two commits that put the
-    answer key before the judge. Neither is a count a template can read, so the
-    miss is held to results.json and the commits to git's own history, where a
-    clone has history to read.
+    The evaluation section explains case 12, the miss both networks share, and
+    names the two commits that put the answer key before the judge. Neither is
+    a count a template can read, so the explanation is held to both networks'
+    results and the commits to git's own history, where a clone has history to
+    read. The page shows that paragraph only when the rows agree with it; this
+    holds the rows to the paragraph it shows today.
     """
     sections = (ROOT / "web" / "components" / "site" / "Sections.tsx").read_text(encoding="utf-8")
-    results = json.loads((ROOT / "eval" / "results.json").read_text(encoding="utf-8"))
-    misses = [row["id"] for row in results["rows"] if not row["correct"]]
-    assert misses == ["12"], f"the site explains case 12 as the one miss, and results.json records {misses}"
-    assert "The one miss in the first set is case 12," in sections
+    columns = {
+        network: json.loads(
+            (ROOT / "eval" / f"results{'' if network == 'studionet' else '.' + network}.json").read_text(encoding="utf-8")
+        )
+        for network in NETWORKS
+    }
+    # One sentence gives every network's runs per case, so they must be one number.
+    assert len({results["runs"] for results in columns.values()}) == 1, "the networks ran different numbers of runs per case"
+    misses = {network: [row["id"] for row in results["rows"] if not row["correct"]] for network, results in columns.items()}
+    shared = [case for case in misses["studionet"] if all(case in missed for missed in misses.values())]
+    assert shared == ["12"], f"the site explains case 12 as the miss both networks share, and the results record {shared}"
+    for network, results in columns.items():
+        twelve = next(row for row in results["rows"] if row["id"] == "12")
+        assert twelve["stable"] and set(twelve["observed"]) == {"not_honored"}, f"{network} did not read case 12 as not honored every run"
+    assert "Both networks read case 12 as not honored" in sections
     shallow = subprocess.run(
         ["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()

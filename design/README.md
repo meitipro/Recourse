@@ -1,24 +1,26 @@
 # The design, and how it got into the site
 
 The site's layout, type, colour and spacing come from a Claude Design canvas.
-This directory holds that canvas and the converter that put it into `web/`, so
+This directory holds that canvas and the tools that put it into `web/`, so
 the port is reproducible rather than remembered.
 
 | file | what it is |
 | --- | --- |
-| `Recourse.dc.html` | the canvas: header, hero, six sections, footer, plus three artboards the site does not ship |
+| `Recourse.dc.html` | the canvas: header, hero, six sections, footer, plus three artboards the site does not ship. This is the second export, of 2026-09-15 |
+| `RecourseBoot.dc.html` | the boot screen the canvas imports above its header, new in the second export |
 | `RecourseFeed.dc.html` | the feed panel the canvas imports, with its skeleton, empty, snapshot and failed states |
-| `RecourseClerk.dc.html` | the clerk artboard, not built yet. See below |
-| `to_jsx.py` | the converter: HTML to JSX, mechanically |
-| `build_site.py` | assembles the header, hero, sections and footer into `web/components/site/` |
-| `build_feed.py` | assembles the feed panel around the real chain read |
+| `RecourseClerk.dc.html` | the clerk artboard. See below |
+| `extract.py` | unpacks a bundled export into its pages and diffs two exports, or an export against this directory, page by page |
+| `to_jsx.py` | the first port's converter: HTML to JSX, mechanically |
+| `build_site.py`, `build_feed.py`, `build_clerk.py` | the first port's assembly into `web/components/site/`. Do not run them again; see below |
 
 ## Why a converter rather than a rebuild
 
 Rebuilding a design by reading it and typing something similar loses it. The
 spacing scale, the exact greys, the clamp() curves and the hover states are the
 design, and an eye reproduces none of them faithfully. So every inline style in
-`web/components/site/` came through `to_jsx.py` byte for byte.
+the first port came through `to_jsx.py` byte for byte, and every change the
+second export made was carried across from a diff, style for style.
 
 What the converter handles: bindings to JSX expressions, `sc-if` and `sc-for`
 to conditionals and maps, style strings to style objects with duplicate
@@ -27,8 +29,20 @@ and the canvas's `style-hover` and `style-focus` attributes to real CSS
 classes, which are appended to `app/globals.css` because React has no inline
 pseudo classes.
 
-To re-port after the canvas changes: export it, extract the template, run the
-three scripts, then `npx tsc --noEmit` and `python scripts/test.py`.
+## Porting a new export
+
+The three build scripts rebuild each component from the canvas. Run now, they
+would drop every departure listed below and everything the site has learned
+about Studio Next since the first port. The second export went the other way:
+
+    python design/extract.py design OLD_OR_NEW_EXPORT.html OUT
+
+unpacks the export into its pages and writes one diff per page into `OUT`,
+flattened one tag per line so each difference names the element that changed.
+Each difference was then carried into `web/` by hand and checked against the
+record before it shipped. The pages in this directory are the export the site
+follows now, so the next export is diffed against them the same way, then
+`npx tsc --noEmit` and `python scripts/test.py`.
 
 ## What the port changed, and why
 
@@ -58,6 +72,45 @@ project binds, and the site was changed rather than the rule:
 | the linter's result ending at the verdict, the reason and the rewrite | a line under every result naming the stage, and at stage 2 "A dry run, not the gate's verdict" | Stage 2 asks one model the gate's question and the gate on chain asks a committee. `linter/service.py` promises every consumer says so, and a reader who takes the panel's answer for the gate's is misled by omission |
 | the Upheld tile in green and Disputes opened in red | the tile labelled Not honored, in the red of the badge for the same verdict, and Disputes opened in text colour | The tile counts not honored verdicts, which the table one screen below badges red, and "Upheld" without "against the seller" read as the seller upheld; a count that mixes states names none |
 | the clerk's Honored chip as a solid accent fill | the honored badge's green, outlined | The table names honored green, and the accent is never a state's colour |
+
+## The second export
+
+The second export, of 2026-09-15, took the first round of corrections into the
+canvas, added Studio Next beside studionet, and changed the shape of the page:
+a floating header, a boot screen, one row per network in every evaluation tile
+and a row of chips for each, a centred closing line. Those are ported as
+drawn. Where it wrote something the record does not support, the site says
+what the record does:
+
+| the canvas says | the site says | why |
+| --- | --- | --- |
+| "Reading eval/cases.json - case 07 of 18", then three more labels, each shown for a fixed time | "Read from eval/cases.json - case 07 of 18", stepping through the ids the server read; "Read from contracts/FROZEN.json - two deployments, studionet and studio-next", from the record's own keys; the fonts label waiting on `document.fonts.ready`; the lane label waiting on the lane's first frame | A label saying the page is reading while only a clock runs describes work that is not happening. The server did read both files to render the page, so the past tense is true, and the two waits are real ones |
+| a boot screen that only a script timer removes | the same timer, a CSS animation that removes it at four seconds with no script at all, and no boot screen under reduced motion | A cover over the whole page that depends on a script traps the page whenever the script fails |
+| "Dispute to money back: about 90 s" | "Dispute to money back, median", read from this network's snapshot: 100 s on studionet, "does not move" on studio-next | The recorded median is 100 seconds, and on studio-next no settlement has moved |
+| "The settlement window runs for 300 seconds, read from contracts/FROZEN.json" and "300 s" | the same words, with the figure read from that file | Every number on the page is read, never typed |
+| the settle step ending at "about half a minute later" | the finality median read from the snapshot, and on studio-next one more sentence: the verdict is written, the payment and the bond stay in escrow, and why | The step alone describes a refund studio-next cannot pay |
+| "five nodes times two presentation orders, and studio charges nothing for them" | the committee read from the snapshot, and "studionet charges nothing for them and studio-next charges a fee in testnet GEN" | Studio Next does charge. Its snapshot keeps what each method paid, spent and got back |
+| "eval/results.json" under every tile | each network's file, one per line | The studio-next row is read from `eval/results.studio-next.json` |
+| studio-next's case 07 chip, "Expected unclear - answered not honored - one run returned no verdict" | the same, ending "one run returned no verdict and the other two disagreed" | Its runs were not_honored, no verdict, unclear. Every chip title is computed from the runs the file records |
+| "from studionet, one of two temporary testnets; ... in evidence/snapshot.json" | the network shown, and that network's snapshot file | studio-next's snapshot is `evidence/snapshot-studio-next.json` |
+| the feed view's four contract cards, studio-next's pair noted "ported from 44111a3" | not built | The site has no separate feed view for them to sit in, and the hero's foot already names this network's pair. `44111a3` is the commit studio-next's pair was deployed from; the pair itself is a port of the frozen one at `ccc470a` |
+| the header's wide bar or menu button chosen by a viewport width held in state | two classes and a media query | The server's HTML is then right on a phone, rather than drawing the wide bar there until the script runs |
+| each tile's network and figure held on one line | the same, with the figure wrapping under the network's name when the tile is too narrow for both | Measured: at 1280 pixels wide the figure ran 24 pixels past its row, at 1366 eight. Wrapped, nothing runs past at any width measured from 320 to 1440 |
+
+## Two things the first port got wrong
+
+Found while porting the second export, and fixed in `web/app/globals.css`:
+
+- **No hover or focus state the canvas drew ever showed.** Each became a class
+  in `globals.css`, but the element keeps the same property in its inline
+  style, and an inline declaration beats any rule that is not `!important`.
+  The rules now carry it, and the linter button's hover skips it while it is
+  disabled.
+- **The canvas's fonts never loaded on the main page.** The ported styles ask
+  for 'Source Serif 4' and 'Work Sans', and fontsource's variable packages
+  register 'Source Serif 4 Variable' and 'Work Sans Variable'. Nothing on the
+  page asked for those, so it drew Georgia and the system sans. Three
+  `@font-face` rules now answer the canvas's names with the same files.
 
 ## The clerk
 

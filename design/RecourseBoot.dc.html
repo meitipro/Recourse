@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div role="status" aria-live="polite" aria-hidden="{{ hidden }}" style="position: fixed; inset: 0; z-index: 9999; background: #0A0C12; display: {{ display }}; opacity: {{ opacity }}; pointer-events: {{ events }}; transition: opacity 0.5s ease;">
+  <div style="position: absolute; top: clamp(20px, 3vw, 34px); left: clamp(20px, 5vw, 100px); font: 500 11px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.3em; text-transform: uppercase; color: #7C8798;">Recourse</div>
+  <div style="position: absolute; top: 50%; left: clamp(20px, 5vw, 100px); right: clamp(20px, 5vw, 100px); transform: translateY(-50%);">
+    <div style="font-family: 'Source Serif 4', Georgia, serif; font-style: italic; font-weight: 600; font-size: clamp(34px, 7vw, 74px); line-height: 1; letter-spacing: -0.03em; color: #EEF3F8; opacity: {{ wordOp }}; transform: translateY({{ wordY }}); transition: opacity 0.3s ease, transform 0.3s ease;">{{ word }}</div>
+    <div style="margin-top: 20px; font: 400 11px/1.7 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; color: #7C8798;">{{ label }}</div>
+  </div>
+  <div style="position: absolute; bottom: clamp(48px, 6vw, 78px); right: clamp(20px, 5vw, 100px); font: 500 clamp(56px, 11vw, 132px)/1 'Geist Mono', ui-monospace, monospace; letter-spacing: -0.04em; color: #EEF3F8; font-variant-numeric: tabular-nums;">{{ count }}</div>
+  <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #1B2130;">
+    <div style="height: 3px; background: #22D3EE; transform: scaleX({{ scale }}); transform-origin: left center; transition: transform 0.2s linear;"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:760}}">
+const WORDS = ["Honored", "Not honored", "Unclear"];
+
+class Component extends DCLogic {
+  state = { pct: 0, label: "Reading eval/cases.json", word: 0, done: false, gone: false };
+
+  componentDidMount() {
+    this._alive = true;
+    this._words = setInterval(() => {
+      this.setState((s) => (s.done ? null : { word: (s.word + 1) % WORDS.length }));
+    }, 900);
+    // Nothing may trap the page: whatever the sequence reached, the overlay leaves.
+    this._failsafe = setTimeout(() => this.finish(), 3600);
+    this.run();
+  }
+
+  componentWillUnmount() {
+    this._alive = false;
+    clearInterval(this._words);
+    clearTimeout(this._failsafe);
+    clearTimeout(this._goneTimer);
+  }
+
+  finish() {
+    if (!this._alive || this.state.done) { return; }
+    clearInterval(this._words);
+    clearTimeout(this._failsafe);
+    this.setState({ pct: 100, label: "Ready", done: true });
+    this._goneTimer = setTimeout(() => {
+      if (this._alive) { this.setState({ gone: true }); }
+    }, 540);
+  }
+
+  async run() {
+    const N = 18;
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const live = () => this._alive && !this.state.done;
+    const set = (pct, label) => { if (live()) { this.setState({ pct, label }); } };
+
+    for (let i = 1; i <= N; i++) {
+      await wait(44);
+      if (!live()) { return; }
+      set(Math.round((i / N) * 55), "Reading eval/cases.json - case " + String(i).padStart(2, "0") + " of " + N);
+    }
+    set(62, "Loading Source Serif 4, Work Sans, Geist Mono");
+    try { if (document.fonts && document.fonts.ready) { await document.fonts.ready; } } catch (e) {}
+    if (!live()) { return; }
+    set(80, "Reading contracts/FROZEN.json - two deployments, studionet and studio-next");
+    await wait(170);
+    if (!live()) { return; }
+    set(92, "Starting the settlement lane");
+    await wait(230);
+    this.finish();
+  }
+
+  renderVals() {
+    const s = this.state;
+    return {
+      count: String(s.pct).padStart(3, "0"),
+      scale: String(s.pct / 100),
+      label: s.label,
+      word: WORDS[s.word],
+      wordOp: s.done ? "0" : "1",
+      wordY: s.done ? "-10px" : "0px",
+      display: s.gone ? "none" : "block",
+      opacity: s.done ? "0" : "1",
+      events: s.done ? "none" : "auto",
+      hidden: s.gone ? "true" : "false"
+    };
+  }
+}
+</script>
+</body>
+</html>

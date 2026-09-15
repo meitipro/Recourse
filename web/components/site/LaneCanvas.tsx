@@ -17,7 +17,18 @@
 import { useEffect, useRef } from "react";
 
 /** What the returning tick says. The build's network is inlined here at build time. */
-const RETURN_LABEL = process.env.NEXT_PUBLIC_RECOURSE_NETWORK === "studio-next" ? "JUDGED" : "RETURNED";
+export const RETURN_LABEL = process.env.NEXT_PUBLIC_RECOURSE_NETWORK === "studio-next" ? "JUDGED" : "RETURNED";
+
+let markStarted: () => void = () => {};
+
+/**
+ * Settles once the lane has drawn its first frame, or has given way to its
+ * static fallback. The boot screen's last step waits on this, so the line that
+ * says the lane is starting is true while it shows.
+ */
+export const laneStarted: Promise<void> = new Promise((resolve) => {
+  markStarted = resolve;
+});
 
 export default function LaneCanvas({ onFallback }: { onFallback: (fallback: boolean) => void }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
@@ -31,6 +42,7 @@ export default function LaneCanvas({ onFallback }: { onFallback: (fallback: bool
     if (reduce || !context || !host) {
       onFallback(true);
       canvas.style.display = "none";
+      markStarted();
       return;
     }
 
@@ -160,6 +172,7 @@ export default function LaneCanvas({ onFallback }: { onFallback: (fallback: bool
     });
     observer.observe(host);
     draw(last);
+    markStarted();
     raf = requestAnimationFrame(loop);
 
     return () => {

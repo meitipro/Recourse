@@ -107,3 +107,34 @@ def test_a_verdict_wears_one_colour_wherever_the_page_names_it():
     for verdict, label in (("honored", "Honored"), ("not_honored", "Not honored")):
         chip = re.search(r'color: "(#[0-9A-F]{6})"[^>]*>' + label + "</span>", clerk)
         assert chip and chip.group(1) == badge(verdict), f"the clerk's {label} chip is not the colour of the {verdict} badge"
+
+
+def test_the_boot_screen_names_only_what_the_page_did():
+    """
+    The canvas's boot screen stepped "Reading eval/cases.json - case 07 of 18"
+    past on a 44 millisecond clock while nothing was read. The port says "Read
+    from" for what the server read to render the page, steps through the ids it
+    read, waits on the fonts and the lane for the two labels that name them,
+    and cannot trap the page.
+    """
+    site = ROOT / "web" / "components" / "site"
+    boot = (site / "Boot.tsx").read_text(encoding="utf-8")
+    code = re.sub(r"^\s*//.*$", "", re.sub(r"/\*.*?\*/", "", boot, flags=re.S), flags=re.M)
+    lane = (site / "LaneCanvas.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "web" / "app" / "page.tsx").read_text(encoding="utf-8")
+    assert "Reading " not in code, "a boot label says it is reading while only a clock runs"
+    assert "Read from eval/cases.json - case ${cases[i]} of ${cases.length}" in code
+    assert "cases.map((one) => one.id)" in page, "the ids the boot screen steps through are not the ones the page read"
+    assert "Read from contracts/FROZEN.json" in code
+    assert "await document.fonts" in code, "the fonts label no longer waits on the fonts"
+    assert "await laneStarted" in code and lane.count("markStarted()") == 2, "the lane label no longer waits on the lane"
+    assert "setTimeout(finish, 3600)" in code, "the failsafe that finishes the boot screen is gone"
+    assert re.search(r"\.rc-boot \{ animation: rc-boot-out [^}]*4s forwards; \}", CSS), "nothing removes the boot screen when no script runs"
+    # The label names three families. The page's inline styles ask for
+    # 'Source Serif 4' and 'Work Sans', while fontsource's variable packages
+    # register them as 'Source Serif 4 Variable' and 'Work Sans Variable', so
+    # globals.css answers the names the page uses with the same files. Geist
+    # Mono's package registers the name the page uses.
+    assert "Loading Source Serif 4, Work Sans, Geist Mono" in code
+    for family in ("Source Serif 4", "Work Sans"):
+        assert re.search(r'@font-face \{[^}]*font-family: "' + family + r'";', CSS), f"no face answers to {family!r}"

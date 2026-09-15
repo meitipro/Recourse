@@ -12,6 +12,41 @@
 @import "@fontsource/geist-mono/400.css";
 @import "@fontsource/geist-mono/500.css";
 
+/* The ported sections ask for 'Source Serif 4' and 'Work Sans' inline, as the
+   canvas does, and fontsource's variable packages register those families as
+   'Source Serif 4 Variable' and 'Work Sans Variable'. These faces answer the
+   names the page uses with the same files. Without them the page asked for
+   families nothing had loaded, and the browser drew Georgia and the system
+   sans in their place: measured on 2026-09-15, a heading set in
+   'Source Serif 4' was exactly as wide as the fallback beside it. */
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url("../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-italic.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Work Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../node_modules/@fontsource-variable/work-sans/files/work-sans-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   --ground: #0a0c12;
   --panel: #0e1119;
@@ -1060,12 +1095,38 @@ a:hover {
 
 /* Hover and focus states from the canvas. React has no inline pseudo
    classes, so each declaration the design carried as an attribute became one
-   class and one rule here, generated rather than typed. */
+   class and one rule here. A rule is !important where the element's own
+   inline style sets the same property, because an inline declaration beats
+   any rule that is not. */
 
-.rc-hover-1:hover { color: #EEF3F8; }
-.rc-hover-2:hover { background: rgba(255,255,255,0.06); color: #EEF3F8; }
-.rc-focus-3:focus-visible { border-bottom-color: #22D3EE; }
-.rc-hover-4:hover { background: rgba(255,255,255,0.16); }
-.rc-hover-5:hover { color: #EEF3F8; text-decoration: underline; }
-.rc-hover-6:hover { border-color: #313A4D; }
-.rc-hover-7:hover { background: rgba(34,211,238,0.13); }
+.rc-hover-2:hover { background: rgba(255,255,255,0.06) !important; color: #EEF3F8 !important; }
+.rc-focus-3:focus-visible { border-bottom-color: #22D3EE !important; }
+.rc-hover-4:hover:not(:disabled) { background: rgba(255,255,255,0.16) !important; }
+.rc-hover-5:hover { color: #EEF3F8 !important; text-decoration: underline; }
+.rc-hover-6:hover { border-color: #313A4D !important; }
+.rc-hover-7:hover { background: rgba(34,211,238,0.13) !important; }
+.rc-hover-8:hover { transform: scale(1.08); border-color: #22D3EE !important; }
+
+/* The header's two layouts. The canvas held the viewport width in state and
+   chose between them there; a class and a media query put the right one in
+   the server's HTML, so a phone never draws the wide bar first. */
+
+.rc-wide { display: flex; }
+.rc-narrow { display: none; }
+
+@media (max-width: 900px) {
+  .rc-wide { display: none; }
+  .rc-narrow { display: block; }
+}
+
+/* The boot screen leaves by itself even if no script ever runs: the script
+   removes it long before this fires, and this is the floor under it. Under
+   reduced motion it is never shown. */
+
+@keyframes rc-boot-out { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+
+.rc-boot { animation: rc-boot-out 0.5s ease 4s forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-boot { display: none !important; }
+}

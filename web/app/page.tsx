@@ -17,6 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Suspense, cache } from "react";
 
+import Boot from "@/components/site/Boot";
 import FeedPanel from "@/components/site/FeedPanel";
 import FeedSkeleton from "@/components/site/FeedSkeleton";
 import Clerk from "@/components/site/Clerk";
@@ -29,23 +30,16 @@ import {
   GapSection,
   HowSection,
   LimitsSection,
+  type EvaluationColumn,
 } from "@/components/site/Sections";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
-import { DISPUTE, ESCROW, EXPLORER, NETWORK, loadFeed } from "@/lib/chain";
+import { DISPUTE, ESCROW, EXPLORER, NETWORK, SETTLEMENT_MOVES, loadFeed } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Results = {
-  accuracy: number;
-  stability: number;
-  n: number;
-  runs: number;
-  unclear: number;
-  measured_at: number;
-  rows: Array<{ id: string; correct: boolean; stable: boolean; expected: string }>;
-};
+type Results = EvaluationColumn["results"];
 
 type Case = {
   id: string;
@@ -130,12 +124,18 @@ async function LiveFeed() {
 
 export default async function Page() {
   const frozen = readOutside<Frozen>(["contracts/FROZEN.json"]);
-  // Every figure on the page is this network's own: studionet's files carry no
-  // suffix, and any other network's are named for it, so a page built for one
-  // network never prints another's evaluation or settlement timings.
-  const suffix = NETWORK === "studionet" ? "" : `.${NETWORK}`;
-  const results = readOutside<Results>([`eval/results${suffix}.json`]);
-  const heldOut = readOutside<Results>([`eval/results-v2${suffix}.json`]);
+  // Every network the freeze record names, in its order. The evaluation gives
+  // each one its own column, never merged and never averaged. The hero, the
+  // feed and the settlement timings are this build's network alone, so a page
+  // built for one network never prints another's chain state.
+  const networks = Object.keys(frozen?.deployments ?? {});
+  const columns: EvaluationColumn[] = (networks.length ? networks : [NETWORK]).flatMap((name) => {
+    // studionet's files carry no suffix, and any other network's are named for it.
+    const suffix = name === "studionet" ? "" : `.${name}`;
+    const results = readOutside<Results>([`eval/results${suffix}.json`]);
+    const heldOut = readOutside<Results>([`eval/results-v2${suffix}.json`]);
+    return results && heldOut ? [{ network: name, results, heldOut }] : [];
+  });
   const snapshotName = NETWORK === "studionet" ? "snapshot.json" : `snapshot-${NETWORK}.json`;
   const settlement: SettlementTotals =
     readOutside<{ totals?: SettlementTotals }>([`evidence/${snapshotName}`])?.totals ?? {};
@@ -166,6 +166,9 @@ export default async function Page() {
         overflowX: "hidden",
       }}
     >
+      {/* The boot screen steps through what this render read: the case ids
+          and the networks the freeze record names. */}
+      <Boot cases={cases.map((one) => one.id)} networks={networks} />
       <SiteHeader />
       <main id="top">
         {/*
@@ -193,6 +196,8 @@ export default async function Page() {
           bondWei={frozen?.bond_wei ?? null}
           moneyBackSeconds={settlement.median_dispute_to_money_back_seconds ?? null}
           finalitySeconds={settlement.median_finality_seconds ?? null}
+          network={NETWORK}
+          settlementMoves={SETTLEMENT_MOVES}
         />
 
         <div id="feed">
@@ -207,9 +212,7 @@ export default async function Page() {
           <Clerk cases={cases} />
         </div>
 
-        {results && heldOut ? (
-          <EvaluationSection results={results} heldOut={heldOut} network={NETWORK} />
-        ) : null}
+        {columns.length ? <EvaluationSection columns={columns} /> : null}
 
         <LimitsSection committee={settlement.committee ?? null} />
         <ClosingSection />

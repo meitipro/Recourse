@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js">
-</script>
+<script src="./support.js"></script>
 </head>
 <body>
 <x-dc>
@@ -33,15 +32,9 @@
 
     <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px clamp(14px, 2vw, 20px); border-bottom: 1px solid #1B2130;">
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;">
-        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #7C8798;">
-<span style="width: 5px; height: 5px; border-radius: 50%; background: #7C8798;">
-</span>Window open, or released</span>
-        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #D9A441;">
-<span style="width: 5px; height: 5px; border-radius: 50%; background: #D9A441;">
-</span>In consensus, then accepted</span>
-        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #4ADE80;">
-<span style="width: 5px; height: 5px; border-radius: 50%; background: #4ADE80;">
-</span>Finalized</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #7C8798;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #7C8798;"></span>Window open, or released</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #D9A441;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #D9A441;"></span>In consensus, then accepted</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #4ADE80;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #4ADE80;"></span>Finalized</span>
       </div>
       <p style="width: 100%; margin: 0; font-size: 12.5px; line-height: 1.6; color: #AEB9C8; max-width: 88ch;">Released means the window expired with no dispute, so the seller may collect at any time; nothing on chain fires on its own. Accepted means the committee agreed on the receipt and is provisional until the appeal window closes. Finalized means appeals are complete, and is the only state that is actually settled.</p>
     </div>
@@ -60,8 +53,7 @@
       <div style="min-width: 720px;">
 
         <div style="display: grid; grid-template-columns: 104px minmax(140px, 1.6fr) 96px 124px 136px 92px; gap: 12px; align-items: center; padding: 11px clamp(14px, 2vw, 20px); border-bottom: 1px solid #1B2130;">
-          <button type="button" onClick="{{ toggleSort }}" style="display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; padding: 0; cursor: pointer; font: 500 9.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #7C8798; color: #AEB9C8; text-align: left;">Time<span style="color: #22D3EE;">{{ sortGlyph }}</span>
-</button>
+          <button type="button" onClick="{{ toggleSort }}" style="display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; padding: 0; cursor: pointer; font: 500 9.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #7C8798; color: #AEB9C8; text-align: left;">Time<span style="color: #22D3EE;">{{ sortGlyph }}</span></button>
           <span style="font: 500 9.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #7C8798;">{{ colSeller }}</span>
           <span style="font: 500 9.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #7C8798;">Amount</span>
           <span style="font: 500 9.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #7C8798;">Status</span>
@@ -116,27 +108,19 @@
         <sc-if value="{{ showSkeleton }}">
         <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="4">
           <div style="display: grid; grid-template-columns: 104px minmax(140px, 1.6fr) 96px 124px 136px 92px; gap: 12px; padding: 17px clamp(14px, 2vw, 20px); border-bottom: 1px solid #151A25; align-items: center;">
-            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 74%; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
-            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: {{ sk.w }}; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
-            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 62%; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
-            <span style="height: 18px; border-radius: 0; background: #1B2130; width: 84px; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
-            <span style="height: 18px; border-radius: 0; background: #1B2130; width: 96px; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
-            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 54%; margin-left: auto; animation: rc-shimmer 1.5s ease-in-out infinite;">
-</span>
+            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 74%; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
+            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: {{ sk.w }}; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
+            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 62%; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
+            <span style="height: 18px; border-radius: 0; background: #1B2130; width: 84px; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
+            <span style="height: 18px; border-radius: 0; background: #1B2130; width: 96px; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
+            <span style="height: 9px; border-radius: 3px; background: #1B2130; width: 54%; margin-left: auto; animation: rc-shimmer 1.5s ease-in-out infinite;"></span>
           </div>
         </sc-for>
         </sc-if>
 
         <sc-if value="{{ showEmpty }}">
           <div style="padding: clamp(38px, 6vw, 62px) 24px; text-align: center;">
-            <div style="display: inline-flex; align-items: center; gap: 9px; font: 500 10.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #22D3EE; border: 1px solid rgba(34,211,238,0.35); border-radius: 0; padding: 7px 13px;">
-<span style="width: 5px; height: 5px; border-radius: 50%; background: #22D3EE;">
-</span>Feed live</div>
+            <div style="display: inline-flex; align-items: center; gap: 9px; font: 500 10.5px 'Geist Mono', ui-monospace, monospace; letter-spacing: 0.14em; text-transform: uppercase; color: #22D3EE; border: 1px solid rgba(34,211,238,0.35); border-radius: 0; padding: 7px 13px;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #22D3EE;"></span>Feed live</div>
             <p style="margin-top: 16px; font-family: 'Source Serif 4', Georgia, serif; font-size: clamp(19px, 2.6vw, 24px); line-height: 1.3; color: #EEF3F8;">The feed is live and waiting</p>
             <p style="margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: #AEB9C8; max-width: 46ch; margin-left: auto; margin-right: auto;">No payment has been recorded against these contracts yet. Nothing is invented to fill the table.</p>
           </div>
@@ -317,7 +301,7 @@ class Component extends DCLogic {
       },
       snapshot: {
         edge: "solid rgba(217,165,65,0.55)", tone: "#D9A441", title: "Recorded snapshot, not a live read",
-        body: "Taken 2026-09-06 from studionet, a temporary testnet; the chain did not answer inside the deadline. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json.",
+        body: "Taken 2026-09-06 from studionet, one of two temporary testnets; the chain did not answer inside the deadline. Every row below is what the chain held then, and every transaction hash behind it is in evidence/snapshot.json.",
         foot: "From the recorded snapshot of 2026-09-06; the chain was tried first."
       },
       failed: {
@@ -332,7 +316,7 @@ class Component extends DCLogic {
       },
       live: {
         edge: "solid #1B2130", tone: "#AEB9C8", title: "Evaluation output, not chain data",
-        body: "Eighteen committed cases replayed through the dispute contract, read from eval/cases.json. Time is the case id and response age is the freshness of the fixture at judgment. Amount is a chain field and stays empty until the feed is wired to a deployed address.",
+        body: "Eighteen committed cases replayed through the dispute contract, read from eval/cases.json. The verdicts shown are the committed expectations, which both networks were measured against. Time is the case id and response age is the freshness of the fixture at judgment. Amount is a chain field and stays empty until the feed is wired to a deployed address.",
         foot: "Click a row for the three frozen strings it was judged on"
       }
     }[mode === "skeleton" || mode === "snapshot" || mode === "failed" || mode === "chain" || mode === "empty" ? (mode === "empty" ? "chain" : mode) : "live"];
