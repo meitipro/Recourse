@@ -178,7 +178,11 @@ sentence.
 
 ### 4.1 Header
 
-- **Wordmark**: "Recourse" in serif with the full stop in accent colour.
+- **Mark and wordmark**: the official mark from `design/logo`, drawn by
+  `components/site/Mark.tsx` at 26px in a 38px tap target with no circle
+  around it, then RECOURSE in Source Serif 4 at weight 600, letterspaced
+  0.22em, in ink. `design/logo/README.md` is the rule for both: the geometry,
+  the four colours, clear space, the minimum size and what never to do.
 - **Network line**, in the hero's strip beside the addresses: `Reading`, then
   the one network the page reads, Studio Next. There is no switch: a network
   in the address is redirected away, and the footer names the first
@@ -279,9 +283,9 @@ candidate for the arbiter slot, not a competitor to an escrow.
 
 A colophon, not a byline. Three columns under the rule that closes the page:
 
-- the seal from the closing panel beside the wordmark, "Recourse" in the serif
-  with the full stop in the accent, and under it what the project is in one
-  line;
+- the mark at 32px beside the wordmark, RECOURSE in the serif at weight 600
+  and 0.22em, as `design/logo` sets them, and under it what the project is in
+  one line;
 - **The record**: the network being read with its chain, and every other
   deployment the freeze record holds, each named with its chain and never
   linked;

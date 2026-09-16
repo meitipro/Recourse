@@ -21,6 +21,8 @@
 
 import { useEffect, useState } from "react";
 
+import Mark from "./Mark";
+
 const LINK = { display: "inline-flex", alignItems: "center", padding: "10px 13px", font: "500 clamp(10px, 0.72vw, 12.5px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", color: "#AEB9C8", transition: "color 0.25s ease, background 0.25s ease", whiteSpace: "nowrap" } as React.CSSProperties;
 
 const RULE = { width: "1px", height: "20px", background: "#263048", margin: "0 6px", flex: "0 0 auto" } as React.CSSProperties;
@@ -108,10 +110,10 @@ export default function SiteHeader() {
     <>
       <header style={{ position: "fixed", top: "0", left: "0", right: "0", zIndex: "60", display: "flex", justifyContent: "center", padding: "clamp(12px, 1.6vw, 20px) clamp(14px, 4vw, 28px)", pointerEvents: "none" } as React.CSSProperties}>
         <nav aria-label="Site" style={{ pointerEvents: "auto", display: "inline-flex", alignItems: "center", maxWidth: "100%", border: `1px solid ${v.barEdge}`, background: "rgba(14,17,25,0.86)", backdropFilter: "blur(14px) saturate(130%)", padding: "7px", transition: "border-color 0.3s ease" } as React.CSSProperties}>
-          <a href="#top" onClick={v.goTop} aria-label="Recourse, back to top" style={{ flex: "0 0 auto", width: "38px", height: "38px", borderRadius: "50%", border: "1px solid rgba(34,211,238,0.5)", display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "transform 0.25s ease, border-color 0.25s ease" } as React.CSSProperties} className="rc-hover-8">
-            <span style={{ fontFamily: "'Source Serif 4', Georgia, serif", fontStyle: "italic", fontWeight: "600", fontSize: "15px", color: "#EEF3F8" } as React.CSSProperties}>R</span>
+          <a href="#top" onClick={v.goTop} aria-label="Recourse, back to top" style={{ flex: "0 0 auto", width: "38px", height: "38px", display: "inline-flex", alignItems: "center", justifyContent: "center", transition: "transform 0.25s ease" } as React.CSSProperties} className="rc-hover-8">
+            <Mark size={26} />
           </a>
-          <a href="#top" onClick={v.goTop} className="rc-wide" style={{ alignItems: "center", padding: "0 4px 0 12px", font: "500 12px 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.22em", color: "#EEF3F8", whiteSpace: "nowrap" } as React.CSSProperties}>RECOURSE</a>
+          <a href="#top" onClick={v.goTop} className="rc-wide" style={{ alignItems: "center", padding: "0 4px 0 8px", fontFamily: "'Source Serif 4', Georgia, serif", fontWeight: "600", fontSize: "13px", letterSpacing: "0.22em", color: "#EEF3F8", whiteSpace: "nowrap" } as React.CSSProperties}>RECOURSE</a>
           <span aria-hidden="true" className="rc-wide" style={RULE}></span>
           <div className="rc-wide" style={{ alignItems: "center" } as React.CSSProperties}>
             <a href="#gap" onClick={v.goGap} style={LINK} className="rc-hover-2">The gap</a>

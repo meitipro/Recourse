@@ -366,7 +366,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 428 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 429 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -385,7 +385,7 @@ checks, that the payment reaches resolved and the seller's record moves with
 it, run where a verdict's settlement pays out, which in this record is
 studionet. It has not been run since it was split that way.
 
-The 428 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 429 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -464,8 +464,9 @@ record, its addresses and its evaluation column, and not as somewhere to go.
 linter at https://recourse-linter.vercel.app/api/lint and the MCP server at
 https://recourse-mcp-eight.vercel.app/api/mcp, three Vercel projects from these
 two repositories. [docs/HOSTING.md](docs/HOSTING.md) has every setting each one
-needs and a smoke test for each. The hosted linter has no model credential
-today, so its stage 2 answers that no model is configured.
+needs and a smoke test for each. The hosted linter runs stage 2 and the
+clerk's judge through OpenRouter, set by `ANTHROPIC_BASE_URL` and
+`RECOURSE_MODEL` on its project.
 
 ## Contracts
 

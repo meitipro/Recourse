@@ -12,6 +12,8 @@ import { Fragment } from "react";
 
 import { capital, list, spell } from "@/lib/words";
 
+import Mark from "./Mark";
+
 type Row = { id: string; correct: boolean; stable: boolean; expected: string; observed: string[] };
 
 type Results = {
@@ -327,7 +329,7 @@ export function ClosingSection() {
         </h2>
         <div aria-hidden="true" style={{ marginTop: "clamp(40px, 6vw, 64px)", display: "flex", alignItems: "center", gap: "16px" } as React.CSSProperties}>
           <span style={{ ...rule, width: "clamp(40px, 8vw, 88px)" } as React.CSSProperties}></span>
-          <span style={{ width: "40px", height: "40px", borderRadius: "50%", border: "1px solid rgba(34,211,238,0.5)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontFamily: "'Source Serif 4', Georgia, serif", fontStyle: "italic", fontWeight: "600", fontSize: "16px", color: "#EEF3F8" } as React.CSSProperties}>R</span>
+          <Mark size={40} />
           <span style={{ ...rule, width: "clamp(40px, 8vw, 88px)" } as React.CSSProperties}></span>
         </div>
       </div>

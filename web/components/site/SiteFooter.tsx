@@ -1,8 +1,8 @@
 /**
  * The footer: the page's colophon, not a byline.
  *
- * Three columns under a rule. The mark and the wordmark the closing panel
- * seals with, the record this page reads, and where the source lives; then a
+ * Three columns under a rule. The mark and the wordmark as design/logo sets
+ * them, the record this page reads, and where the source lives; then a
  * bottom bar saying where every figure above came from. The canvas carried an
  * article link and the author's handle here. Neither is here now: nothing is
  * published at that address, and the last thing a reader meets should be what
@@ -17,6 +17,8 @@
 import { Fragment } from "react";
 
 import type { NetworkName } from "@/lib/networks";
+
+import Mark from "./Mark";
 
 const MONO = "'Geist Mono', ui-monospace, monospace";
 
@@ -60,37 +62,18 @@ export default function SiteFooter({
           } as React.CSSProperties}
         >
           <div style={COLUMN}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" } as React.CSSProperties}>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" } as React.CSSProperties}>
+              <Mark size={32} />
               <span
-                aria-hidden="true"
                 style={{
-                  width: "30px",
-                  height: "30px",
-                  borderRadius: "50%",
-                  border: "1px solid rgba(34,211,238,0.5)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   fontFamily: "'Source Serif 4', Georgia, serif",
-                  fontStyle: "italic",
                   fontWeight: "600",
-                  fontSize: "13px",
-                  color: "#EEF3F8",
-                  flex: "0 0 auto",
-                } as React.CSSProperties}
-              >
-                R
-              </span>
-              <span
-                style={{
-                  fontFamily: "'Source Serif 4', Georgia, serif",
-                  fontWeight: "500",
-                  fontSize: "24px",
-                  letterSpacing: "-0.01em",
+                  fontSize: "20px",
+                  letterSpacing: "0.22em",
                   color: "#EEF3F8",
                 } as React.CSSProperties}
               >
-                Recourse<span style={{ color: "#22D3EE" } as React.CSSProperties}>.</span>
+                RECOURSE
               </span>
             </div>
             <p style={{ marginTop: "14px", font: `400 12.5px/1.6 ${MONO}`, color: "#7C8798", maxWidth: "32ch" } as React.CSSProperties}>

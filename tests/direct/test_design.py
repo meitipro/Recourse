@@ -178,6 +178,28 @@ def test_studio_next_is_the_only_network_a_visitor_can_arrive_at():
     assert {"studio-next", "studionet"} <= set(frozen["deployments"]), "a network the page names has no deployment"
 
 
+def test_the_mark_on_the_site_is_the_official_pack():
+    """
+    design/logo is the official mark: one path on a 32 unit grid, never inside
+    a circle, and a wordmark in the serif at weight 600, all caps, never
+    italic. The site drew a placeholder italic R inside a 1px circle in the
+    navbar, the closing panel and the footer. Every one now draws the pack's
+    path through components/site/Mark.tsx, and the favicon is the pack's.
+    """
+    web = ROOT / "web"
+    pack = (ROOT / "design" / "logo" / "svg" / "mark-currentcolor.svg").read_text(encoding="utf-8")
+    path = re.search(r'd="([^"]+)"', pack.split("</metadata>")[-1]).group(1)
+    mark = (web / "components" / "site" / "Mark.tsx").read_text(encoding="utf-8")
+    assert f'MARK_PATH = "{path}"' in mark, "the site's mark is not the pack's path"
+    assert 'viewBox="0 0 32 32"' in mark and 'strokeLinecap="square"' in mark and "2.6" in mark and "3.4" in mark
+    for name in ("SiteHeader.tsx", "SiteFooter.tsx", "Sections.tsx"):
+        source = (web / "components" / "site" / name).read_text(encoding="utf-8")
+        assert "<Mark " in source, f"{name} no longer draws the mark"
+        assert ">R<" not in source and "\n                R\n" not in source, f"{name} draws the placeholder R again"
+    assert (web / "app" / "icon.svg").read_bytes() == (ROOT / "design" / "logo" / "svg" / "favicon.svg").read_bytes()
+    assert (web / "app" / "apple-icon.png").read_bytes() == (ROOT / "design" / "logo" / "png" / "apple-touch-icon-180.png").read_bytes()
+
+
 def test_the_site_shows_no_api_the_repository_does_not_have():
     """
     The clerk's Integration section showed recourse.serve, recourse.pay,

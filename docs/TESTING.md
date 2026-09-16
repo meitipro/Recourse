@@ -28,10 +28,10 @@ house style, holds the README's test count to pytest, and typechecks the site.
 It printed:
 
 ```
-428 passed
+429 passed
 === lint escrow / lint dispute / lint v06/escrow / lint v06/dispute
 === validate escrow / validate dispute / validate v06/escrow / validate v06/dispute
-README, docs/RULES.md and pytest agree: 428 direct tests, 1 skipped
+README, docs/RULES.md and pytest agree: 429 direct tests, 1 skipped
 all green
 ```
 
@@ -191,13 +191,23 @@ The linter refused the promise at stage 1, with no model:
 {"judgeable": false, "reason": "Nothing here is measurable: no number, unit, time bound, count, named field or named source. Say what arrives and how fresh, not how good.", "failed_check": "no measurable term", "suggestion": null, "stage": 1}
 ```
 
-A promise that passes stage 1 goes to stage 2, which needs a model credential
-on the linter's host. The hosted linter has none: `Returns the spot price for
-the requested pair, aggregated from at least three venues, with a timestamp no
-more than five seconds old.` answered
-`{"error": "no model is configured, so judgeability cannot be asked"}`.
+A promise that passes stage 1 goes to stage 2, which needs a model on the
+linter's host. The hosted linter has one, through OpenRouter, since 16
+September; these two requests were run that day. Before it, every stage 2 call
+crashed the function with FUNCTION_INVOCATION_FAILED, because its
+`ANTHROPIC_BASE_URL` ended in `/v1` and the SDK called `/v1/v1/messages`.
 
-The site's clerk asks the same host's judge, so it has no model either:
+```bash
+curl -s -X POST https://recourse-linter.vercel.app/api/lint   -H "Content-Type: application/json"   -d '{"promise":"Returns pricing data for the requested pair, refreshed regularly."}'
+```
+
+It answered HTTP 200 at stage 2, a refusal with a rewrite:
+
+```
+{"judgeable": false, "reason": "'Refreshed regularly' is vague with no time bound; no specific fields or freshness limit to check against.", "failed_check": null, "suggestion": "Returns pricing data for the requested pair. Data is refreshed at least once every 60 seconds.", "stage": 2}
+```
+
+The site's clerk asks the same host's judge:
 
 ```bash
 curl -s -X POST https://recourse-site-seven.vercel.app/api/clerk \
@@ -205,13 +215,12 @@ curl -s -X POST https://recourse-site-seven.vercel.app/api/clerk \
   -d '{"promise":"Returns the spot price for the requested pair from at least three venues.","request":"GET /quote?pair=ETH-USD","response":"pair ETH-USD price 4182.10 sources 3"}'
 ```
 
-It answered HTTP 503 with
-`{"error":"a judgment needs a model, and none is configured. Compare against the committed expectation instead: every committed case carries one, in eval/cases.json"}`.
-That is the judge's sentence rather than the linter's, because a judgment is
-a different question from judgeability. The clerk's panel on the site shows
-it with the verdict a loaded committed case expects, to compare against
-instead. Once a key is set on the linter's host, stage 2 and the clerk answer
-with a verdict; until then neither can be checked.
+It answered HTTP 200 in 5.2 seconds, `"verdict":"honored"`, `"agreed":"yes"`,
+`"recorded_on_chain":false`, with the reason `Response provides ETH-USD spot
+price with 3 sources, meeting the promise of at least three venues.` One model,
+both presentation orders, no chain. Without a model the judge answers 503 in
+its own sentence, `a judgment needs a model, and none is configured`, and the
+clerk's panel names the verdict a loaded committed case expects instead.
 
 The MCP server:
 
@@ -277,5 +286,6 @@ none comes.
   defences verified in both pairs. `scripts/mutate.py` refuses to write that
   file if any mutant escapes, and it takes long enough that it was not run
   again.
-- The linter's stage 2 and the clerk were not run with a model: the hosted
-  linter has no key, and each says so in its own sentence.
+- Stage 2 and the clerk were each run once against the hosted model, in
+  section 8, and not against a committee: nothing either returns is a verdict
+  on chain.
