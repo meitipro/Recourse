@@ -30,6 +30,20 @@ export const maxDuration = 300;
 const FAUCET_GEN = 100n;
 const PAIR = "ETH-USD";
 
+/** The limits a run is held to, and how many payments the escrow recorded in the last hour. Read only. */
+export async function GET() {
+  const at = where();
+  let lastHour: number | null = null;
+  if (at) {
+    try {
+      lastHour = await paymentsLastHour(at);
+    } catch {
+      lastHour = null;
+    }
+  }
+  return Response.json({ perIpPerHour: PER_IP, globalPerHour: GLOBAL_PER_HOUR, paymentsLastHour: lastHour }, { headers: { "Cache-Control": "no-store" } });
+}
+
 export async function POST(request: Request) {
   const at = where();
   const seller = demoSeller();

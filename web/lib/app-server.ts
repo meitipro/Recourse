@@ -57,9 +57,10 @@ export async function latestCase(at: Where): Promise<{ pid: string; citation: st
 /** What a demo run pays, in whole GEN: the buyer agent's own default, agent/run.py --amount. */
 export const PAY_GEN = 4n;
 
-export const PER_IP = 3;
+export const PER_IP = 10;
 export const PER_IP_WINDOW_MS = 60 * 60 * 1000;
-export const GLOBAL_PER_HOUR = 30;
+/** Across every visitor, counted on chain: room for four reviewers each running their full ten in one hour. */
+export const GLOBAL_PER_HOUR = 40;
 
 const byIp = new Map<string, number[]>();
 
