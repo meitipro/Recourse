@@ -4,7 +4,7 @@ Record what the chain holds about the frozen contracts, so the evidence
 survives a testnet reset.
 
     python scripts/snapshot.py                              # evidence/snapshot-studio-next.json, receipts/studio-next/
-    python scripts/snapshot.py --network studionet          # evidence/snapshot.json and evidence/receipts/
+    python scripts/snapshot.py --network studionet          # only to reproduce the studionet record: evidence/snapshot.json
     python scripts/snapshot.py --contested p-000003 --honest p-000001
 
 Both testnets' persistence is temporary. Every number this repository
@@ -626,7 +626,7 @@ def main() -> int:
         "--check", action="store_true",
         help="compare the recorded snapshot against the chain and report drift, writing nothing",
     )
-    parser.add_argument("--network", default=None, help="the network to read; default studio-next")
+    parser.add_argument("--network", default=None, help="the network to read; default studio-next. studionet is accepted only to reproduce its published record")
     parser.add_argument(
         "--out", default=None,
         help="where to write the snapshot; default evidence/snapshot.json on studionet and "

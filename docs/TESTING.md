@@ -7,14 +7,12 @@ not run again and why. Where a command writes to a chain, it says so: running
 it again adds payments, and that network's snapshot has to be re-taken
 afterwards.
 
-Two networks are covered. studionet runs the frozen pair in `contracts/`;
-Studio Next runs the port in `contracts/v06/`. The site reads Studio Next
-unless its address asks for studionet. Every script defaults to Studio Next
-and takes `--network studionet`. Reading studionet needs genlayer-py 0.16.3 and
-reading Studio Next needs 0.19.0rc2, which is what `requirements.txt` pins;
-the two cannot share one environment, so here the Studio Next commands run
-from `.venv`, which has 0.19.0rc2, and the studionet ones from the system
-interpreter, which has 0.16.3.
+Studio Next is the network everything runs on: the port in `contracts/v06/`,
+read through genlayer-py 0.19.0rc2, which `requirements.txt` pins and `.venv`
+has. The first deployment, the frozen pair in `contracts/` on studionet,
+stays in the record the sections below cite, both evaluation columns and the
+snapshot among them, and nothing here runs against it; the README's Run the
+demo section names the one flag that reproduces that record.
 
 ## 1. The gate, offline
 
@@ -61,22 +59,15 @@ five API names, `gl.Contract`, `gl.get_contract_at`, `gl.vm.run_nondet_unsafe`,
 ## 3. The deployments are these files
 
 ```bash
-python scripts/prepare.py --network studionet && python scripts/verify.py --network studionet
-.venv\Scripts\python scripts\prepare.py --network studio-next
-.venv\Scripts\python scripts\verify.py --network studio-next
+.venv\Scripts\python scripts\prepare.py
+.venv\Scripts\python scripts\verify.py
 ```
 
 `verify.py` reads each contract's source back off the chain, diffs it against
 the repository and lints what came back. It checks the network `deployed.json`
-names, and `prepare.py` writes that file, so each network's `prepare.py` comes
-first: run straight after studionet's, the Studio Next check stopped on
-`deployed.json is for studionet but RECOURSE_NETWORK is studio-next`.
-`prepare.py` wrote nothing to either chain here: every account was funded and
-the seller already registered. On studionet it printed
-`source matches contracts/escrow.py (28514 bytes)`,
-`source matches contracts/dispute.py (21352 bytes)`, both evaluation instances
-running the same `contracts/dispute.py`, 19 payments and 10 cases under live
-state, and `the deployment matches this repository`. On Studio Next:
+names, and `prepare.py` writes that file, so `prepare.py` comes first.
+`prepare.py` wrote nothing to the chain here: every account was funded and
+the seller already registered. `verify.py` printed:
 
 ```
 escrow  0x3d3fa7Fd2E143C4D6b47D31f15D19B102Ec9e0dA
@@ -94,17 +85,15 @@ the deployment matches this repository
 ## 4. The recorded evidence still describes the chain
 
 ```bash
-python scripts/snapshot.py --network studionet --check
-.venv\Scripts\python scripts\snapshot.py --network studio-next --check
+.venv\Scripts\python scripts\snapshot.py --check
 ```
 
-Each compares its network's snapshot with the chain and writes nothing. The
-Studio Next check first answered DRIFT, `payments: snapshot 9, chain 11` and
+It compares the Studio Next snapshot with the chain and writes nothing. It
+first answered DRIFT, `payments: snapshot 9, chain 11` and
 `not_honored: snapshot 3, chain 4`, because section 6's demo had just added two
-payments. `.venv\Scripts\python scripts\snapshot.py --network studio-next`
-re-took the snapshot, and both checks then printed `no drift. The recorded
-evidence still describes the chain.`, over 19 payments on studionet and 11 on
-Studio Next.
+payments. `.venv\Scripts\python scripts\snapshot.py` re-took the snapshot,
+and the check then printed `no drift. The recorded evidence still describes
+the chain.`, over 11 payments.
 
 ## 5. The evaluation
 
@@ -191,9 +180,10 @@ curl -s -X POST https://recourse-linter.vercel.app/api/lint \
 The site answered `200`. Its feed read Studio Next live, with no snapshot
 banner: 11 payments, 7 disputes opened and 4/6 not honored, the totals
 `evidence/snapshot-studio-next.json` keeps, with the Studio Next pair in the
-hero's strip and `Reading studio-next / chain 61997` in the footer. At
-`/?network=studionet` it read studionet instead: 19, 10 and 8/10, the studionet
-pair, and `Reading studionet / chain 61999`.
+hero's strip and `Reading studio-next / chain 61997` in the footer, under
+which studionet is named as the record, without a link. An address naming a
+network, `/?network=studionet`, answered `308` to `/`: studionet is in the
+record the page shows and not somewhere the page reads.
 
 The linter refused the promise at stage 1, with no model:
 
@@ -235,11 +225,10 @@ Asked with no network it reads Studio Next, the default in
 `mcp/addresses.json`: the escrow's and the dispute's live stats from chain
 61997, 11 payments, and an evaluation block of `16/18` for the tuned set and
 `2/3` for the held out set on Studio Next, beside studionet's `17/18` and
-`1/3`, read from this repository's result files. With
-`"arguments":{"network":"studionet"}` it reads chain 61999 instead, 19
-payments. Each network is read by its own line of genlayer-js, as
-`mcp/package.json` pins them: 2.0.0-rc.1 for Studio Next and 1.1.8 for
-studionet.
+`1/3`, read from this repository's result files. The tools offer no other
+network; studionet's entry in `addresses.json` is the record of the first
+deployment, and a caller who names it is reading that record, through the
+genlayer-js 1.1.8 that `mcp/package.json` pins beside 2.0.0-rc.1.
 
 ## 9. The site, locally
 
@@ -247,17 +236,14 @@ studionet.
 cd web && npx next build && npx next start -p 4500
 ```
 
-The page reads Studio Next unless its address asks for studionet,
-`/?network=studionet`; no environment variable names the network, and the
-case links and the feed's drawer keep the one asked for. Its feed read
+The page reads Studio Next; no environment variable names the network, and
+an address naming one is redirected to the same address without it. Its feed read
 `11 PAYMENTS`, `7 DISPUTES OPENED` and `4/6 NOT HONORED` from chain 61997,
 counting the committee's rulings, and the demo's contested row read
 `RC-2026-0011`, `JUDGED, ACCEPTED`, `NOT HONORED`. The case page for
 RC-2026-0003 read `p-000003 on studio-next` and `disputed (verdict written; on
 this runtime the settlement does not move)`, and the hero's lane is labelled
-JUDGED. At `/?network=studionet` the lane is labelled RETURNED and the feed read
-19 payments, 10 disputes opened and 8/10 not honored, with no snapshot banner.
-Section 06 is the same whichever network is read: every tile has a studionet
+JUDGED. Section 06 keeps both columns: every tile has a studionet
 row and a studio-next row, `17 / 18` and `16 / 18` for accuracy and for
 stability, `3 / 18` and `2 / 18` landed on unclear, and `1 / 3` and `2 / 3` for
 the held out set, each tile naming the files its rows came from.
@@ -278,9 +264,11 @@ none comes.
 
 ## What this does not cover
 
-- The contested path was not run on studionet in this session. The studionet
-  timings the README prints are medians over its snapshot recorded on 11
-  September, and section 4 found that snapshot still describes the chain.
+- Nothing was run on studionet. The studionet timings the README prints are
+  medians over its snapshot recorded on 11 September, last checked against
+  that chain on 15 September.
+- The integration cycle was not run: it writes a payment and a dispute to the
+  chain, and its settlement checks apply where the settlement moves.
 - The evaluation and the rail proof were not run again, for the reasons in
   sections 5 and 7.
 - `docs/MUTATIONS.md` is from the mutation run after the port, 32 of 32

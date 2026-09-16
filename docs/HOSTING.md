@@ -91,7 +91,7 @@ what the smoke script now tests by default.
 | Root directory | `web` |
 | Framework | Next.js (detected) |
 | Include source files outside the root directory | **on** (the page reads `../eval/*.json`, `../contracts/FROZEN.json` and `../evidence/snapshot.json`; `web/next.config.mjs` traces them into the function) |
-| Environment | `LINTER_URL` = `https://recourse-linter.vercel.app/api/lint`. No key: the site calls no model. No network variable: the page reads studio-next, and studionet when its address asks with `?network=studionet`. Both pairs of addresses come from `contracts/FROZEN.json`, and no variable can change the network or an address. |
+| Environment | `LINTER_URL` = `https://recourse-linter.vercel.app/api/lint`. No key: the site calls no model. No network variable: the page reads studio-next, and a network in an address is redirected away. Both pairs of addresses come from `contracts/FROZEN.json`, and no variable can change the network or an address. |
 
 `LINTER_URL` is not optional here. In production the lint route answers 503
 "linter not configured" without it, by design, and the panel is the first

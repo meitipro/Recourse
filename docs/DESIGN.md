@@ -179,11 +179,11 @@ sentence.
 ### 4.1 Header
 
 - **Wordmark**: "Recourse" in serif with the full stop in accent colour.
-- **Network switch**, in the hero's strip beside the addresses: `Reading`, then
-  every deployment the freeze record holds, the one being read marked. Studio
-  Next by default; `?network=studionet` reads the other, and every case link
-  keeps it. The footer names the network being read and links the others. The
-  value is the network the page reads, never a constant.
+- **Network line**, in the hero's strip beside the addresses: `Reading`, then
+  the one network the page reads, Studio Next. There is no switch: a network
+  in the address is redirected away, and the footer names the first
+  deployment, studionet, with its chain as the record, never as a link. The
+  value is read from `lib/networks.ts`, where the browser can see it too.
 - **h1**: "A dispute right for the un-negotiated call."
 - **Lede**: three sentences. The un-negotiated call, the one sentence the
   seller published, and "Agents can spend money in milliseconds; nothing in the

@@ -35,37 +35,39 @@ one on the site, is traced to its source in [docs/SOURCES.md](docs/SOURCES.md).
 pip install -r requirements.txt pytest   # Python 3.12, genlayer-py 0.19.0rc2
 # and genvm-lint on PATH: scripts/test.py lints and validates the contracts with it
 python scripts/prepare.py                # funds three accounts, registers a seller
-python scripts/demo.py                   # both paths, against the deployed pair
+python scripts/demo.py                   # both paths, on Studio Next
 ```
 
-Every script runs on Studio Next unless told otherwise, because it is the
-network the site reads. An agent pays, receives a nine hour old price, contests
-it, and the verdict is written to its case with no human in the loop. The
-settlement does not move on that runtime, for the reason
-[Settlement on Studio Next](#settlement-on-studio-next) gives, so the escrow
-keeps the payment and the bond, no refund arrives, and the demo ends on
-`settlement not moved: the escrow still holds the payment and the bond`.
+Everything here runs on Studio Next, the network the hackathon requires and
+the one the site reads. Both paths run: the honest one, which adds no latency
+and costs nobody anything, and the contested one, in which an agent pays,
+receives a nine hour old price, contests it, and has the verdict written to
+its case with no human in the loop.
 
-On studionet the refund lands, and that is why `--network studionet` is here:
-for anyone who wants to watch the money come back. genlayer-py 0.19 cannot
-read studionet, so it runs from an environment of its own:
+**The demo ends without a refund, and says so.** On Studio Next the verdict is
+written and the settlement does not move. Consensus v0.6 funds a value
+transfer only from the top of the transaction's allocation tree, and the
+transfer that `settle` emits sits two messages below the transaction that
+funds it, `open_dispute`, then `adjudicate`, then `settle`, so it is never
+funded and the escrow keeps the payment and the bond. The last line the demo
+prints is `settlement not moved: the escrow still holds the payment and the
+bond`, and [Settlement on Studio Next](#settlement-on-studio-next) has every
+transaction. The refund itself is on the record: on studionet, where these
+contracts were first frozen, the same contested path returned the payment and
+the bond to the buyer, and `evidence/snapshot.json` holds each of those
+settlements with its transaction. `--network studionet` on any script exists
+for one purpose, reproducing that record from an interpreter with genlayer-py
+0.16.3, and is offered nowhere as a place to run against.
 
-```bash
-pip install genlayer-py==0.16.3                 # the SDK line studionet speaks
-python scripts/prepare.py --network studionet
-python scripts/demo.py --network studionet      # the same two paths, and the refund
-```
-
-Both paths run on either network: the honest one, which adds no latency and
-costs nobody anything, and the contested one. `prepare.py` deploys nothing.
-Each network's pair is frozen at the addresses in `contracts/FROZEN.json` and
-every chain number published here is tied to them, so a clone gets accounts of
-its own, funded from the Studio faucet, and a seller among them registered on
-that network's escrow. `deploy.py` refuses to run while the freeze stands, and
-says what to do instead. A clean clone, in a fresh virtual environment, was run
-this way on 11 September, on studionet, which was the default then, installed
-with `pip install genlayer_py anthropic pytest`. It needed `genvm-lint` on the
-path and, for `scripts/test.py`, `pytest`, which is why both are named above.
+`prepare.py` deploys nothing. The pair is frozen at the addresses in
+`contracts/FROZEN.json` and every chain number published here is tied to a
+recorded pair, so a clone gets accounts of its own, funded from the Studio
+faucet, and a seller among them registered on the escrow. `deploy.py` refuses
+to run while the freeze stands, and says what to do instead. A clean clone, in
+a fresh virtual environment, was walked this way on 11 September, on
+studionet, then the default, installed with `pip install genlayer_py anthropic
+pytest`. It needed `genvm-lint` on the path and, for `scripts/test.py`,
+`pytest`, which is why both are named above.
 
 [docs/SCRIPT.md](docs/SCRIPT.md) is the ninety second recording script: shot by
 shot, timed, every spoken number one this repository publishes. It films
@@ -368,11 +370,9 @@ python scripts/test.py         # freeze, house style, both pairs linted, 426 dir
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
-RECOURSE_INTEGRATION=1 RECOURSE_NETWORK=studionet python -m pytest tests/integration -q   # one live cycle, 26 checks along it, the money among them
+RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle: the verdict, and the settlement where it moves
 python eval/run.py --set v1 --runs 3    # the tuned set, on Studio Next
 python eval/run.py --set v2 --runs 3    # the held out set
-python eval/run.py --network studionet --set v1 --runs 3   # both sets again, on studionet
-python eval/run.py --network studionet --set v2 --runs 3
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
 
@@ -443,8 +443,9 @@ for a private key. Stage 2 of the linter needs a model behind the service:
 machine. Without one it says so and offers nothing.
 
 The site is `web/`: `npm install && npm run dev` on port 4500, reading the
-frozen contracts from `contracts/FROZEN.json`: Studio Next by default, and
-studionet when the address asks, `/?network=studionet`.
+frozen contracts from `contracts/FROZEN.json` on Studio Next. A network in
+the address is redirected away; the first deployment is on the page as the
+record, its addresses and its evaluation column, and not as somewhere to go.
 
 **Hosted.** The site is at https://recourse-site-seven.vercel.app, the promise
 linter at https://recourse-linter.vercel.app/api/lint and the MCP server at
@@ -490,16 +491,14 @@ from what the port generates, or on a deployment entry whose chain id does
 not match its name.
 
 The record is keyed by network, and each deployment names the pair it runs.
-Every script defaults to Studio Next, takes `--network studionet` for the
-first deployment, and stops on any other network with the sentence that it
-has never been deployed. Every chain number in this file names the network it
+Every script runs on Studio Next and stops on any other network with the
+sentence that it has never been deployed. Every chain number in this file names the network it
 was measured on. The evaluation scores were measured on judgment instances of
 their own, deployed from the `dispute.py` of each network's pair, and
 `scripts/verify.py` reads each back and compares it to its recorded bytes the
 same way it checks the pairs.
 
-Verify with `python scripts/verify.py`, or `python scripts/verify.py --network
-studionet`, which reads the source back off the chain, diffs it against this
+Verify with `python scripts/verify.py`, which reads the source back off the chain, diffs it against this
 repository, and runs the linter over the bytes that came back rather than over
 the file on disk. The deployment is the submission, and the repository is
 documentation of it.
@@ -511,7 +510,7 @@ it. The evaluation set exercises all three verdicts against a test double, but
 a reader of the feed sees the chain and nothing else, and for a while the chain
 held six disputes and six `not_honored`. A hundred percent upheld rate reads as
 a buyer-side tool rather than an adjudicator, so the other two verdicts were
-put on the record too, on studionet, by `python scripts/verdicts.py --network studionet`:
+put on the record too, by `scripts/verdicts.py`, on studionet:
 
 | verdict | payment | what happened | where the money went | settling transaction |
 | --- | --- | --- | --- | --- |
@@ -624,7 +623,7 @@ one it answers with its error state and the reason, and never with a verdict.
 
 A page showing only successes proves the file compiles. Refusing is what this
 contract is for, so the refusals are on chain deliberately and
-`python scripts/evidence.py --network studionet` records them into `deployed.json`:
+`scripts/evidence.py` recorded them, on studionet, into `deployed.json`:
 
 | what was attempted | what the chain says | transaction |
 | --- | --- | --- |
@@ -649,8 +648,8 @@ down in this repository, read back from the chain rather than typed:
   frozen strings, every case, every transaction either contract ever sent or
   received, decoded to method, payment and outcome, the refusals with the
   sentence each was refused with, the totals the feed shows, and the
-  evaluation numbers. `python scripts/snapshot.py --network studionet` regenerates it from a
-  throwaway account, which can read and cannot write.
+  evaluation numbers. `scripts/snapshot.py` wrote it from a throwaway
+  account, which can read and cannot write.
 - [evidence/receipts/](evidence/receipts/): the raw receipt of every
   transaction in one cycle of each kind, as the RPC returned them. A dispute
   ruled `not_honored` (`p-000003`, the one the Rails section cites), one ruled
@@ -750,9 +749,8 @@ curl -s -H "x-settlement-id: set_3PxQrLbGk29fVn" localhost:4502/quote?pair=ETH-U
 
 `python scripts/rail.py` runs a full contested cycle against it, and the
 finding is the point: **neither contract changed, and neither contract could
-tell.** On studionet, with `--network studionet`, payment `p-000003` was
-bought against the settlement id `set_3PxQrLbGk29fVn`, contested, and ruled
-`not_honored` on chain:
+tell.** On studionet, payment `p-000003` was bought against the settlement
+id `set_3PxQrLbGk29fVn`, contested, and ruled `not_honored` on chain:
 
 | step | transaction |
 | --- | --- |

@@ -3,13 +3,13 @@
 /**
  * Both deployments' addresses: the four cards the canvas drew under its feed
  * view, built here under the feed. Every address the repository publishes is
- * on the page whichever network is being read, and the pair being read says
- * so; the other pair's cards link to reading it instead.
+ * on the page, the pair being read says so, and the other pair says what it
+ * is: the record of the first deployment, not a link to reading it.
  */
 
 import { useRef, useState } from "react";
 
-import { networkQuery, type NetworkName } from "@/lib/networks";
+import type { NetworkName } from "@/lib/networks";
 
 type Pair = { network: NetworkName; escrow: string; dispute: string; provenance: string };
 
@@ -43,7 +43,7 @@ export default function ContractCards({ pairs, reading }: { pairs: Pair[]; readi
               {current ? (
                 <span style={{ ...LABEL, color: "#22D3EE" } as React.CSSProperties}>Reading</span>
               ) : (
-                <a href={`/${networkQuery(card.pair.network)}#feed`} style={{ ...LABEL, color: "#AEB9C8" } as React.CSSProperties} className="rc-hover-5">Read</a>
+                <span style={LABEL}>In the record</span>
               )}
             </div>
             <button type="button" onClick={() => copy(card.key, card.address)} title={card.address} aria-label={`Copy the ${card.pair.network} ${card.role} address, ${card.address}`} style={{ marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #263048", borderRadius: "0", background: "#0C1018", color: "#7C8798", font: "500 12px 'Geist Mono', ui-monospace, monospace", padding: "8px 11px", cursor: "pointer" } as React.CSSProperties}>{short(card.address)}</button>

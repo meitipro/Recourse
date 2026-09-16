@@ -207,7 +207,7 @@ def run(site: str, linter: str, mcp: str) -> tuple[list[tuple[str, bool]], list[
         "site renders a case permalink",
         code == 200 and "not honored" in shown,
         f"HTTP {code}",
-        "The case page did not render p-000003 on studio-next, the network the site reads unless asked: check the outside root switch, "
+        "The case page did not render p-000003 on studio-next, the network the site reads: check the outside root switch, "
         "which also ships the network's snapshot for when the chain is slow.",
     )
     if code == 200 and RECORDED in shown:

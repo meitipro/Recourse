@@ -141,27 +141,38 @@ def test_the_boot_screen_names_only_what_the_page_did():
         assert re.search(r'@font-face \{[^}]*font-family: "' + family + r'";', CSS), f"no face answers to {family!r}"
 
 
-def test_the_page_reads_studio_next_unless_its_address_asks():
+def test_studio_next_is_the_only_network_a_visitor_can_arrive_at():
     """
-    The hackathon requires Studio Next, and the hosted site opened on studionet
-    because the network came from an environment variable that defaulted to
-    it. The default is now a literal and no environment variable can move the
-    network or an address. The footer names the network being read and every
-    other deployment, and both pairs of addresses stay published.
+    The hackathon requires Studio Next. The site once read studionet when its
+    address asked, and offered that address in its footer, its strip and its
+    address cards: our own links took a judge to the wrong chain. Now a
+    network in the address is redirected away, nothing on the page links to
+    another network, and no environment variable can move the network or an
+    address. studionet stays where it belongs, in the record: the footer names
+    it with its chain, the first pair's addresses stay published as the record,
+    and the evaluation keeps both columns.
     """
     web = ROOT / "web"
     networks = (web / "lib" / "networks.ts").read_text(encoding="utf-8")
     assert 'export const DEFAULT_NETWORK: NetworkName = "studio-next";' in networks
+    assert "networkQuery" not in networks, "a helper for putting a network in the address is back"
     for name in ("lib/networks.ts", "lib/chain.ts", "lib/snapshot.ts", "app/page.tsx", "components/site/LaneCanvas.tsx"):
         source = (web / name).read_text(encoding="utf-8")
         assert "NEXT_PUBLIC_RECOURSE" not in source, f"web/{name} takes the network or an address from the environment"
+    for path in [*web.joinpath("app").rglob("*.ts*"), *web.joinpath("components").rglob("*.tsx"), *web.joinpath("lib").glob("*.ts")]:
+        text = path.read_text(encoding="utf-8")
+        assert "?network=" not in text and "networkFor(" not in text, f"{path.relative_to(ROOT).as_posix()} still offers a network in the address"
     page = (web / "app" / "page.tsx").read_text(encoding="utf-8")
-    assert "networkFor((await searchParams).network)" in page, "the page no longer reads the network its address asks for"
+    assert 'permanentRedirect("/")' in page and "const network = DEFAULT_NETWORK;" in page
     assert "<ContractCards pairs={pairs} reading={network} />" in page, "one pair of addresses is no longer published"
+    case = (web / "app" / "case" / "[id]" / "page.tsx").read_text(encoding="utf-8")
+    assert "permanentRedirect(`/case/${id}`)" in case and "const network = DEFAULT_NETWORK;" in case
     footer = (web / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
-    assert "Reading {network} / chain" in footer and "Also deployed on" in footer
+    assert "Reading {network} / chain" in footer and "kept in the record" in footer and "<a href" not in footer.split("Also ran on")[1].split("</p>")[0]
+    cards = (web / "components" / "site" / "ContractCards.tsx").read_text(encoding="utf-8")
+    assert "In the record" in cards and "href" not in cards
     frozen = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
-    assert {"studio-next", "studionet"} <= set(frozen["deployments"]), "a network the page offers has no deployment"
+    assert {"studio-next", "studionet"} <= set(frozen["deployments"]), "a network the page names has no deployment"
 
 
 def test_the_site_shows_no_api_the_repository_does_not_have():

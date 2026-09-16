@@ -9,9 +9,9 @@
  * connection fails the whole call. Against Studio that is the difference
  * between working and not, so every read here retries.
  *
- * Every read names its network. A page reads Studio Next unless its address
- * asks for another network the freeze record deploys, and lib/networks.ts
- * holds that rule where the browser can see it too.
+ * Every read names its network. A page reads Studio Next, and lib/networks.ts
+ * holds that rule where the browser can see it too; the other deployment the
+ * freeze record holds is read only for the record it shows.
  */
 
 import fs from "node:fs";
@@ -30,7 +30,7 @@ import { studionet, testnetAsimov, testnetBradbury } from "genlayer-js-v1/chains
 import { DEFAULT_NETWORK, type NetworkName } from "./networks";
 import { loadSnapshot, snapshotEvidence, snapshotRows } from "./snapshot";
 
-export { DEFAULT_NETWORK, networkQuery, settlementMoves } from "./networks";
+export { DEFAULT_NETWORK, settlementMoves } from "./networks";
 export type { NetworkName } from "./networks";
 
 /**
@@ -106,12 +106,6 @@ export function deployments(): Deployment[] {
 
 export function deploymentOf(network: NetworkName): Deployment | undefined {
   return deployments().find((one) => one.network === network);
-}
-
-/** The network a request asked for when the freeze record deploys it, and Studio Next otherwise. */
-export function networkFor(asked: string | string[] | null | undefined): NetworkName {
-  const value = Array.isArray(asked) ? asked[0] : asked;
-  return deployments().find((one) => one.network === value)?.network ?? DEFAULT_NETWORK;
 }
 
 /**

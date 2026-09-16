@@ -7,8 +7,8 @@ down here, read back from the chain rather than typed.
 
 ## snapshot.json
 
-`python scripts/snapshot.py --network studionet` writes it from a throwaway
-account, which can read and cannot write. It holds:
+`scripts/snapshot.py` wrote it from a throwaway account, which can read and
+cannot write, on studionet, the first deployment. It holds:
 
 - `totals`: what the feed's tiles show, computed by the feed's own rules, and
   four numbers the README's timing block and the site's How and Limits sections

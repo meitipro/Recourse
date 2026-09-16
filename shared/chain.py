@@ -228,9 +228,10 @@ def _external_node(recipient: str) -> dict:
 FROZEN = pathlib.Path(__file__).resolve().parent.parent / "contracts" / "FROZEN.json"
 
 
-#: The network everything defaults to when no --network is given: Studio Next,
-#: the network the site reads. --network studionet runs the first pair, where
-#: a verdict's settlement moves.
+#: The network everything runs on when no --network is given: Studio Next,
+#: the network the site reads. --network studionet is accepted for one purpose,
+#: reproducing the record the first deployment left, and is offered nowhere as
+#: a place to run against.
 DEFAULT_NETWORK = "studio-next"
 
 
@@ -263,8 +264,7 @@ def sdk_problem(name: str) -> str | None:
     if name in V06_NETWORKS and _studio_devnet is None:
         return (
             f"{name} runs consensus v0.6, which needs genlayer-py 0.19.0rc2; this interpreter "
-            f"has {SDK_VERSION}. Install requirements.txt in a virtual environment and run from it, "
-            "or pass --network studionet, which this interpreter can read."
+            f"has {SDK_VERSION}. Install requirements.txt in a virtual environment and run from it."
         )
     return None
 
@@ -272,8 +272,8 @@ def sdk_problem(name: str) -> str | None:
 #: What a studionet read under the v0.6 SDK fails with, measured, and what it means.
 STUDIONET_UNDER_V06 = (
     "genlayer-py {version} cannot read studionet: its gen_call fails there with "
-    "'execution failed' whatever the contract. Run studionet from an interpreter with "
-    "genlayer-py 0.18 or earlier."
+    "'execution failed' whatever the contract. The studionet record is reproduced from an "
+    "interpreter with genlayer-py 0.18 or earlier."
 )
 
 
@@ -616,7 +616,10 @@ class Chain:
         nodes = [dict(node) for node in estimate.get("messageAllocations") or []]
         if not nodes:
             return estimate
-        deployment = load_deployment()
+        # The frozen record rather than deployed.json, so a caller that has
+        # not run prepare.py, such as the skill's reference files, can still
+        # open a dispute whose settlement is allocated.
+        deployment = frozen_deployment()
         roles = {name: deployment[name] for name in ("escrow", "dispute")}
         for parent_method, children in cascade.items():
             wanted = str(derive_internal_message_call_key(parent_method)).lower()

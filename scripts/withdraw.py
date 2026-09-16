@@ -3,7 +3,7 @@
 The seller collects an uncontested payment after its window has closed.
 
     python scripts/withdraw.py p-000001
-    python scripts/withdraw.py p-000001 --network studionet
+    python scripts/withdraw.py p-000001 --network studionet   # only to reproduce the studionet record
 
 This is the last step of the honest path, the one the demo leaves for the
 window to reach: no dispute was filed, the window expired, and the seller
@@ -31,7 +31,7 @@ from shared.chain import GEN, Chain, load_accounts, load_deployment, select_netw
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pid", help="the payment id, p-000001")
-    parser.add_argument("--network", default=None, help="the network to run against; default studio-next")
+    parser.add_argument("--network", default=None, help="the network to run against; default studio-next. studionet is accepted only to reproduce its published record")
     args = parser.parse_args()
     select_network(args.network)
 

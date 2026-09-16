@@ -9,7 +9,7 @@
  * else about the request is kept.
  */
 
-import { loadEvidence, networkFor, toPid } from "@/lib/chain";
+import { DEFAULT_NETWORK, loadEvidence, toPid } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ pid:
   } catch {
     return Response.json({ error: "not a payment id or citation" }, { status: 400 });
   }
-  const network = networkFor(new URL(request.url).searchParams.get("network"));
+  // An older link may still carry a network in the address. It is ignored: the
+  // drawer reads the one network the page does.
+  const network = DEFAULT_NETWORK;
   const evidence = await loadEvidence(pid, network);
   if (!evidence.ok || !evidence.case) {
     return Response.json({ error: evidence.error ?? "no case for this payment" }, { status: 404 });

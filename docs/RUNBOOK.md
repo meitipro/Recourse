@@ -57,7 +57,7 @@ not. Submit after step 6.
       repository. A contract edited after deploying has a published address
       that no longer stands behind the published source.
 - [ ] Feed open at `http://localhost:4500`, a production build. It reads Studio
-      Next unless its address asks for studionet, so there is nothing to set.
+      Next and nothing else, so there is nothing to set.
 - [ ] The seller endpoint: nothing to start. `demo.py` starts it on `http://localhost:4501`.
 - [ ] Terminal font size increased.
 
@@ -104,11 +104,10 @@ move.
 Run this after the last cycle that touched the chain, and read the answer:
 
 ```bash
-.venv\Scripts\python scripts\snapshot.py --network studio-next --check
-python scripts/snapshot.py --network studionet --check   # from an interpreter whose genlayer-py reads it
+.venv\Scripts\python scripts\snapshot.py --check
 ```
 
-Each compares its network's snapshot, its payment count and verdict
+It compares the Studio Next snapshot, its payment count and verdict
 distribution, with the chain and writes nothing. Three answers, and only one
 of them means carry on:
 

@@ -21,7 +21,10 @@ lets the buying agent contest it, and has GenLayer validators rule.
 5. To contest, the buyer posts a bond (1 GEN). `RecourseDispute` receives the
    promise, the request, the response, and a timing block the chain wrote, and
    answers one narrow question in both presentation orders.
-6. The verdict is written on acceptance and the money moves on finalization.
+6. The verdict is written on acceptance. On studionet, the first deployment,
+   the money then moved on finalization. On Studio Next the settlement that
+   the verdict implies is not funded, so the verdict is the outcome and the
+   escrow keeps the payment and the bond; `06-read-a-verdict.md` says why.
 
 ## The three verdicts
 
@@ -38,15 +41,18 @@ fault rather than the buyer's, so the bond comes back.
 
 ## What is measured
 
-Two evaluation sets, both published: 17 of 18 on the set the question was
-narrowed against, and 1 of 3 on a held out set committed before it could be
-run. Both numbers are always shown together. The pattern they agree on: a
+Two evaluation sets, both published, measured on both networks. On Studio
+Next, 16 of 18 on the set the question was narrowed against and 2 of 3 on a
+held out set committed before it could be run; on studionet, the first
+deployment, 17 of 18 and 1 of 3. Both numbers are always shown together, and
+the columns are never merged. The pattern they agree on: a
 promise that does not settle the question gets answered on its plain words.
 Write promises that settle the question. `02-write-a-promise.md` is how.
 
 ## Read the live state
 
-Read only, no cost. Python with `genlayer_py`. One thing the SDK insists on:
+Read only, no cost. Python with `genlayer_py` 0.19.0rc2, the line that
+speaks consensus v0.6, which Studio Next runs. One thing the SDK insists on:
 a read needs a sender address, so a client with no account raises
 `No account provided and no account is connected` on its first read. Give it
 a throwaway key. It holds nothing, is never stored, and is never used to sign
@@ -54,18 +60,24 @@ a write; it exists because the SDK wants a `from`.
 
 ```python
 import json
-from genlayer_py import create_account, create_client, studionet
+from genlayer_py import create_account, create_client
+from genlayer_py.chains import studio_devnet
 
-ESCROW = "0x5125De939F7373eAE741B133FB32B7E9915C8F78"
-DISPUTE = "0x80A98929EcA334804dbB04d31F6050bca42C0Cc4"
+# Studio Next, chain 61997. The SDK ships another hostname for the same
+# network; the organisers name this one.
+studio_devnet.rpc_urls = {"default": {"http": ["https://studio-next.genlayer.com/api"]}}
 
-client = create_client(chain=studionet, account=create_account())   # throwaway, reads only
+ESCROW = "0x3d3fa7Fd2E143C4D6b47D31f15D19B102Ec9e0dA"
+DISPUTE = "0xba5f285FdB14E3e1d130b3C9346728aBfEC479f4"
 
-stats = json.loads(client.read_contract(ESCROW, "stats", []))
-# {"bond_amount": "1000000000000000000", "held": "...", "payments": 7, "window_seconds": 300, ...}
+reader = create_account()                                    # throwaway, reads only
+client = create_client(chain=studio_devnet, account=reader)
 
-recent = json.loads(client.read_contract(DISPUTE, "recent_verdicts", [10]))
-# [{"pid": "p-000003", "verdict": 2, "verdict_name": "not_honored", "reason": "...", "decided_at": 1788639536}, ...]
+stats = json.loads(client.read_contract(address=ESCROW, function_name="stats", args=[], account=reader))
+# {"bond_amount": "1000000000000000000", "held": "...", "payments": 11, "window_seconds": 300, ...}
+
+recent = json.loads(client.read_contract(address=DISPUTE, function_name="recent_verdicts", args=[10], account=reader))
+# [{"pid": "p-000011", "verdict": 2, "verdict_name": "not_honored", "reason": "...", "decided_at": 1789...}, ...]
 ```
 
 Studio allows about thirty requests a minute for the whole node. Read pages
@@ -74,7 +86,7 @@ Studio allows about thirty requests a minute for the whole node. Read pages
 ## Studio drops connections, and the SDK does not retry
 
 `genlayer_py` makes one attempt per call and turns a dropped TLS handshake into
-a hard failure. Against studionet that happens often enough that a script
+a hard failure. Against Studio that happens often enough that a script
 following these files verbatim died on its first read while this file was
 being verified. Mount a retrying session under the SDK once, before any call:
 

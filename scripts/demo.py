@@ -94,7 +94,7 @@ def main() -> int:
     parser.add_argument("--contested", action="store_true", help="skip the honest path")
     parser.add_argument("--honest", action="store_true", help="skip the contested path")
     parser.add_argument("--keep-seller", action="store_true", help="do not start the endpoint")
-    parser.add_argument("--network", default=None, help="the network to run against; default studio-next")
+    parser.add_argument("--network", default=None, help="the network to run against; default studio-next. studionet is accepted only to reproduce its published record")
     args = parser.parse_args()
     select_network(args.network)
 

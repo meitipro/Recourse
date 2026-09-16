@@ -625,7 +625,7 @@ def main() -> int:
     parser.add_argument("--clerk", action="store_true", help="OPTIONAL: the clerk at 1:12; needs a key behind the linter")
     parser.add_argument("--withdraw", action="store_true", help="OPTIONAL: the withdraw at 1:12, once the honest window has closed")
     parser.add_argument("--hosted", action="store_true", help=f"the live site at {HOSTED_SITE} instead of {LOCAL_SITE}")
-    parser.add_argument("--network", default=None, help="the network the take runs on, passed to demo.py and withdraw.py; default studio-next")
+    parser.add_argument("--network", default=None, help="the network the take runs on, passed to demo.py and withdraw.py; default studio-next. studionet is accepted only to reproduce its published record")
     args = parser.parse_args()
 
     text = SCRIPT_MD.read_text(encoding="utf-8")

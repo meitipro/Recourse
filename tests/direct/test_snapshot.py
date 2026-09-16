@@ -349,7 +349,7 @@ def test_the_settlement_timings_the_site_and_readme_state_are_the_chains_own():
     # Studio Next's settles all fail, so the verdict is written to the case and
     # never reaches the escrow, and its one timing is the dispute to the
     # adjudication's acceptance. It heads the README's timing block, because
-    # the site reads Studio Next unless its address asks for studionet.
+    # the site reads Studio Next, and studionet's is the record's own.
     studio = SNAPSHOTS["studio-next"]
     linked = {t["hash"]: t for t in studio["transactions"]}
     to_case = [

@@ -110,7 +110,7 @@ Ninety seconds. About two hundred words.
   1:12, after the withdraw shot when both are recorded, and the edit keeps
   whichever the running time has room for.
 - **The live site**: the hosted site at `https://recourse-site-seven.vercel.app`
-  reads Studio Next unless its address asks for studionet, the same as
+  reads Studio Next and nothing else, the same as
   `http://localhost:4500`, the production build this take uses. `--hosted`
   films the hosted site instead.
 - **The withdraw shot** at 1:12, as marked.
@@ -137,7 +137,7 @@ the first frame.
    having said the deployment matches. Large font.
 3. **Browser tab 1, the site**, not yet loaded. Load it as recording starts so
    the lane's first CONTESTED lands inside the opening shot. A production build
-   on 4500, which reads Studio Next unless its address asks for studionet, so
+   on 4500, which reads Studio Next and nothing else, so
    nothing names the network and any build will do. Set `LINTER_URL`,
    because without it a production build answers the linter panel with a 503.
    In `web/`, `npx next build`, then in PowerShell

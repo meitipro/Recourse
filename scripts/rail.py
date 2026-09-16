@@ -92,7 +92,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", default="stale", help="the failure to inject")
     parser.add_argument("--keep", action="store_true", help="leave the endpoint running")
-    parser.add_argument("--network", default=None, help="the network to run against; default studio-next")
+    parser.add_argument("--network", default=None, help="the network to run against; default studio-next. studionet is accepted only to reproduce its published record")
     args = parser.parse_args()
     network = select_network(args.network)
 

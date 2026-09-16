@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
-import { EXPLORER, loadEvidence, networkFor, networkQuery, settlementMoves, toCitation, toPid } from "@/lib/chain";
+import { DEFAULT_NETWORK, EXPLORER, loadEvidence, settlementMoves, toCitation, toPid } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ const VERDICT = ["pending", "honored", "not_honored", "unclear"] as const;
  * derived off chain from the payment id and the year the verdict landed, so
  * the site, the bot and the MCP server print the same one without a contract
  * change. Everything on this page is read from the chain when it is opened,
- * on Studio Next unless the address asks for studionet: ?network=studionet.
+ * on Studio Next; an address naming a network lands here without it.
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -40,8 +40,9 @@ export default async function CasePage({
   searchParams: Promise<{ network?: string | string[] }>;
 }) {
   const { id } = await params;
-  const network = networkFor((await searchParams).network);
-  const home = `/${networkQuery(network)}#feed`;
+  if ((await searchParams).network !== undefined) permanentRedirect(`/case/${id}`);
+  const network = DEFAULT_NETWORK;
+  const home = "/#feed";
   let pid: string;
   try {
     pid = toPid(decodeURIComponent(id));

@@ -35,7 +35,8 @@ import {
 } from "@/components/site/Sections";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
-import { EXPLORER, deploymentOf, deployments, loadFeed, networkFor, settlementMoves, type NetworkName } from "@/lib/chain";
+import { permanentRedirect } from "next/navigation";
+import { DEFAULT_NETWORK, EXPLORER, deploymentOf, deployments, loadFeed, settlementMoves, type NetworkName } from "@/lib/chain";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -87,7 +88,7 @@ function readOutside<T>(names: string[]): T | null {
   return null;
 }
 
-async function HeroWithTotals({ network, networks }: { network: NetworkName; networks: NetworkName[] }) {
+async function HeroWithTotals({ network }: { network: NetworkName }) {
   const data = await getFeed(network);
   // Decided means a committee ruled, and a ruling is a case. On studionet
   // every case settled, so this is also every settled dispute. On Studio Next a
@@ -105,7 +106,6 @@ async function HeroWithTotals({ network, networks }: { network: NetworkName; net
   return (
     <Hero
       network={network}
-      networks={networks}
       escrow={data.escrow}
       dispute={data.dispute}
       explorer={EXPLORER[network]}
@@ -125,10 +125,11 @@ async function LiveFeed({ network }: { network: NetworkName }) {
 }
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ network?: string | string[] }> }) {
-  // Studio Next, unless the address asks for another deployment the freeze
-  // record holds: /?network=studionet. Everything below that reads a chain
-  // reads this one, and the footer names it.
-  const network = networkFor((await searchParams).network);
+  // Studio Next, and nothing in the address can move it. Links once named a
+  // network in the query; such an address lands here without it, because
+  // studionet is in the record this page shows and not somewhere it reads.
+  if ((await searchParams).network !== undefined) permanentRedirect("/");
+  const network = DEFAULT_NETWORK;
   const pairs = deployments();
   const names = pairs.map((one) => one.network);
   const pair = deploymentOf(network);
@@ -185,7 +186,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
           fallback={
             <Hero
               network={network}
-              networks={names}
               escrow={pair?.escrow ?? ""}
               dispute={pair?.dispute ?? ""}
               explorer={EXPLORER[network]}
@@ -193,7 +193,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
             />
           }
         >
-          <HeroWithTotals network={network} networks={names} />
+          <HeroWithTotals network={network} />
         </Suspense>
 
         <GapSection />
@@ -212,8 +212,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
             <Suspense fallback={<FeedSkeleton />}>
               <LiveFeed network={network} />
             </Suspense>
-            {/* Both pairs of addresses stay on the page whichever network is
-                being read: the two networks are the strongest evidence here. */}
+            {/* Both pairs of addresses stay on the page: the first deployment is
+                the record, and the two networks are the strongest evidence here. */}
             <ContractCards pairs={pairs} reading={network} />
           </FeedSectionShell>
         </div>
