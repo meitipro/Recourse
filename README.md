@@ -40,8 +40,8 @@ run and forgets; with a wallet you sign each step yourself, and the page funds
 it from Studio's faucet. The verdict is written on chain and the settlement then
 does not move: on Studio Next the escrow keeps the payment and the bond, for the
 reason [Settlement on Studio Next](#settlement-on-studio-next) gives, and the
-page says so before anything is paid. Runs are limited per visitor, and per hour
-across every visitor by the payments the escrow itself recorded.
+page says so before anything is paid. Runs are limited to ten an hour per
+visitor, with no cap across visitors.
 
 ## Run the demo
 

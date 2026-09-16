@@ -391,8 +391,9 @@ def test_a_case_shows_the_committees_verdict_even_after_reclaim():
     assert "const code = row.case ? row.case.verdict : row.verdict;" in feed
 
 
-def test_the_app_run_limits_are_ten_per_address_and_forty_across_everyone():
-    """Raised for hackathon reviewers: ten runs an hour per address, forty an hour across every visitor, counted on chain."""
+def test_the_app_runs_ten_an_hour_per_address_with_no_cap_across_visitors():
+    """For hackathon reviewers: ten runs an hour per address, and by decision no cap across visitors."""
     server = (ROOT / "web" / "lib" / "app-server.ts").read_text(encoding="utf-8")
-    assert "export const PER_IP = 10;" in server and "export const GLOBAL_PER_HOUR = 40;" in server
-    assert '"recent_rows", [GLOBAL_PER_HOUR]' in server, "the on-chain count must read at least as many rows as the cap"
+    route = (ROOT / "web" / "app" / "api" / "run" / "route.ts").read_text(encoding="utf-8")
+    assert "export const PER_IP = 10;" in server
+    assert "GLOBAL_PER_HOUR" not in server + route and "paymentsLastHour" not in server + route

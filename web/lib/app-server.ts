@@ -46,21 +46,17 @@ export async function latestCase(at: Where): Promise<{ pid: string; citation: st
 }
 
 /**
- * Two limits on a run, because every run spends real GEN from Studio's faucet
- * and ten model calls across a committee.
- *
+ * One limit on a run: ten an hour from one address, so a loop cannot spend
+ * Studio's faucet and the committee's calls unattended. There is no cap across
+ * visitors, by decision: a hundred reviewers in the same hour all get to run.
  * PER_IP is held in this process's memory, so it is per serverless instance:
- * it stops a loop, not a determined visitor. GLOBAL is read off the chain
- * itself, the payments the escrow recorded in the last hour, so it holds
- * across every instance at once and cannot be reset by a cold start.
+ * it stops a loop, not a determined visitor.
  */
 /** What a demo run pays, in whole GEN: the buyer agent's own default, agent/run.py --amount. */
 export const PAY_GEN = 4n;
 
 export const PER_IP = 10;
 export const PER_IP_WINDOW_MS = 60 * 60 * 1000;
-/** Across every visitor, counted on chain: room for four reviewers each running their full ten in one hour. */
-export const GLOBAL_PER_HOUR = 40;
 
 const byIp = new Map<string, number[]>();
 
@@ -79,11 +75,4 @@ export function takeIpSlot(ip: string, now = Date.now()): number {
   byIp.set(ip, recent);
   if (byIp.size > 5000) byIp.clear();
   return 0;
-}
-
-/** How many payments the escrow recorded in the last hour, read from the chain. */
-export async function paymentsLastHour(at: Where): Promise<number> {
-  const rows = await readJson(at, readerFor(at), at.escrow, "recent_rows", [GLOBAL_PER_HOUR]);
-  const since = Math.floor(Date.now() / 1000) - 3600;
-  return (Array.isArray(rows) ? rows : []).filter((row: any) => Number(row.created_at) > since).length;
 }

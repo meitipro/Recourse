@@ -1,6 +1,6 @@
 import { createAccount, generatePrivateKey } from "genlayer-js";
 
-import { GLOBAL_PER_HOUR, PAY_GEN, PER_IP, demoSeller, ipOf, latestCase, paymentsLastHour, takeIpSlot, where } from "@/lib/app-server";
+import { PAY_GEN, PER_IP, demoSeller, ipOf, latestCase, takeIpSlot, where } from "@/lib/app-server";
 import { GEN, Refused, fund, readJson, readerFor, returnedOf, send, writerFor } from "@/lib/cycle";
 import { MODES, buildBody, checks, serialize, type Mode } from "@/lib/quote";
 
@@ -30,18 +30,9 @@ export const maxDuration = 300;
 const FAUCET_GEN = 100n;
 const PAIR = "ETH-USD";
 
-/** The limits a run is held to, and how many payments the escrow recorded in the last hour. Read only. */
+/** The limit a run is held to. Read only. There is no cap across visitors. */
 export async function GET() {
-  const at = where();
-  let lastHour: number | null = null;
-  if (at) {
-    try {
-      lastHour = await paymentsLastHour(at);
-    } catch {
-      lastHour = null;
-    }
-  }
-  return Response.json({ perIpPerHour: PER_IP, globalPerHour: GLOBAL_PER_HOUR, paymentsLastHour: lastHour }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ perIpPerHour: PER_IP, globalPerHour: null }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -70,21 +61,6 @@ export async function POST(request: Request) {
       { status: 429, headers: { "Retry-After": String(wait) } },
     );
   }
-  try {
-    if ((await paymentsLastHour(at)) >= GLOBAL_PER_HOUR) {
-      return Response.json(
-        {
-          error: "rate_limited",
-          message: `The escrow has recorded ${GLOBAL_PER_HOUR} payments in the last hour, the limit for runs from this page, counted on chain across every visitor.`,
-          latest: await latestCase(at),
-        },
-        { status: 429 },
-      );
-    }
-  } catch {
-    return Response.json({ error: "rpc", message: "Studio Next is not answering. Nothing was spent." }, { status: 503 });
-  }
-
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
