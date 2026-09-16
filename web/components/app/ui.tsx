@@ -145,7 +145,7 @@ export function SettlementNotice({ amountGen, bondGen }: { amountGen: string; bo
       <Label color={T.amber}>Before you pay: the money does not move on this network</Label>
       <p style={{ margin: "8px 0 0", font: `400 13.5px/1.65 ${T.sans}`, color: T.body }}>
         The payment, the checks, the committee&apos;s vote, the verdict and the record are all real here. What does not happen on Studio Next is the
-        settlement: consensus v0.6 funds a value transfer only at the root of a transaction&apos;s fee allocation, and the payout sits two messages below
+        settlement: consensus v0.6 funds a value transfer only at the root of a transaction&apos;s fee allocation tree, and the payout sits two messages below
         the transaction that pays for it. So a {amountGen} GEN payment and a {bondGen} GEN bond stay in the escrow even when the verdict goes your way. The
         verdict is final before the transfer is ever attempted, so it stands either way, and on a network where that transfer is funded the same
         transaction pays out.

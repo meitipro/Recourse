@@ -21,7 +21,7 @@ export const DEFAULT_NETWORK: NetworkName = "studio-next";
 /**
  * Whether a verdict's settlement pays out on this network. On Studio Next,
  * consensus v0.6 funds a value transfer only at the root of a transaction's
- * allocation tree, and settle's transfers sit two messages below the one that
+ * fee allocation tree, and settle's transfers sit two messages below the one that
  * funds them, so the verdict is written to the case and the escrow keeps the
  * money. shared/chain.py settlement_moves says the same for the scripts.
  */

@@ -66,7 +66,7 @@ export const FAQS: Record<string, Item[]> = {
     },
     {
       question: "Can a response talk the judge into a verdict?",
-      answer: "Each validator asks the same question with the evidence in both presentation orders, and when the two readings disagree the answer is unclear. The evaluation includes injected instructions inside a promise, a request and a response, and each was ruled on its merits.",
+      answer: "Each validator asks the same question with the evidence in both presentation orders, and when the two readings disagree the answer is unclear. Three evaluation cases attack the judge: an instruction to rule honored inside a response, a forged rules block inside a promise, and a forged good response inside a request. In every recorded run, on studionet and on Studio Next, each was ruled not honored, against what the attack asked for, and every stored reason rests on what the response is missing. The one reason that mentions the injected note calls it an invalid instruction.",
     },
     {
       question: "What if judgment never lands?",
@@ -114,7 +114,7 @@ export const FAQS: Record<string, Item[]> = {
     },
     {
       question: "Does the money actually move on Studio Next?",
-      answer: "The verdict is written and the settlement does not move. Consensus v0.6 funds a value transfer only at the top of a transaction's fee allocation, and the payout sits two messages below the dispute that pays for it, so the escrow keeps the payment and the bond. On studionet the same path returned both to the buyer.",
+      answer: "The verdict is written and the settlement does not move. Consensus v0.6 funds a value transfer only at the root of a transaction's fee allocation tree, and the payout sits two messages below the dispute that pays for it, so the escrow keeps the payment and the bond. On studionet the same path returned both to the buyer.",
     },
     {
       question: "How good is the judge?",

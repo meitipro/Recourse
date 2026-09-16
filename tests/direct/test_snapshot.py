@@ -117,7 +117,7 @@ def test_on_studio_next_every_case_is_judged_and_none_settled_and_the_readme_say
     On Studio Next judgment runs and settlement cannot pay out: settle's
     transfers sit two messages below the transaction that funds them, and
     consensus v0.6 accepts an external message only at the root of the
-    allocation tree. The chain's own record says exactly that: every case
+    fee allocation tree. The chain's own record says exactly that: every case
     carries a verdict, all three verdicts among them, every payment behind a
     case is still disputed, and every settle that ran ended on the allocation.
     The README says it in the same words.

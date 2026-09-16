@@ -22,8 +22,8 @@ WHERE THE MONEY CHECKS RUN
 The cycle runs on either network. The settlement checks, that the payment
 reaches RESOLVED and that the seller's record moved with it, run only where a
 verdict's settlement pays out: shared/chain.py settlement_moves. On Studio Next
-consensus v0.6 funds a value transfer only from the root of a transaction's
-allocation tree, and settle's transfers sit two messages below the transaction
+consensus v0.6 funds a value transfer only at the root of a transaction's
+fee allocation tree, and settle's transfers sit two messages below the transaction
 that funds them, so there this checks that the committee wrote the verdict to
 the case and that the escrow still holds the payment and the bond, and stops
 at that. Neither branch is part of scripts/test.py on any network: this file

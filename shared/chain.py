@@ -193,7 +193,7 @@ CASCADES = {
     "open_dispute": {"adjudicate": [("settle", "escrow", False)]},
 }
 
-#: Writes that pay out from the top of their own transaction. Studio cannot
+#: Writes that pay out at the root of their own transaction's allocation tree. Studio cannot
 #: simulate them ("execution failed"), and the flat allocation funds no
 #: message, so each payout needs an External node at the root of the tree:
 #: the payee as recipient and the unnamed call key of a plain value transfer.

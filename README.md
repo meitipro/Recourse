@@ -60,7 +60,7 @@ its case with no human in the loop.
 
 **The demo ends without a refund, and says so.** On Studio Next the verdict is
 written and the settlement does not move. Consensus v0.6 funds a value
-transfer only from the top of the transaction's allocation tree, and the
+transfer only at the root of the transaction's fee allocation tree, and the
 transfer that `settle` emits sits two messages below the transaction that
 funds it, `open_dispute`, then `adjudicate`, then `settle`, so it is never
 funded and the escrow keeps the payment and the bond. The last line the demo
@@ -348,14 +348,14 @@ works on Studio Next: paying into escrow, recording the response, opening a
 dispute, and the committee's judgment in both presentation orders, written to
 the case. Its five cases carry all three verdicts, p-000003, p-000005 and
 p-000009 `not_honored`, p-000006 `honored` and p-000007 `unclear`. A payout
-sent from the top of its own transaction works too: the seller's withdraw,
+sent at the root of its own transaction's tree works too: the seller's withdraw,
 and reclaim for a dispute whose judgment never landed. What does not work is
 the settlement a verdict implies. The payment and the bond stay in escrow, so
 a contested buyer gets its verdict on chain and not its money. The reason is a
 rule of consensus v0.6, not anything in the contracts: every message a
-transaction's descendants emit is funded in advance from one allocation tree
-submitted with that transaction, and a value transfer is accepted only at the
-root of that tree. `open_dispute` emits `adjudicate`, `adjudicate` emits
+transaction's descendants emit is funded in advance from one fee allocation
+tree submitted with that transaction, and a value transfer is accepted only at
+the root of that tree. `open_dispute` emits `adjudicate`, `adjudicate` emits
 `settle`, and `settle` sends the payouts two messages below the transaction
 that funds them, so every `settle` there ended
 `fee no_matching_allocation # external` and none of the five cases has
