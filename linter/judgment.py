@@ -128,7 +128,15 @@ def answer(payload: dict, model: Model | None = None) -> tuple[int, dict]:
     except ModelUnavailable as error:
         return 503, {"error": str(error)}
     except ValueError as error:
-        return 502, {"error": f"the model gave no usable answer: {error}"}
+        # Name what arrived, not only that it could not be read. The text goes
+        # back to the caller who sent the case and is logged nowhere.
+        asked = model if model is not None else default_model()
+        body = {"error": f"the model gave no usable answer: {error}"}
+        if hasattr(asked, "last_stop_reason"):
+            body["stop_reason"] = asked.last_stop_reason
+            body["blocks"] = asked.last_blocks
+            body["model_text"] = asked.last_text[:4000]
+        return 502, body
     return 200, {
         "verdict": result["verdict"],
         "reason": result["reason"],

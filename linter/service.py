@@ -99,6 +99,13 @@ class ClaudeModel:
         self.model = model
         self.calls = 0
         self.last_error: str | None = None
+        # What the last answer looked like before anything parsed it: its
+        # stop reason, the types of its content blocks and its text. A parse
+        # failure downstream reports these, so it names what arrived instead
+        # of only that it could not be read.
+        self.last_stop_reason: str | None = None
+        self.last_blocks: list[str] = []
+        self.last_text: str = ""
         self._client = None
 
     def _connect(self):
@@ -158,10 +165,13 @@ class ClaudeModel:
             # string rather than a message.
             self.last_error = f"{client.base_url} answered, but not with a Messages API response: check ANTHROPIC_BASE_URL"
             raise ModelUnavailable(self.last_error)
+        self.last_stop_reason = response.stop_reason
+        self.last_blocks = [block.type for block in response.content]
+        self.last_text = "".join(block.text for block in response.content if block.type == "text")
         if response.stop_reason == "refusal":
             raise ModelUnavailable("the model declined to answer this promise")
         self.last_error = None
-        return "".join(block.text for block in response.content if block.type == "text")
+        return self.last_text
 
 
 class CliModel:
