@@ -360,3 +360,18 @@ def test_the_skill_and_the_questions_are_numbered_sections_in_the_main_flow():
     faq = (site / "FaqSection.tsx").read_text(encoding="utf-8")
     assert ">09</div>" in faq and 'role="tablist"' in faq and "aria-expanded={open}" in faq
     assert "AgentCard" not in (site / "SiteFooter.tsx").read_text(encoding="utf-8")
+
+
+def test_reclaim_is_described_with_its_studio_next_limitation():
+    """
+    On Studio Next settle never runs, so a decided payment stays disputed and
+    reclaim applies the unclear split over any verdict, reproduced on
+    p-000014. Neither the README nor the FAQ may say more than that proves:
+    no "forever", and the limitation said where reclaim is described.
+    """
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    assert "On Studio Next, reclaim does not check for an existing verdict, so after the dispute window closes either party can reclaim the funds regardless of the ruling; this is a known limitation." in readme
+    faq = (ROOT / "web" / "components" / "site" / "FaqSection.tsx").read_text(encoding="utf-8")
+    answer = faq[faq.index('question: "What if judgment never lands?"'):faq.index('agents: [')]
+    assert "forever" not in answer
+    assert "does not check for an existing verdict" in answer and "confirmed working on Studio Next" in answer

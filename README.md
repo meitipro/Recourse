@@ -363,6 +363,17 @@ settled. The contested path settles end to end on studionet, where the timings
 near the top of this file were measured, and [docs/SCRIPT.md](docs/SCRIPT.md)
 films Studio Next saying exactly this.
 
+On Studio Next, reclaim does not check for an existing verdict, so after the
+dispute window closes either party can reclaim the funds regardless of the
+ruling; this is a known limitation. Because `settle` never runs there, a
+payment stays disputed after its case is decided, and `reclaim` then applies
+the unclear split whatever the committee ruled. It was reproduced on
+p-000014: the case was decided `not_honored` and finalized, the seller called
+`reclaim`, and the seller kept the payment while the buyer got only the bond
+back. On studionet `settle` resolves the payment when the verdict lands, so
+`reclaim` finds it no longer disputed and refuses. The fix is new contract
+bytes, and the contracts are frozen.
+
 The payouts that do run there, which `shared/chain.py` allocates at the root:
 
 | payment on Studio Next | what ran | what moved | transaction |
@@ -386,7 +397,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 438 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 439 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -405,7 +416,7 @@ checks, that the payment reaches resolved and the seller's record moves with
 it, run where a verdict's settlement pays out, which in this record is
 studionet. It has not been run since it was split that way.
 
-The 438 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 439 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

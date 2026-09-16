@@ -72,7 +72,7 @@ export const FAQS: Record<string, Item[]> = {
       question: "What if judgment never lands?",
       answer: (
         <>
-          After the dispute window passes with no verdict, either party can call <C>reclaim</C>. The seller is paid and the bond goes back to the buyer, so no payment can sit in escrow forever.
+          A dispute that stalls with no verdict has a way out: after the dispute window closes, either party can call <C>reclaim</C>, which pays the seller and returns the bond to the buyer, confirmed working on Studio Next. On Studio Next it does not check for an existing verdict, so it unwinds a decided dispute the same way, whatever the committee ruled. That is a known limitation of this deployment.
         </>
       ),
     },
