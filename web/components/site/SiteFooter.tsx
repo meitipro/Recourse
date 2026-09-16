@@ -18,6 +18,7 @@ import { Fragment } from "react";
 
 import type { NetworkName } from "@/lib/networks";
 
+import AgentCard from "./AgentCard";
 import Mark from "./Mark";
 
 const MONO = "'Geist Mono', ui-monospace, monospace";
@@ -38,6 +39,7 @@ const COLUMN = { flex: "1 1 212px", minWidth: 0 } as React.CSSProperties;
 const SOURCES = [
   { label: "Repository", href: "https://github.com/meitipro/Recourse" },
   { label: "Skill and MCP server", href: "https://github.com/meitipro/recourse-skill" },
+  { label: "Notary on Telegram", href: "https://t.me/AskRecourseBot" },
   { label: "GenLayer", href: "https://genlayer.com" },
 ];
 
@@ -53,6 +55,9 @@ export default function SiteFooter({
   return (
     <footer style={{ borderTop: "1px solid #1B2130", background: "#0C1018" } as React.CSSProperties}>
       <div style={{ padding: "clamp(40px, 6vw, 64px) clamp(20px, 5vw, 100px) clamp(30px, 4vw, 40px)" } as React.CSSProperties}>
+        <div style={{ marginBottom: "clamp(36px, 5vw, 56px)" } as React.CSSProperties}>
+          <AgentCard />
+        </div>
         <div
           style={{
             display: "flex",

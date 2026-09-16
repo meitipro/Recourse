@@ -701,3 +701,25 @@ def test_notary_introduces_itself_and_remembers_nobody():
     assert "You keep no profile, score or history of any person" in SYSTEM
     assert "the linter says" not in HELP + START + DESCRIPTION
     assert deps.calls == [], "an introduction reads nothing"
+
+
+def test_a_refused_model_call_logs_the_body_the_provider_answered_with(capsys):
+    """Railway showed "(400)" and nothing else. The log now carries what the provider said."""
+    import anthropic
+    import httpx2 as httpx
+
+    request = httpx.Request("POST", "https://openrouter.ai/api/v1/messages")
+    body = '{"error":{"message":"fallbacks: unsupported parameter","code":400}}'
+    response = httpx.Response(400, request=request, text=body, headers={"x-request-id": "req-7"})
+
+    class Refusing:
+        def create(self, **kwargs):
+            raise anthropic.BadRequestError("bad request", response=response, body=None)
+
+    chat = ClaudeChat(client=SimpleNamespace(beta=SimpleNamespace(messages=Refusing())))
+    conversations, bucket, deps = world()
+    reply = handle(1, "how often does it rule for the seller", conversations, bucket, deps, threads=Threads(), chat=chat)
+    assert "(400)" in reply
+    logged = capsys.readouterr().err
+    assert "model error 400 request req-7" in logged and "fallbacks: unsupported parameter" in logged
+    assert "how often does it rule" not in logged, "the person's message is never logged"

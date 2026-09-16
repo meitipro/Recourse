@@ -303,3 +303,20 @@ def test_the_app_says_the_response_it_freezes_is_unsigned():
     ui = (ROOT / "web" / "components" / "app" / "ui.tsx").read_text(encoding="utf-8")
     checks_view = ui[ui.index("export function ChecksView"):ui.index("export function ModePicker")]
     assert "Signed by nothing - this demo seller holds no key on this server, unlike a real seller." in checks_view
+
+
+def test_the_agent_card_and_the_telegram_link_point_where_they_say():
+    """
+    The skill.md card copies the command it shows, which fetches this site's
+    own /skill.md route, and both ways to Notary open the same bot.
+    """
+    card = (ROOT / "web" / "components" / "site" / "AgentCard.tsx").read_text(encoding="utf-8")
+    assert 'SITE = "https://recourse-site-seven.vercel.app"' in card
+    assert "SKILL_COMMAND = `curl -s ${SITE}/skill.md`" in card and "writeText(SKILL_COMMAND)" in card
+    assert (ROOT / "web" / "app" / "skill.md" / "route.ts").exists(), "the command needs the route it fetches"
+    assert 'NOTARY = "https://t.me/AskRecourseBot"' in card and "href={NOTARY}" in card
+    footer = (ROOT / "web" / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
+    assert "<AgentCard />" in footer
+    hero = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
+    assert 'href="https://t.me/AskRecourseBot"' in hero and ">Ask Notary on Telegram</a>" in hero
+    assert "Notary reads promises, disputes and verdicts off the chain. No install." in hero

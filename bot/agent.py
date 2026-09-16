@@ -27,6 +27,7 @@ import json
 import os
 import pathlib
 import re
+import sys
 import typing
 
 from bot.records import Unavailable, case_record, seller_record, stats_record, verdict_split
@@ -535,11 +536,32 @@ class ClaudeChat:
         except anthropic.APIConnectionError as error:
             raise ChatUnavailable("the model could not be reached") from error
         except anthropic.APIStatusError as error:
+            log_model_error(error)
             raise ChatUnavailable(f"the model answered with an error ({error.status_code})") from error
         if not hasattr(response, "stop_reason"):
             # An address that serves a web page with 200 comes back as a string.
             raise ChatUnavailable(f"{client.base_url} answered, but not with a Messages API response")
         return _turn(response.stop_reason, list(response.content))
+
+
+def log_model_error(error) -> str:
+    """
+    A refused model call, logged whole: the status, the provider's request id
+    and the body it answered with, which is the only place a 400 says what it
+    objected to. A status code alone sent the first Railway failure to
+    guessing. The body is the provider's words about the request, not the
+    person's message, and it is cut at 2000 characters.
+    """
+    response = getattr(error, "response", None)
+    try:
+        body = response.text if response is not None else ""
+    except Exception:  # noqa: BLE001 - a body that cannot be read is logged as unreadable
+        body = "(unreadable)"
+    headers = getattr(response, "headers", None) or {}
+    request_id = headers.get("x-request-id") or headers.get("request-id") or getattr(error, "request_id", None) or "-"
+    line = f"model error {getattr(error, 'status_code', '?')} request {request_id} base {os.environ.get('ANTHROPIC_BASE_URL', 'default')} model {configured_model()}: {body[:2000]}"
+    print(line, file=sys.stderr, flush=True)
+    return line
 
 
 class NoChat:
