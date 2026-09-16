@@ -29,6 +29,20 @@ back.**
 Every claim above that rests on something outside this repository, and every
 one on the site, is traced to its source in [docs/SOURCES.md](docs/SOURCES.md).
 
+**Run one yourself, with nothing installed.**
+[recourse-site-seven.vercel.app/app](https://recourse-site-seven.vercel.app/app)
+runs one real contested cycle on Studio Next. It reads the demo seller's promise
+from the escrow, pays, shows the response beside the buyer's three checks with
+their numbers, opens the dispute with the bond, and reads the adjudicate
+transaction until the committee's verdict is written, every hash linked to the
+explorer. With no wallet the server pays, from an account it creates for that
+run and forgets; with a wallet you sign each step yourself, and the page funds
+it from Studio's faucet. The verdict is written on chain and the settlement then
+does not move: on Studio Next the escrow keeps the payment and the bond, for the
+reason [Settlement on Studio Next](#settlement-on-studio-next) gives, and the
+page says so before anything is paid. Runs are limited per visitor, and per hour
+across every visitor by the payments the escrow itself recorded.
+
 ## Run the demo
 
 ```bash
@@ -177,6 +191,12 @@ git log --oneline --diff-filter=A -- contracts/dispute.py   # e5750e3, next
 `--diff-filter=A` is doing work in the third command: without it git answers
 with the most recent commit to touch the file, which is a later fix and reads
 like a contradiction.
+
+Read the figures below for what each one counts: how often the judge matched
+an answer fixed before it ran, how often its three runs agreed, how often it
+declined to guess, and how it did on cases it was never tuned against. The
+first three are measured on the set the question was narrowed against, so the
+last line is the one that says how the judge meets a dispute it has not seen.
 
 ```
 accuracy    17/18    matched the verdict committed before the run
@@ -366,7 +386,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 430 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 432 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -385,7 +405,7 @@ checks, that the payment reaches resolved and the seller's record moves with
 it, run where a verdict's settlement pays out, which in this record is
 studionet. It has not been run since it was split that way.
 
-The 430 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 432 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

@@ -217,3 +217,59 @@ def test_the_site_shows_no_api_the_repository_does_not_have():
     for claim in ("run the whole committed set", "in your browser", "pinned per case"):
         assert claim not in clerk, f"the clerk says {claim!r} again, and the panel does not do it"
     assert "curl -s -X POST" in clerk and "/api/clerk" in clerk, "the real curl call to the clerk is gone"
+
+
+def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
+    """
+    /app builds the demo seller's response and the buyer's checks in
+    TypeScript, web/lib/quote.ts, ported from seller/main.py and agent/run.py.
+    A port that drifts would freeze a response on chain the demo never sends,
+    as JSON.stringify writing 118400 where the seller writes 118400.0 did.
+    Node runs the port itself, with no build step, and every mode's frozen
+    string and the promise bounds are compared with the Python sources.
+    """
+    import datetime
+    import shutil
+    import subprocess
+    import sys
+
+    import pytest
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    sys.path.insert(0, str(ROOT))
+    import seller.main as seller
+    from agent.run import read_promise_bounds
+    from shared.canonical import canonical
+
+    moment = datetime.datetime(2026, 9, 16, 11, 22, 7, tzinfo=datetime.timezone.utc)
+    promises = [
+        "Returns the spot price for the requested pair, aggregated from at least three venues, with a timestamp no more than five seconds old.",
+        "Refreshed within 30 seconds, from at least 2 sources.",
+        "Accurate market data.",
+    ]
+    script = (
+        "const q = await import(process.argv[1]);"
+        "const at = new Date('2026-09-16T11:22:07Z');"
+        "const out = {modes: q.MODES, book: q.BOOK, stale: q.STALE_HOURS, bodies: {}, bounds: []};"
+        "for (const pair of Object.keys(q.BOOK)) for (const mode of q.MODES) out.bodies[pair + ' ' + mode] = q.serialize(q.buildBody(pair, mode, at));"
+        "for (const p of JSON.parse(process.argv[2])) { const b = q.promiseBounds(p); out.bounds.push([b.maxAge, b.minSources]); }"
+        "console.log(JSON.stringify(out));"
+    )
+    url = (ROOT / "web" / "lib" / "quote.ts").as_uri()
+    ran = subprocess.run([node, "--input-type=module", "-e", script, url, json.dumps(promises)], capture_output=True, text=True, timeout=60)
+    assert ran.returncode == 0, ran.stderr
+    port = json.loads(ran.stdout)
+
+    assert tuple(port["modes"]) == seller.MODES
+    assert port["book"] == seller.BOOK and port["stale"] == seller.STALE_HOURS
+    original = seller.now
+    seller.now = lambda: moment
+    try:
+        for pair in seller.BOOK:
+            for mode in seller.MODES:
+                assert port["bodies"][f"{pair} {mode}"] == canonical(seller.build_body(pair, mode)), f"{pair} {mode} drifted"
+    finally:
+        seller.now = original
+    assert [tuple(b) for b in port["bounds"]] == [read_promise_bounds(p) for p in promises]

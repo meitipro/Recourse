@@ -61,6 +61,9 @@ export type Deployment = {
   chainId: number;
   escrow: string;
   dispute: string;
+  /** The RPC and explorer the freeze record names for this network, so /app signs against the published values. */
+  rpc: string;
+  explorer: string;
   /** Where the pair's bytes come from: the freeze commit, or the commit the port was deployed from. */
   provenance: string;
 };
@@ -68,7 +71,7 @@ export type Deployment = {
 type FrozenRecord = {
   deployments?: Record<
     string,
-    { chain_id: number; escrow: string; dispute: string; frozen_at_commit?: string; deployed_from_commit?: string }
+    { chain_id: number; escrow: string; dispute: string; rpc?: string; explorer?: string; frozen_at_commit?: string; deployed_from_commit?: string }
   >;
 };
 
@@ -90,6 +93,8 @@ export function deployments(): Deployment[] {
           chainId: entry.chain_id,
           escrow: entry.escrow,
           dispute: entry.dispute,
+          rpc: entry.rpc ?? CHAINS[name as NetworkName].rpcUrls.default.http[0],
+          explorer: entry.explorer ?? EXPLORER[name as NetworkName],
           provenance: entry.frozen_at_commit
             ? `frozen at ${entry.frozen_at_commit}`
             : entry.deployed_from_commit
