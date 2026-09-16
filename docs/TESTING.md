@@ -267,8 +267,10 @@ none comes.
 - Nothing was run on studionet. The studionet timings the README prints are
   medians over its snapshot recorded on 11 September, last checked against
   that chain on 15 September.
-- The integration cycle was not run: it writes a payment and a dispute to the
-  chain, and its settlement checks apply where the settlement moves.
+- The integration cycle was not run, on either network: it writes a payment and
+  a dispute to a chain and spends GEN. It now runs on Studio Next as far as the
+  verdict on the case, with its settlement checks behind `settlement_moves` in
+  `shared/chain.py`, and that split has not been executed against either chain.
 - The evaluation and the rail proof were not run again, for the reasons in
   sections 5 and 7.
 - `docs/MUTATIONS.md` is from the mutation run after the port, 32 of 32

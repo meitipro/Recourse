@@ -14,8 +14,20 @@ No exact verdict for a borderline case. Verdict quality is measured by the
 evaluation set, which runs every case three times and publishes the number.
 Asserting a particular verdict here would produce a flaky suite and teach
 everyone to ignore red. What is asserted is that a verdict lands, that it is one
-of the three, and that the money moved the way the settlement table says for the
-verdict that actually landed.
+of the three, and, where a verdict's settlement pays out, that the money moved
+the way the settlement table says for the verdict that actually landed.
+
+WHERE THE MONEY CHECKS RUN
+
+The cycle runs on either network. The settlement checks, that the payment
+reaches RESOLVED and that the seller's record moved with it, run only where a
+verdict's settlement pays out: shared/chain.py settlement_moves. On Studio Next
+consensus v0.6 funds a value transfer only from the root of a transaction's
+allocation tree, and settle's transfers sit two messages below the transaction
+that funds them, so there this checks that the committee wrote the verdict to
+the case and that the escrow still holds the payment and the bond, and stops
+at that. Neither branch is part of scripts/test.py on any network: this file
+writes to a chain and spends GEN, which is what RECOURSE_INTEGRATION=1 gates.
 
 They are written as a plain script rather than under gltest because gltest reads
 any config in the working directory and aborts a run before collection, and
@@ -38,7 +50,7 @@ sys.path.insert(0, str(ROOT))
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from shared.chain import GEN, Chain, load_accounts, load_deployment  # noqa: E402
+from shared.chain import GEN, Chain, load_accounts, load_deployment, settlement_moves  # noqa: E402
 
 ST_OPEN, ST_WITHDRAWN, ST_DISPUTED, ST_RESOLVED = 0, 1, 2, 3
 V_HONORED, V_NOT_HONORED, V_UNCLEAR = 1, 2, 3
@@ -75,6 +87,24 @@ def wait_for_status(chain: Chain, escrow: str, pid: str, want: int, timeout: int
     return row
 
 
+def wait_for_case(chain: Chain, dispute: str, pid: str, timeout: int = 300) -> dict:
+    """
+    The committee's case row, polled until it carries a verdict, {} if none
+    lands. This is what a verdict looks like where the settlement cannot run:
+    the escrow's own copy arrives with the settlement and never arrives there.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            case = chain.read_json(dispute, "get_case", [pid])
+        except Exception:  # noqa: BLE001  "[EXPECTED] unknown case" until adjudicate has written one
+            case = {}
+        if int(case.get("verdict", 0)):
+            return case
+        time.sleep(5)
+    return {}
+
+
 def main() -> int:
     deployment = load_deployment()
     accounts = load_accounts()
@@ -84,9 +114,16 @@ def main() -> int:
     buyer = Chain(accounts["buyer"])
     bond = int(deployment["bond_wei"])
 
+    moves = settlement_moves(deployment["network"])
     print(f"\nnetwork  {deployment['network']}")
     print(f"escrow   {escrow}")
-    print(f"dispute  {dispute}\n")
+    print(f"dispute  {dispute}")
+    print(
+        "money    a verdict's settlement pays out here"
+        if moves
+        else "money    the settlement does not move on this runtime: the verdict is the outcome"
+    )
+    print()
 
     # --- the pair is deployed and wired -----------------------------------
     print("deployment")
@@ -171,18 +208,34 @@ def main() -> int:
     opened = buyer.send(escrow, "open_dispute", [pid], value=bond)
     check("the dispute transaction succeeded", opened["ok"], opened["status"])
 
-    row = wait_for_status(buyer, escrow, pid, ST_RESOLVED, timeout=300)
-    elapsed = time.time() - contested_at
-    settled = int(row["status"]) == ST_RESOLVED
-    check(f"the payment settled in {elapsed:.0f}s", settled, f"status {row['status']}")
-    if not settled:
-        return report()
+    if moves:
+        row = wait_for_status(buyer, escrow, pid, ST_RESOLVED, timeout=300)
+        elapsed = time.time() - contested_at
+        settled = int(row["status"]) == ST_RESOLVED
+        check(f"the payment settled in {elapsed:.0f}s", settled, f"status {row['status']}")
+        if not settled:
+            return report()
+        case = buyer.read_json(dispute, "get_case", [pid])
+        verdict = int(row["verdict"])
+    else:
+        # The settlement cannot be funded here, so the verdict on the case is
+        # the outcome, and where the money sits is asserted rather than assumed.
+        case = wait_for_case(buyer, dispute, pid, timeout=300)
+        elapsed = time.time() - contested_at
+        check(f"the verdict reached the case in {elapsed:.0f}s", bool(case), "no case carried a verdict")
+        if not case:
+            return report()
+        row = buyer.read_json(escrow, "get_payment", [pid])
+        check(
+            "the escrow still holds the payment and the bond",
+            int(row["status"]) == ST_DISPUTED,
+            f"status {row['status']}",
+        )
+        verdict = int(case["verdict"])
 
-    verdict = int(row["verdict"])
     name = VERDICTS.get(verdict, "?")
     check("the verdict is one of the three", verdict in VERDICTS, name)
 
-    case = buyer.read_json(dispute, "get_case", [pid])
     check("a case row exists on chain", case["pid"] == pid)
     check("the case holds the promise unchanged", case["promise"] == deployment["promise"])
     check("the case holds the request unchanged", case["request"] == "GET /quote?pair=ETH-USD")
@@ -196,31 +249,36 @@ def main() -> int:
     )
 
     # The settlement table, checked against the verdict that actually landed
-    # rather than the one this response deserves.
-    seller_row = owner.read_json(escrow, "get_seller", [deployment["seller"]])
-    if verdict == V_NOT_HONORED:
-        check("not honored incremented the upheld counter", int(seller_row["upheld"]) >= 1)
-    check(
-        "the payment is no longer counted as live",
-        int(seller_row["live"]) >= 0,
-        f"live {seller_row['live']}",
-    )
+    # rather than the one this response deserves. The seller's record moves
+    # when settle does, so these run where settle can.
+    if moves:
+        seller_row = owner.read_json(escrow, "get_seller", [deployment["seller"]])
+        if verdict == V_NOT_HONORED:
+            check("not honored incremented the upheld counter", int(seller_row["upheld"]) >= 1)
+        check(
+            "the payment is no longer counted as live",
+            int(seller_row["live"]) >= 0,
+            f"live {seller_row['live']}",
+        )
 
-    print(f"\n  verdict {name} in {elapsed:.0f}s from dispute to settlement")
+    print(f"\n  verdict {name} in {elapsed:.0f}s from dispute to {'settlement' if moves else 'the case'}")
     print(f"  reason: {case['reason']}")
-    print(f"  payment to settlement: {time.time() - started:.0f}s")
+    print(f"  payment to {'settlement' if moves else 'verdict'}: {time.time() - started:.0f}s")
 
-    # --- a settled payment stays settled -----------------------------------
+    # --- the payment is terminal for both parties ---------------------------
+    # Settled, or judged and held: neither party may withdraw it or contest it
+    # again, and the same status check refuses both, "not open".
     print("\nterminal states")
+    where = "a settled payment" if moves else "a payment under judgment"
     for label, caller, method, value in (
         ("withdraw", seller, "withdraw", 0),
         ("open_dispute", buyer, "open_dispute", bond),
     ):
         try:
             caller.send(escrow, method, [pid], value=value)
-            check(f"{label} is refused on a settled payment", False, "it was allowed")
+            check(f"{label} is refused on {where}", False, "it was allowed")
         except Exception as error:  # noqa: BLE001
-            check(f"{label} is refused on a settled payment", "not open" in str(error), str(error)[:60])
+            check(f"{label} is refused on {where}", "not open" in str(error), str(error)[:60])
 
     return report()
 

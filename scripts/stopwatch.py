@@ -6,12 +6,13 @@ to read on a screen capture.
     python scripts/stopwatch.py
     python scripts/stopwatch.py --stop-file PATH
 
-What it measures is the time from the dispute line to the refund line.
-scripts/record.py starts it when the agent prints that its dispute was
-accepted, and stops it when the demo prints that the refund landed. The demo's
-own "dispute to money back" starts earlier, as the dispute transaction is sent,
-so this reads about five seconds less: the time that transaction takes to be
-accepted. The two do not agree to the second.
+What it measures is the time from the dispute line to the line that ends the
+shot. scripts/record.py starts it when the agent prints that its dispute was
+accepted and stops it at the verdict line, where the take on Studio Next ends,
+because the settlement does not move there. The agent's own "dispute to
+verdict" starts earlier, as the dispute transaction is sent, so this reads
+about five seconds less: the time that transaction takes to be accepted. The
+two do not agree to the second.
 
 With --stop-file it stops by itself when that file appears, and keeps its last
 reading on screen until the window is closed.

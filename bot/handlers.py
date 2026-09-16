@@ -93,7 +93,7 @@ def cmd_case(argument: str, deps: Deps) -> str:
     return "\n".join([
         f"{record['citation']}  ({pid})",
         f"verdict   {record['verdict']}",
-        f"status    {record['status']}" + ("  (money moved)" if record["money"] == "moved" else "  (verdict written, money moves on finalization)"),
+        f"status    {record['status']}" + ("  (money moved)" if record["money"] == "moved" else f"  ({record['money']})"),
         f"reason    {record['reason']}",
         "",
         f"promise   {record['promise']}",

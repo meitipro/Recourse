@@ -370,11 +370,20 @@ python scripts/test.py         # freeze, house style, both pairs linted, 426 dir
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
-RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle: the verdict, and the settlement where it moves
+RECOURSE_INTEGRATION=1 python -m pytest tests/integration -q   # one live cycle on the deployed pair, gated behind that variable
 python eval/run.py --set v1 --runs 3    # the tuned set, on Studio Next
 python eval/run.py --set v2 --runs 3    # the held out set
 python -m linter.examples --dry         # the six worked examples, stage 1
 ```
+
+The integration cycle is part of no gate, on any network: it writes a payment
+and a dispute to a chain and spends GEN, which is what `RECOURSE_INTEGRATION=1`
+exists to gate, and `scripts/test.py` runs neither branch of it. On Studio Next
+it runs as far as the verdict the committee writes to the case, and checks
+there that the escrow still holds the payment and the bond. Its settlement
+checks, that the payment reaches resolved and the seller's record moves with
+it, run where a verdict's settlement pays out, which in this record is
+studionet. It has not been run since it was split that way.
 
 The 426 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with

@@ -96,7 +96,10 @@ def case_record(argument: str, deps: Deps) -> dict:
         "disputed": True,
         "decided": True,
         "verdict": case.get("verdict_name") or VERDICT[case["verdict"]],
-        "money": "moved" if code == 3 else "verdict written, money moves on finalization",
+        # What the chain shows, rather than what it will do next: the escrow's
+        # copy of the verdict arrives with the settlement, and on a runtime
+        # where that cannot be funded it never arrives.
+        "money": "moved" if code == 3 else "the verdict is written to the case, and the escrow still holds the payment and the bond",
         "reason": case["reason"],
         "promise": case["promise"],
         "request": case["request"],

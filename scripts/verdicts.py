@@ -62,7 +62,7 @@ from agent.checks import check  # noqa: E402
 from agent.run import discover_rail, http, read_promise_bounds  # noqa: E402
 from seller.signing import verify  # noqa: E402
 from shared.chain import (  # noqa: E402
-    GEN, KEYS, Chain, load_accounts, load_deployment, select_network,
+    GEN, KEYS, Chain, load_accounts, load_deployment, network_name, select_network, settlement_moves,
 )
 
 VERDICT = {0: "pending", 1: "honored", 2: "not_honored", 3: "unclear"}
@@ -121,21 +121,38 @@ def start_endpoint(port: int, mode: str, account: str, promise: str | None) -> s
 
 
 # --- one cycle ---------------------------------------------------------------
+def read_case(chain: Chain, dispute: str, pid: str) -> dict:
+    """The committee's case row, or {} until adjudicate has written one."""
+    try:
+        return chain.read_json(dispute, "get_case", [pid])
+    except Exception:  # noqa: BLE001  "[EXPECTED] unknown case" until then
+        return {}
+
+
 def wait_for_verdict(chain: Chain, escrow: str, dispute: str, pid: str, timeout: int) -> tuple[dict, dict]:
-    """Poll until the payment leaves DISPUTED. Returns (payment row, case row or {})."""
+    """
+    Poll until the verdict is on chain. Returns (payment row, case row or {}).
+
+    Where a verdict's settlement pays out, the escrow's own copy of the verdict
+    arrives with it, so the payment leaving DISPUTED is the signal. Where it
+    cannot (shared/chain.py settlement_moves) that copy never arrives and the
+    committee's verdict sits on the case alone, so waiting on the payment there
+    spends the whole timeout and then reports a decided case as pending.
+    """
+    moves = settlement_moves(network_name())
     deadline = time.time() + timeout
     row: dict = {}
+    case: dict = {}
     while time.time() < deadline:
         time.sleep(5)
         row = chain.read_json(escrow, "get_payment", [pid])
         if int(row["status"]) == 3:
             break
-    case: dict = {}
-    try:
-        case = chain.read_json(dispute, "get_case", [pid])
-    except Exception:  # noqa: BLE001
-        case = {}
-    return row, case
+        if not moves:
+            case = read_case(chain, dispute, pid)
+            if int(case.get("verdict", 0)):
+                break
+    return row, case or read_case(chain, dispute, pid)
 
 
 def owed(verdict: str, amount_wei: int, bond_wei: int) -> dict[str, int]:
@@ -253,7 +270,11 @@ def run_cycle(
     print(f"disputed   bond {bond_wei / GEN:.0f} GEN posted")
 
     row, case = wait_for_verdict(buyer, escrow, dispute, pid, timeout)
-    verdict = VERDICT.get(int(row.get("verdict", 0)), str(row.get("verdict")))
+    # The escrow carries the verdict once it settles. Until then, and on a
+    # runtime where it never does, the committee's is the one on the case.
+    settled = int(row.get("status", 0)) == 3
+    code = int(row.get("verdict", 0)) if settled else int(case.get("verdict", 0))
+    verdict = VERDICT.get(code, str(code))
     report["status"] = STATUS.get(int(row.get("status", 0)), str(row.get("status")))
     report["verdict"] = verdict
     report["reason"] = case.get("reason", "")
@@ -262,7 +283,9 @@ def run_cycle(
     if report["reason"]:
         print(f"reason     {report['reason']}")
 
-    due = owed(verdict, amount_gen * GEN, bond_wei)
+    # Nobody is owed where the settlement cannot run: the verdict is the
+    # outcome there, and a payout waited on would be one that never comes.
+    due = owed(verdict, amount_gen * GEN, bond_wei) if settlement_moves(network_name()) else {}
     after, landed = settle_balances(
         buyer, {"buyer": buyer_account.address, "seller": seller_address}, due,
     )
@@ -272,7 +295,9 @@ def run_cycle(
     report["moved_gen"] = {k: round(v, 2) for k, v in moved.items()}
     print(f"buyer      {before['buyer'] / GEN:.2f} -> {after['buyer'] / GEN:.2f} GEN  ({moved['buyer']:+.2f})")
     print(f"seller     {before['seller'] / GEN:.2f} -> {after['seller'] / GEN:.2f} GEN  ({moved['seller']:+.2f})")
-    if not due:
+    if not due and not settlement_moves(network_name()):
+        print(f"payout     none: the settlement does not move on {network_name()}, so the verdict is the outcome")
+    elif not due:
         print("payout     none: the escrow has not settled this payment, so nobody is owed yet")
     else:
         print(f"payout     {'landed' if landed else 'NOT LANDED within the wait; it moves on finalization'}")

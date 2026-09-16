@@ -520,11 +520,13 @@ the feed.
   the home page.
 - **Title**: the citation when a case exists, else the payment id.
 - **Subtitle**: "{pid} on {network}", or "never disputed, so there is no case;
-  payment {pid} on {network}", the network the page reads: Studio Next unless
-  its address asks for studionet.
-- **Facts** as a definition list: status (with "verdict written, money moves on
-  finalization" or "money moved" appended where true), verdict (or "not
-  contested"), amount, bond, paid, responded, decided, buyer, seller.
+  payment {pid} on {network}", the network the page reads, Studio Next.
+- **Facts** as a definition list: status, verdict (or "not contested"), amount,
+  bond, paid, responded, decided, buyer, seller. Status carries what the chain
+  shows: "money moved" once it has, and while a case is decided and unsettled
+  either "verdict written, money moves on finalization" where a verdict's
+  settlement pays out or "verdict written; on this runtime the settlement does
+  not move" where it cannot.
 - **What the validators read**: promise, request, response, timing, each in a
   labelled `pre`. Then **What they wrote**: the reason as a blockquote. Then a
   caption: read from chain when opened, or from the snapshot because the chain

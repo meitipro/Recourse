@@ -362,10 +362,6 @@ RULES: list[tuple[str, str, int, str | None, Value]] = [
     (r"direct tests", r"\d{3}", 0, "pytest, which scripts/test.py reads", lambda s: s.direct_tests),
     (r"defences", r"32|32 of 32", 0, "docs/MUTATIONS.md", lambda s: literal("docs/MUTATIONS.md", r"\*\*(\d+ of \d+) defences verified")),
     (r"32 of 32 are caught", r"32 of 32", 0, "docs/MUTATIONS.md", lambda s: literal("docs/MUTATIONS.md", r"\*\*(\d+ of \d+) defences verified")),
-    (r"26 checks", r"26", 0, None,
-     lambda s: f"what one live run checks: tests/integration/test_cycle.py has "
-     f"{read(ROOT / 'tests' / 'integration' / 'test_cycle.py').count('check(') - 1} check() call sites, several the two "
-     "branches of one check and one inside a loop, so only a run with RECOURSE_INTEGRATION=1 can confirm it"),
     (r"--runs 3", r"3", 0, "eval/results.json", lambda s: f"runs {s.r1['runs']}"),
     (r"six worked examples", r"six", 0, "linter/examples.py", lambda s: s.examples()),
     (r"two real coverage gaps", r"two", 0, "docs/SECURITY.md", "names the two tests that exist only because mutation found the gap"),
