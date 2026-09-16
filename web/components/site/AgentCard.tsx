@@ -34,18 +34,21 @@ export default function AgentCard() {
   }
 
   return (
-    <section aria-labelledby="rc-skill-card" style={{ border: "1px solid #1B2130", borderRadius: "4px", background: "#0E1119", maxWidth: "640px", minWidth: 0 } as React.CSSProperties}>
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: "8px 16px", padding: "14px 16px", borderBottom: "1px solid #1B2130" } as React.CSSProperties}>
-        <h2 id="rc-skill-card" style={{ ...LABEL, margin: 0, color: "#EEF3F8" }}>skill.md</h2>
+    <section aria-labelledby="rc-skill-card" className="rc-agent-card">
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "8px 16px", padding: "16px 20px", borderBottom: "1px solid #1B2130" } as React.CSSProperties}>
+        <h2 id="rc-skill-card" style={{ ...LABEL, margin: 0, color: "#EEF3F8", display: "inline-flex", alignItems: "center", gap: "10px" }}>
+          <span aria-hidden="true" className="rc-live-dot" />
+          skill.md
+        </h2>
         <a href={SKILL_REPO} target="_blank" rel="noreferrer" style={{ ...LABEL, color: "#22D3EE", textUnderlineOffset: "4px" }} className="rc-hover-5">
           View on GitHub <span aria-hidden="true">{"↗"}</span>
         </a>
       </div>
 
-      <div style={{ padding: "16px" } as React.CSSProperties}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "#0C1018", border: "1px solid #1B2130", borderRadius: "4px", padding: "10px 10px 10px 14px", minWidth: 0 } as React.CSSProperties}>
-          <code style={{ flex: "1 1 auto", minWidth: 0, font: `400 12.5px/1.6 ${MONO}`, color: "#EEF3F8", overflowWrap: "anywhere" } as React.CSSProperties}>
-            <span aria-hidden="true" style={{ color: "#7C8798" }}>$ </span>
+      <div style={{ padding: "22px 20px 18px" } as React.CSSProperties}>
+        <div className="rc-agent-command">
+          <code style={{ flex: "1 1 auto", minWidth: 0, font: `400 clamp(12.5px, 1.2vw, 14.5px)/1.6 ${MONO}`, color: "#EEF3F8", overflowWrap: "anywhere" } as React.CSSProperties}>
+            <span aria-hidden="true" style={{ color: "#22D3EE" }}>$ </span>
             {SKILL_COMMAND}
           </code>
           <button
@@ -53,7 +56,8 @@ export default function AgentCard() {
             onClick={copy}
             aria-label={copied ? "Copied" : "Copy the command"}
             title={copied ? "Copied" : "Copy"}
-            style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: "32px", height: "32px", background: "transparent", border: "1px solid #263048", borderRadius: "4px", color: copied ? "#22D3EE" : "#AEB9C8", cursor: "pointer" } as React.CSSProperties}
+            style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", background: copied ? "rgba(34,211,238,0.08)" : "transparent", border: `1px solid ${copied ? "#22D3EE" : "#263048"}`, borderRadius: "4px", color: copied ? "#22D3EE" : "#AEB9C8", cursor: "pointer", transition: "border-color 0.2s ease, background 0.2s ease, color 0.2s ease" } as React.CSSProperties}
+            className="rc-hover-2"
           >
             {copied ? (
               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
@@ -62,17 +66,17 @@ export default function AgentCard() {
             )}
           </button>
         </div>
-        <p style={{ ...LABEL, margin: "10px 0 0", color: "#7C8798" }}>For your agent</p>
+        <p style={{ ...LABEL, margin: "12px 0 0", color: "#7C8798" }}>For your agent</p>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px 16px", padding: "12px 16px", borderTop: "1px solid #1B2130" } as React.CSSProperties}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px 16px", padding: "14px 20px", borderTop: "1px solid #1B2130", background: "#0C1018" } as React.CSSProperties}>
         <span style={{ ...LABEL, color: "#AEB9C8" }}>No agent? Start here</span>
         <a
           href={NOTARY}
           target="_blank"
           rel="noreferrer"
-          style={{ ...LABEL, display: "inline-block", color: "#22D3EE", border: "1px solid #22D3EE", borderRadius: "4px", padding: "10px 14px", textDecoration: "none", minHeight: "24px" } as React.CSSProperties}
-          className="rc-hover-5"
+          style={{ ...LABEL, display: "inline-block", color: "#0A0C12", background: "#22D3EE", border: "1px solid #22D3EE", borderRadius: "4px", padding: "11px 16px", textDecoration: "none", minHeight: "24px" } as React.CSSProperties}
+          className="rc-notary-cta"
         >
           Talk to Notary
         </a>

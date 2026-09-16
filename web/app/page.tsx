@@ -33,7 +33,9 @@ import {
   LimitsSection,
   type EvaluationColumn,
 } from "@/components/site/Sections";
+import FaqSection from "@/components/site/FaqSection";
 import SiteFooter from "@/components/site/SiteFooter";
+import SkillSection from "@/components/site/SkillSection";
 import SiteHeader from "@/components/site/SiteHeader";
 import { permanentRedirect } from "next/navigation";
 import { DEFAULT_NETWORK, EXPLORER, deploymentOf, deployments, loadFeed, settlementMoves, type NetworkName } from "@/lib/chain";
@@ -224,7 +226,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
 
         {columns.length ? <EvaluationSection columns={columns} /> : null}
 
+        {/* 07: the skill, in the main flow rather than under the footer. */}
+        <SkillSection />
+
         <LimitsSection committee={settlement.committee ?? null} />
+        <FaqSection />
         <ClosingSection />
       </main>
       <SiteFooter network={network} deployments={pairs.map((one) => ({ network: one.network, chainId: one.chainId }))} />

@@ -315,8 +315,8 @@ def test_the_agent_card_and_the_telegram_link_point_where_they_say():
     assert "SKILL_COMMAND = `curl -s ${SITE}/skill.md`" in card and "writeText(SKILL_COMMAND)" in card
     assert (ROOT / "web" / "app" / "skill.md" / "route.ts").exists(), "the command needs the route it fetches"
     assert 'NOTARY = "https://t.me/AskRecourseBot"' in card and "href={NOTARY}" in card
-    footer = (ROOT / "web" / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
-    assert "<AgentCard />" in footer
+    section = (ROOT / "web" / "components" / "site" / "SkillSection.tsx").read_text(encoding="utf-8")
+    assert "<AgentCard />" in section
     hero = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
     assert 'href="https://t.me/AskRecourseBot"' in hero and ">Ask Notary on Telegram</a>" in hero
     assert "Notary reads promises, disputes and verdicts off the chain. No install." in hero
@@ -326,7 +326,7 @@ def test_the_navbar_offers_skill_and_notary_at_every_width():
     """
     Both entry points sit on the bar itself, beside Clerk and Feed on a wide
     screen and beside the menu button on a phone, so neither needs a scroll
-    or a tap to find. Skill jumps to the footer card, which carries the id.
+    or a tap to find. Skill jumps to section 07, which carries the id.
     """
     header = (ROOT / "web" / "components" / "site" / "SiteHeader.tsx").read_text(encoding="utf-8")
     assert 'NOTARY = "https://t.me/AskRecourseBot"' in header
@@ -336,7 +336,27 @@ def test_the_navbar_offers_skill_and_notary_at_every_width():
         assert "onClick={v.showSkill}" in group and ">Skill</button>" in group
         assert 'href={NOTARY} target="_blank"' in group and ">Ask Notary</a>" in group
     assert 'showSkill: jump("skill")' in header
-    footer = (ROOT / "web" / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
-    assert 'id="skill"' in footer and "<AgentCard />" in footer
+    section = (ROOT / "web" / "components" / "site" / "SkillSection.tsx").read_text(encoding="utf-8")
+    assert '<section id="skill"' in section and "<AgentCard />" in section
     css = (ROOT / "web" / "app" / "globals.css").read_text(encoding="utf-8")
     assert ".rc-narrow-flex { display: flex; }" in css
+
+
+def test_the_skill_and_the_questions_are_numbered_sections_in_the_main_flow():
+    """
+    The skill card sat under the footer, where nobody scrolls. It is section 07
+    now, straight after the evaluation, and the questions are 09, so the page
+    reads 06 Evaluation, 07 For your agent, 08 What it is not, 09 Questions,
+    10 In one line, and the footer holds no card of its own.
+    """
+    page = (ROOT / "web" / "app" / "page.tsx").read_text(encoding="utf-8")
+    order = [page.index(tag) for tag in ("<EvaluationSection", "<SkillSection />", "<LimitsSection", "<FaqSection />", "<ClosingSection />", "<SiteFooter")]
+    assert order == sorted(order), "the sections are out of order"
+    site = ROOT / "web" / "components" / "site"
+    sections = (site / "Sections.tsx").read_text(encoding="utf-8")
+    assert ">08</div>" in sections and ">What it is not</div>" in sections
+    assert '>10</span>' in sections and ">In one line</span>" in sections
+    assert ">07</span>" in (site / "SkillSection.tsx").read_text(encoding="utf-8")
+    faq = (site / "FaqSection.tsx").read_text(encoding="utf-8")
+    assert ">09</div>" in faq and 'role="tablist"' in faq and "aria-expanded={open}" in faq
+    assert "AgentCard" not in (site / "SiteFooter.tsx").read_text(encoding="utf-8")

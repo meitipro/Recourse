@@ -291,7 +291,7 @@ def _epoch(value: str) -> float:
 
 def test_the_settlement_timings_the_site_and_readme_state_are_the_chains_own():
     """
-    The README's timing block, the site's section 04 and its section 07 state
+    The README's timing block, the site's section 04 and its section 08 state
     four numbers about settlement. All four are totals here, each recomputed
     from the transactions by walking the hashes that link them, open_dispute
     to adjudicate to settle to payout, and each is held to where it is printed.
