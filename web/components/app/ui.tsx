@@ -85,6 +85,8 @@ export function ChecksView({ response, checks, receivedAt }: { response: string;
   return (
     <div style={{ display: "grid", gap: "10px", minWidth: 0 }}>
       <pre style={{ margin: 0, padding: "10px 12px", border: `1px solid ${T.line}`, borderRadius: T.radius, background: T.ground, color: T.body, font: `400 12px/1.6 ${T.mono}`, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{response}</pre>
+      {/* The CLI seller signs with a key read from .accounts.json on the machine running it. That key is not on this server, so the response both tiers freeze is unsigned. */}
+      <div style={{ font: `400 12px ${T.mono}`, color: T.amber }}>Signed by nothing - this demo seller holds no key on this server, unlike a real seller.</div>
       <div style={{ font: `400 11px ${T.mono}`, color: T.muted }}>received {receivedAt.replace("T", " ").replace(/\.\d+Z$/, " UTC")}</div>
       <div style={{ display: "grid", gap: "6px" }}>
         {checks.map((one) => (

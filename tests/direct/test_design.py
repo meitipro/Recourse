@@ -278,3 +278,28 @@ def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
     finally:
         seller.now = original
     assert [tuple(b) for b in port["bounds"]] == [read_promise_bounds(p) for p in promises]
+
+
+def test_the_wallet_is_offered_studio_next_by_its_real_chain_id():
+    """
+    A prompt once gave Studio Next's chain as 0xF1ED, which is 61933. The
+    wallet tier derives the hex from the deployment in contracts/FROZEN.json,
+    so the only chain it can ask a wallet to add is 61997, 0xf22d, and no hex
+    chain id is typed anywhere in the site.
+    """
+    record = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
+    assert record["deployments"]["studio-next"]["chain_id"] == 61997 and hex(61997) == "0xf22d"
+    wallet = (ROOT / "web" / "components" / "app" / "WalletRun.tsx").read_text(encoding="utf-8")
+    assert "const chainHex = `0x${at.chainId.toString(16)}`;" in wallet
+    assert wallet.count("chainId: chainHex") == 3, "switch, add and switch again all use the derived hex"
+    for path in (ROOT / "web").rglob("*.ts*"):
+        if "node_modules" in path.parts or ".next" in path.parts or path.suffix not in (".ts", ".tsx"):
+            continue
+        assert not re.search(r"0x[fF]1[eE][dD]\b", path.read_text(encoding="utf-8")), f"{path} carries 0xF1ED"
+
+
+def test_the_app_says_the_response_it_freezes_is_unsigned():
+    """The CLI seller signs; /app's server holds no seller key, and the response says so where it is shown."""
+    ui = (ROOT / "web" / "components" / "app" / "ui.tsx").read_text(encoding="utf-8")
+    checks_view = ui[ui.index("export function ChecksView"):ui.index("export function ModePicker")]
+    assert "Signed by nothing - this demo seller holds no key on this server, unlike a real seller." in checks_view

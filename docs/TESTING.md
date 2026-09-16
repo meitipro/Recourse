@@ -28,10 +28,10 @@ house style, holds the README's test count to pytest, and typechecks the site.
 It printed:
 
 ```
-432 passed
+434 passed
 === lint escrow / lint dispute / lint v06/escrow / lint v06/dispute
 === validate escrow / validate dispute / validate v06/escrow / validate v06/dispute
-README, docs/RULES.md and pytest agree: 432 direct tests, 1 skipped
+README, docs/RULES.md and pytest agree: 434 direct tests, 1 skipped
 all green
 ```
 
