@@ -680,3 +680,24 @@ def test_a_missing_credential_is_said_before_any_charge_and_never_crashes_a_turn
     chat = ClaudeChat(client=SimpleNamespace(beta=SimpleNamespace(messages=Unauthenticated())))
     reply = handle(2, "how often does it rule for the seller", conversations, bucket, deps, threads=Threads(), chat=chat)
     assert "no Anthropic credential" in reply, "a request that cannot authenticate is a reply, not a crash"
+
+
+def test_notary_introduces_itself_and_remembers_nobody():
+    """
+    The bot has a name and a first person voice, and nothing more: /start is
+    the Internet Court Clerk's shape, the profile texts fit what BotFather
+    accepts, and the system prompt forbids remembering a person.
+    """
+    from bot.handlers import ABOUT, DESCRIPTION, HELP, NAME, START
+
+    conversations, bucket, deps = world()
+    assert NAME == "Notary"
+    assert handle(1, "/start", conversations, bucket, deps) == START
+    assert START.startswith("I'm Notary, the Recourse agent. ")
+    assert START.endswith("Ask me about delivery promises, disputes, verdicts, escrow, or a specific case. No menus, just ask.")
+    assert handle(1, "/help", conversations, bucket, deps) == HELP and "/promise" in HELP
+    assert len(DESCRIPTION) <= 512 and len(ABOUT) <= 120, "BotFather refuses longer text"
+    assert "Notary" in SYSTEM and "first person" in SYSTEM
+    assert "You keep no profile, score or history of any person" in SYSTEM
+    assert "the linter says" not in HELP + START + DESCRIPTION
+    assert deps.calls == [], "an introduction reads nothing"

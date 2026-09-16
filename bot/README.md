@@ -39,6 +39,25 @@ disk, nothing survives a restart, and no message text is logged.
   answering a message can carry what was typed; only the transport's own
   errors, which carry Telegram's reason or the network's, are logged whole.
 
+## Name and voice
+
+The bot is Notary, the Recourse agent, and speaks in the first person: "I
+checked the chain", never "the linter says". The name is a role, the way
+GenLayer's Internet Court bot is its Clerk. A notary reads an agreement's
+wording and says whether it will hold up, which is the linter, and keeps the
+record, which is the reads. Unlike a notary it witnesses and signs nothing, and
+the committee, not Notary, rules on a dispute.
+
+That is a voice and nothing else. There is no profile, score or memory of any
+person; the six message, ten minute thread above is all it keeps.
+`bot/handlers.py` holds the texts, and `tests/direct/test_bot.py` holds them to
+their shape and to what BotFather accepts:
+
+- `START`, the reply to `/start`.
+- `DESCRIPTION`, pasted into BotFather's `/setdescription`: the "What can this
+  bot do?" paragraph a fresh DM shows before anything is typed.
+- `ABOUT`, pasted into `/setabouttext`: the line on the bot's profile.
+
 ## Commands
 
 | | |

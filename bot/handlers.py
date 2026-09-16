@@ -33,9 +33,36 @@ from bot.records import (  # noqa: F401 - citation, to_pid and the names stay im
     to_pid,
 )
 
-HELP = """Recourse, read only. Nothing here holds a key or moves money.
+#: The bot's name. A role, the way GenLayer's Internet Court bot is its Clerk:
+#: a notary reads an agreement's wording and says whether it will hold up, which
+#: is the linter, and keeps the record, which is the reads. Unlike a notary it
+#: witnesses and signs nothing, and says so.
+NAME = "Notary"
 
-Ask in plain words: whether a promise is any good, what happened with a case, how often it rules for the seller, whether a response would pass. Or use a command:
+#: /start, in the shape of the Internet Court Clerk's: who, what the protocol
+#: is in one sentence, what to ask.
+START = (
+    f"I'm {NAME}, the Recourse agent. Recourse holds a machine payment in escrow for a short window, "
+    "and if the response breaks the seller's written promise, GenLayer validators rule on the dispute. "
+    "Ask me about delivery promises, disputes, verdicts, escrow, or a specific case. No menus, just ask."
+)
+
+#: What BotFather's /setdescription takes: the "What can this bot do?" text a
+#: fresh DM shows before anything is typed. Telegram allows 512 characters.
+DESCRIPTION = (
+    f"I'm {NAME}, the Recourse agent. Recourse is the dispute right machine payments are missing: "
+    "an agent pays into escrow against a seller's written promise, and if the response breaks it, "
+    "GenLayer validators rule. I tell you whether a promise can be judged, dry run the judge on a "
+    "response, and read cases, sellers and live counts from the chain. I hold no key and move no money. "
+    "Ask me about delivery promises, disputes, verdicts, escrow, or a specific case. No menus, just ask."
+)
+
+#: What BotFather's /setabouttext takes: the profile line. Telegram allows 120 characters.
+ABOUT = f"{NAME}, the Recourse agent. I read promises, disputes and verdicts off the chain. I hold no key."
+
+HELP = f"""I'm {NAME}, the Recourse agent, and I only read. I hold no key and move no money.
+
+Ask me in plain words: whether a promise is any good, what happened with a case, how often it rules for the seller, whether a response would pass. Or use a command:
 
 /promise <text>   is this promise judgeable? The linter, in chat.
 /check            a dry run of the judge: the promise, then the response body.
@@ -44,11 +71,11 @@ Ask in plain words: whether a promise is any good, what happened with a case, ho
 /stats            live counts from chain, and both evaluation figures.
 /help             this.
 
-Paying, disputing and withdrawing are done from your own wallet. The exact calls are in the skill: github.com/meitipro/recourse-skill"""
+You pay, dispute and withdraw from your own wallet, never through me. The exact calls are in the skill: github.com/meitipro/recourse-skill"""
 
 NO_MODEL = (
-    "Free text needs a model to choose which read to make, and this bot has none right now: {why}.\n"
-    "The commands read directly: /promise <text>, /check, /case <id>, /seller <addr>, /stats. /help explains each."
+    "I need a model to choose which read a question needs, and I have none right now: {why}.\n"
+    "The commands still work, because I read those directly: /promise <text>, /check, /case <id>, /seller <addr>, /stats. /help explains each."
 )
 
 
@@ -61,19 +88,19 @@ def cmd_promise(argument: str, deps: Deps) -> str:
     try:
         result = deps.lint(argument)
     except Unavailable as error:
-        return f"The linter could not answer: {error}. Stage 1 is free and deterministic; stage 2 needs a model the linter does not have right now."
+        return f"I could not get an answer from the linter: {error}. Stage 1 is free and deterministic; stage 2 needs a model the linter does not have right now."
     lines = []
     if result["judgeable"]:
         lines.append("JUDGEABLE. " + result["reason"])
-        lines.append("A response could be ruled against this. That is what a promise is for.")
+        lines.append("A committee could rule a response against this. That is what a promise is for.")
     else:
         head = "NOT JUDGEABLE"
         if result.get("failed_check"):
             head += f" (failed: {result['failed_check']}, no model was asked)"
         lines.append(head + ". " + result["reason"])
         if result.get("suggestion"):
-            lines.append("\nA rewrite that keeps your intent and passes the checks:\n\n" + result["suggestion"])
-    lines.append(f"\nstage {result['stage']} of the linter. Stage 2 is the deployed gate's question put to one model: a dry run, not the gate's verdict. Nothing you send here is stored.")
+            lines.append("\nA rewrite that keeps your intent and passes my checks:\n\n" + result["suggestion"])
+    lines.append(f"\nstage {result['stage']} of the linter. Stage 2 is the deployed gate's question, which I put to one model: a dry run, not the gate's verdict. I keep what you send here in memory for ten minutes at most, and none of it is stored.")
     return "\n".join(lines)
 
 
@@ -85,11 +112,11 @@ def cmd_case(argument: str, deps: Deps) -> str:
     try:
         record = case_record(pid, deps)
     except Unavailable as error:
-        return f"Could not read {pid} from the chain: {error}"
+        return f"I could not read {pid} from the chain: {error}"
     if not record["disputed"]:
-        return f"{pid} was never disputed, so there is no case to read. Status: {record['status']}. Window ends {record['window_ends']}."
+        return f"{pid} was never disputed, so I have no case to read. Status: {record['status']}. Window ends {record['window_ends']}."
     if not record["decided"]:
-        return f"{pid} is disputed and judgment is still running: no case row yet. Dispute ends {record['dispute_ends']}."
+        return f"{pid} is disputed and judgment is still running: I see no case row yet. Dispute ends {record['dispute_ends']}."
     return "\n".join([
         f"{record['citation']}  ({pid})",
         f"verdict   {record['verdict']}",
@@ -113,7 +140,7 @@ def cmd_seller(argument: str, deps: Deps) -> str:
     try:
         record = seller_record(address, deps)
     except Unavailable as error:
-        return f"Could not read that seller: {error}"
+        return f"I could not read that seller: {error}"
     lines = [
         f"seller     {record['address']}",
         f"promise    {record['promise']}",
@@ -163,20 +190,20 @@ def cmd_check(chat_id: int, argument: str, conversations, deps: Deps) -> str:
         try:
             result = deps.dry_run(promise, response)
         except Unavailable as error:
-            return f"DRY RUN could not run: {error}. No model is available to ask, so no verdict is offered."
+            return f"I could not run the dry run: {error}. I have no model to ask, so I offer no verdict."
         return "\n".join([
             "DRY RUN, no money, no consensus. One model, both presentation orders, the deployed contract's own judge().",
             f"verdict  {result['verdict']}",
             f"reason   {result['reason']}",
             f"orders   {'agreed' if result.get('agreed') == 'yes' else 'DISAGREED, resolved to unclear'}",
             "",
-            "On chain this would be a five node committee. Treat this as what the judge would probably say, not what it did say.",
+            "On chain a five node committee would rule, not me. Treat this as what the judge would probably say, not what it did say.",
         ])
     if argument.strip():
         conversations.set(chat_id, {"step": "response", "promise": argument.strip()})
-        return "Promise noted. Now send the response body, as the endpoint returned it."
+        return "I have the promise. Now send me the response body, as the endpoint returned it."
     conversations.set(chat_id, {"step": "promise"})
-    return "Step 1 of 2: send the seller's promise."
+    return "Step 1 of 2: send me the seller's promise."
 
 
 def slow_down(bucket, chat_id: int, cost: float) -> str:
@@ -184,13 +211,13 @@ def slow_down(bucket, chat_id: int, cost: float) -> str:
     wait = bucket.wait_seconds(chat_id, cost)
     if cost >= bucket.expensive:
         return (
-            "Slow down: this chat has used its share of model calls for now. The limit protects the model "
-            "budget that answers every chat, so one loop cannot spend it for everyone. /stats, /case and "
-            f"/seller only read the chain and cost less. Try again in about {wait} seconds."
+            "Slow down: this chat has used its share of my model calls for now. The limit protects the model "
+            "budget that answers every chat, so one loop cannot spend it for everyone. For /stats, /case and "
+            f"/seller I only read the chain, which costs less. Ask me again in about {wait} seconds."
         )
     return (
-        "Slow down: this chat is reading faster than the shared Studio node allows. The limit protects "
-        f"that node, which rate limits every reader at once. Try again in about {wait} seconds."
+        "Slow down: this chat is asking me to read faster than the shared Studio node allows. The limit protects "
+        f"that node, which rate limits every reader at once. Ask me again in about {wait} seconds."
     )
 
 
@@ -234,13 +261,15 @@ def _reply(chat_id: int, text: str, conversations, bucket, deps: Deps, threads, 
     # A conversation in progress takes plain text as its next step.
     if state.get("step") == "promise" and not text.startswith("/"):
         conversations.set(chat_id, {"step": "response", "promise": text})
-        return "Promise noted. Now send the response body, as the endpoint returned it."
+        return "I have the promise. Now send me the response body, as the endpoint returned it."
     if state.get("step") == "response" and not text.startswith("/"):
         if not bucket.take(chat_id, cost=bucket.expensive):
             return slow_down(bucket, chat_id, bucket.expensive)
         return cmd_check(chat_id, text, conversations, deps)
 
-    if command in ("/start", "/help"):
+    if command == "/start":
+        return START
+    if command == "/help":
         return HELP
     if command == "/promise":
         if not bucket.take(chat_id, cost=bucket.expensive):
@@ -263,7 +292,7 @@ def _reply(chat_id: int, text: str, conversations, bucket, deps: Deps, threads, 
             return slow_down(bucket, chat_id, 1)
         return cmd_stats(deps)
     if text.startswith("/"):
-        return f"Unknown command {command}.\n\n" + HELP
+        return f"I have no command called {command}.\n\n" + HELP
     return _free_text(chat_id, text, conversations, bucket, deps, threads, chat, trace)
 
 

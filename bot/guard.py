@@ -58,7 +58,7 @@ def looks_like_secret(text: str) -> str | None:
 
 COMPROMISED = (
     "That message contains what looks like a {what}. It is now compromised, "
-    "whatever this bot does: it has passed through Telegram's servers and this "
-    "process. Rotate it now, move anything it controls, and never paste one "
-    "into a chat again. Nothing else in that message was read."
+    "whatever I do: it has passed through Telegram's servers and through me. "
+    "Rotate it now, move anything it controls, and never paste one "
+    "into a chat again. I did not read anything else in that message."
 )
