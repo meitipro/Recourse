@@ -277,15 +277,27 @@ candidate for the arbiter slot, not a competitor to an escrow.
 
 ### 4.9 Footer
 
-The closing line in serif: "A refund system where the merchant picks the judge
-is a refund policy. It is not a dispute right." Then a row: "Recourse" on the
-left, and on the right three links, repository, genlayer, and the author's X
-handle.
+A colophon, not a byline. Three columns under the rule that closes the page:
 
-Planned, not built: when the three Vercel projects exist, the footer gains
-links to the hosted linter and MCP server, in the same commit that puts the
-URLs into the README's Install section. Until then the footer has exactly the
-three links above.
+- the seal from the closing panel beside the wordmark, "Recourse" in the serif
+  with the full stop in the accent, and under it what the project is in one
+  line;
+- **The record**: the network being read with its chain, and every other
+  deployment the freeze record holds, each named with its chain and never
+  linked;
+- **Source**: three links, the repository, the skill and MCP server, and
+  GenLayer.
+
+Then a bottom bar over a hairline: where the figures on the page came from,
+and "MIT licensed" with the year.
+
+The canvas put the author's X handle here, beside an article link to a page
+that does not exist. Neither is here: the last thing a reader meets is what
+the project is and what stands behind it, rather than who wrote it, and
+`tests/direct/test_design.py` fails if a handle returns. The hosted linter and
+MCP server are not linked either. They are POST endpoints, the MCP answering a
+browser's GET with 405 and the linter with raw JSON, and the README's Install
+section names both addresses instead.
 
 ---
 

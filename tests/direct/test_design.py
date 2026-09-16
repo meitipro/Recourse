@@ -169,6 +169,9 @@ def test_studio_next_is_the_only_network_a_visitor_can_arrive_at():
     assert "permanentRedirect(`/case/${id}`)" in case and "const network = DEFAULT_NETWORK;" in case
     footer = (web / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
     assert "Reading {network} / chain" in footer and "kept in the record" in footer and "<a href" not in footer.split("Also ran on")[1].split("</p>")[0]
+    # The footer is the project's colophon, not a byline: the canvas's author
+    # handle and its link to an article nobody published are both gone.
+    assert "x.com" not in footer and "@meiti" not in footer, "the footer carries a personal handle again"
     cards = (web / "components" / "site" / "ContractCards.tsx").read_text(encoding="utf-8")
     assert "In the record" in cards and "href" not in cards
     frozen = json.loads((ROOT / "contracts" / "FROZEN.json").read_text(encoding="utf-8"))
