@@ -451,7 +451,7 @@ def test_the_model_is_handed_the_five_reads_and_nothing_else():
     assert client.sent[0]["tools"] is TOOLS
 
 
-def test_the_sdk_request_is_the_configured_model_at_low_effort_with_the_refusal_fallback():
+def test_the_sdk_request_is_the_configured_model_at_low_effort_with_nothing_openrouter_refuses():
     client = FakeClient(text_response("ok"), text_response("ok"))
     chat = ClaudeChat(client=client)
     assert chat.ready() == (True, None)
@@ -460,22 +460,22 @@ def test_the_sdk_request_is_the_configured_model_at_low_effort_with_the_refusal_
     first, last = client.sent
     assert first["model"] == chat.model
     assert first["thinking"] == {"type": "adaptive"} and first["output_config"] == {"effort": "low"}
-    assert first["fallbacks"] == "default" and first["betas"] == ["server-side-fallback-2026-07-01"]
+    # OpenRouter answered the fallbacks field with 400 "expected array, received
+    # string" on Railway; the beta and its field are not sent at all.
+    assert "fallbacks" not in first and "betas" not in first
     assert first["system"] == SYSTEM
     assert first["tool_choice"] == {"type": "auto"} and last["tool_choice"] == {"type": "none"}
 
 
-def test_after_a_fallback_only_the_finishing_model_is_echoed():
+def test_a_turn_is_read_whole_from_the_one_model_that_answered():
     blocks = [
         SimpleNamespace(type="thinking", thinking=""),
-        SimpleNamespace(type="tool_use", id="declined", name="get_stats", input={}),
-        SimpleNamespace(type="fallback"),
-        SimpleNamespace(type="thinking", thinking=""),
+        SimpleNamespace(type="text", text="Reading it. "),
         SimpleNamespace(type="tool_use", id="kept", name="get_case", input={"id": "p-000003"}),
     ]
     turn = _turn("tool_use", blocks)
-    assert [block.type for block in turn.content] == ["thinking", "tool_use"]
-    assert turn.calls == [("kept", "get_case", {"id": "p-000003"})]
+    assert [block.type for block in turn.content] == ["thinking", "text", "tool_use"]
+    assert turn.calls == [("kept", "get_case", {"id": "p-000003"})] and turn.text == "Reading it. "
 
 
 def test_free_text_is_answered_from_a_read_made_that_turn():

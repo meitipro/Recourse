@@ -111,11 +111,12 @@ one they did not is sent back once, then refused.
   reaches a model costs five more. The refusal says what the limit protects
   and when it lifts.
 - **Model.** Claude Opus 5 through the Anthropic SDK at low effort, with
-  adaptive thinking and the server side refusal fallback, unless configured
+  adaptive thinking, unless configured
   otherwise. `RECOURSE_MODEL` overrides the model, passed through unchanged,
   and `RECOURSE_BOT_MODEL` is still read after it; `ANTHROPIC_BASE_URL` sends
-  the client to another endpoint that speaks the Messages API. The refusal
-  fallback is an Anthropic beta, so another endpoint may not carry it.
+  the client to another endpoint that speaks the Messages API. The request
+  carries no server side refusal fallback: it is an Anthropic beta, and
+  OpenRouter rejects its `fallbacks` field with a 400.
   `RECOURSE_BOT_BACKEND=none` turns free text off. The
   `claude` CLI is not a backend for free text: it carries tools of its own,
   and the model here must be handed the five reads and nothing more.

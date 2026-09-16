@@ -441,19 +441,15 @@ def _turn(stop: str | None, blocks: list) -> Turn:
     """
     The part of a response the loop may echo back, and what it asked for.
 
-    After a server side fallback, everything before the last fallback marker
-    except text belongs to the declined attempt and is not echoed, and the
-    marker itself is only an audit note. Tool calls and the answer are read
-    from what the model that finished the turn produced.
+    The request carries no server side fallback: that is an Anthropic beta,
+    OpenRouter refuses its `fallbacks` field outright, and this bot runs
+    through OpenRouter. So a response is one model's, read whole.
     """
-    last = max((index for index, block in enumerate(blocks) if _kind(block) == "fallback"), default=-1)
-    kept = [block for index, block in enumerate(blocks) if _kind(block) != "fallback" and (index > last or _kind(block) == "text")]
-    after = blocks[last + 1 :]
     return Turn(
         stop=stop or "",
-        content=kept,
-        text="".join(_get(block, "text") or "" for block in after if _kind(block) == "text"),
-        calls=[(_get(block, "id"), _get(block, "name"), _get(block, "input")) for block in after if _kind(block) == "tool_use"],
+        content=list(blocks),
+        text="".join(_get(block, "text") or "" for block in blocks if _kind(block) == "text"),
+        calls=[(_get(block, "id"), _get(block, "name"), _get(block, "input")) for block in blocks if _kind(block) == "tool_use"],
     )
 
 
@@ -462,8 +458,8 @@ class ClaudeChat:
     The model behind free text, through the official SDK.
 
     Claude Opus 5 at low effort, because choosing a read and answering in six
-    lines is a routing job rather than a hard one, with adaptive thinking and
-    the server side refusal fallback. The tools it is handed are TOOLS and
+    lines is a routing job rather than a hard one, with adaptive thinking.
+    The tools it is handed are TOOLS and
     nothing else. The Claude Code CLI is not offered as a backend here: it
     carries tools of its own, and this model must be handed five reads and
     nothing more.
@@ -513,8 +509,6 @@ class ClaudeChat:
             response = client.beta.messages.create(
                 model=self.model,
                 max_tokens=4096,
-                betas=["server-side-fallback-2026-07-01"],
-                fallbacks="default",
                 thinking={"type": "adaptive"},
                 output_config={"effort": "low"},
                 cache_control={"type": "ephemeral"},
