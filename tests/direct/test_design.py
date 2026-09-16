@@ -320,3 +320,23 @@ def test_the_agent_card_and_the_telegram_link_point_where_they_say():
     hero = (ROOT / "web" / "components" / "site" / "Hero.tsx").read_text(encoding="utf-8")
     assert 'href="https://t.me/AskRecourseBot"' in hero and ">Ask Notary on Telegram</a>" in hero
     assert "Notary reads promises, disputes and verdicts off the chain. No install." in hero
+
+
+def test_the_navbar_offers_skill_and_notary_at_every_width():
+    """
+    Both entry points sit on the bar itself, beside Clerk and Feed on a wide
+    screen and beside the menu button on a phone, so neither needs a scroll
+    or a tap to find. Skill jumps to the footer card, which carries the id.
+    """
+    header = (ROOT / "web" / "components" / "site" / "SiteHeader.tsx").read_text(encoding="utf-8")
+    assert 'NOTARY = "https://t.me/AskRecourseBot"' in header
+    wide = header[header.index('className="rc-wide" style={{ alignItems: "stretch" }'):header.index('className="rc-narrow-flex"')]
+    narrow = header[header.index('className="rc-narrow-flex"'):header.index('aria-controls="mobileMenu"')]
+    for group in (wide, narrow):
+        assert "onClick={v.showSkill}" in group and ">Skill</button>" in group
+        assert 'href={NOTARY} target="_blank"' in group and ">Ask Notary</a>" in group
+    assert 'showSkill: jump("skill")' in header
+    footer = (ROOT / "web" / "components" / "site" / "SiteFooter.tsx").read_text(encoding="utf-8")
+    assert 'id="skill"' in footer and "<AgentCard />" in footer
+    css = (ROOT / "web" / "app" / "globals.css").read_text(encoding="utf-8")
+    assert ".rc-narrow-flex { display: flex; }" in css

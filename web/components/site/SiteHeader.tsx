@@ -27,6 +27,9 @@ const LINK = { display: "inline-flex", alignItems: "center", padding: "10px 13px
 
 const RULE = { width: "1px", height: "20px", background: "#263048", margin: "0 6px", flex: "0 0 auto" } as React.CSSProperties;
 
+/** Notary, the Telegram bot: the way in for someone without an agent. */
+const NOTARY = "https://t.me/AskRecourseBot";
+
 const GROUP = { display: "inline-flex", alignItems: "center", border: "1px solid rgba(255,255,255,0.20)", borderRadius: "0", padding: "10px clamp(11px, 0.95vw, 16px)", cursor: "pointer", font: "500 clamp(10px, 0.72vw, 12.5px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", transition: "background 0.25s ease, color 0.25s ease", whiteSpace: "nowrap" } as React.CSSProperties;
 
 export default function SiteHeader() {
@@ -83,6 +86,7 @@ export default function SiteHeader() {
     goEval: jump("evaluation"),
     showClerk: jump("clerk"),
     showFeed: jump("feed"),
+    showSkill: jump("skill"),
     barEdge: scrolled ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.10)",
     navClerkBg: "transparent",
     navClerkColor: "#AEB9C8",
@@ -125,7 +129,14 @@ export default function SiteHeader() {
           <div role="group" className="rc-wide" style={{ alignItems: "stretch" } as React.CSSProperties}>
             <button type="button" onClick={v.showClerk} style={{ ...GROUP, background: v.navClerkBg, color: v.navClerkColor }} className="rc-hover-2">Clerk</button>
             <button type="button" onClick={v.showFeed} style={{ ...GROUP, borderLeft: "0", background: v.navFeedBg, color: v.navFeedColor }} className="rc-hover-2">Feed</button>
-            <button type="button" onClick={v.showFeed} style={{ ...GROUP, borderLeft: "0", background: v.navFeedBg, color: v.navFeedColor }} className="rc-hover-2">View the feed</button>
+            <button type="button" onClick={v.showFeed} style={{ ...GROUP, borderLeft: "0", background: v.navFeedBg, color: v.navFeedColor }} className="rc-hover-2 rc-xwide">View the feed</button>
+            <button type="button" onClick={v.showSkill} style={{ ...GROUP, borderLeft: "0", background: "transparent", color: "#AEB9C8" }} className="rc-hover-2">Skill</button>
+            <a href={NOTARY} target="_blank" rel="noreferrer" style={{ ...GROUP, borderLeft: "0", background: "transparent", color: "#22D3EE" }} className="rc-hover-2">Ask Notary</a>
+          </div>
+          {/* On a phone the section links fold into the menu, but these two stay on the bar, so neither needs a tap to find. */}
+          <div role="group" className="rc-narrow-flex" style={{ alignItems: "stretch", marginLeft: "4px" } as React.CSSProperties}>
+            <button type="button" onClick={v.showSkill} style={{ ...GROUP, padding: "10px 11px", fontSize: "11px", background: "transparent", color: "#AEB9C8" }} className="rc-hover-2">Skill</button>
+            <a href={NOTARY} target="_blank" rel="noreferrer" style={{ ...GROUP, borderLeft: "0", padding: "10px 11px", fontSize: "11px", background: "transparent", color: "#22D3EE" }} className="rc-hover-2">Ask Notary</a>
           </div>
           <button type="button" onClick={v.toggleMenu} aria-label={v.menuAria} aria-expanded={v.menuOpen} aria-controls="mobileMenu" className="rc-narrow" style={{ position: "relative", width: "44px", height: "38px", background: "transparent", border: "0", padding: "0", cursor: "pointer", flex: "0 0 auto" } as React.CSSProperties}>
             <span style={{ position: "absolute", left: "50%", top: v.bar1Top, width: "22px", height: "1px", background: "#EEF3F8", transform: `translateX(-50%) rotate(${v.bar1Rot})`, transition: "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), top 0.45s cubic-bezier(0.16, 1, 0.3, 1)" } as React.CSSProperties}></span>
@@ -141,6 +152,8 @@ export default function SiteHeader() {
           <a href="#how" onClick={v.goHow} style={{ font: "500 clamp(20px, 5.5vw, 28px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.14em", textTransform: "uppercase", color: "#EEF3F8", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 250ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 250ms" } as React.CSSProperties}>How it works</a>
           <a href="#evaluation" onClick={v.goEval} style={{ font: "500 clamp(20px, 5.5vw, 28px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.14em", textTransform: "uppercase", color: "#EEF3F8", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 320ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 320ms" } as React.CSSProperties}>Evaluation</a>
           <button type="button" onClick={v.showClerk} style={{ background: "transparent", border: "0", padding: "0", cursor: "pointer", font: "500 clamp(20px, 5.5vw, 28px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", color: "#EEF3F8", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 390ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 390ms" } as React.CSSProperties}>Clerk</button>
+          <button type="button" onClick={v.showSkill} style={{ background: "transparent", border: "0", padding: "0", cursor: "pointer", font: "500 clamp(20px, 5.5vw, 28px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", color: "#EEF3F8", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 420ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 420ms" } as React.CSSProperties}>Skill</button>
+          <a href={NOTARY} target="_blank" rel="noreferrer" style={{ font: "500 clamp(20px, 5.5vw, 28px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", color: "#22D3EE", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 440ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 440ms" } as React.CSSProperties}>Ask Notary</a>
           <button type="button" onClick={v.showFeed} style={{ marginTop: "12px", background: "transparent", border: "1px solid rgba(255,255,255,0.20)", borderRadius: "0", padding: "16px 40px", cursor: "pointer", font: "500 clamp(12px, 3vw, 14px) 'Geist Mono', ui-monospace, monospace", letterSpacing: "0.04em", color: "#EEF3F8", opacity: v.menuItemOp, transform: `translateY(${v.menuItemY})`, transition: "opacity 0.4s ease 460ms, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 460ms" } as React.CSSProperties}>View the feed</button>
         </div>
       </div>

@@ -386,7 +386,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 436 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 437 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -405,7 +405,7 @@ checks, that the payment reaches resolved and the seller's record moves with
 it, run where a verdict's settlement pays out, which in this record is
 studionet. It has not been run since it was split that way.
 
-The 436 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 437 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against

@@ -1113,10 +1113,17 @@ a:hover {
 
 .rc-wide { display: flex; }
 .rc-narrow { display: none; }
+.rc-narrow-flex { display: none; }
+
+/* View the feed repeats Feed; below this width the bar gives its room to Skill and Ask Notary. */
+@media (max-width: 1179px) {
+  .rc-xwide { display: none !important; }
+}
 
 @media (max-width: 900px) {
   .rc-wide { display: none; }
   .rc-narrow { display: block; }
+  .rc-narrow-flex { display: flex; }
 }
 
 /* The boot screen leaves by itself even if no script ever runs: the script
