@@ -65,10 +65,15 @@ export default async function CasePage({
   const decided = evidence.case;
   const citation = decided ? toCitation(pid, decided.decided_at) : null;
   const status = STATUS[payment.status] ?? String(payment.status);
-  // The escrow carries the verdict once it settles. Until then, and on a
-  // network where it never does, the case carries the committee's.
-  const verdictCode = payment.status !== 3 && decided ? decided.verdict : payment.verdict;
+  // The committee's verdict is the case's, wherever one was written. The
+  // escrow's own field is shown only when there is no case, a stalled dispute
+  // unwound by reclaim. On Studio Next settle never runs, so reclaim can also
+  // resolve a decided payment with the unclear split, and then the escrow's
+  // field disagrees with the committee's: that is said, never shown as the
+  // verdict.
+  const verdictCode = decided ? decided.verdict : payment.verdict;
   const verdict = VERDICT[verdictCode] ?? String(verdictCode);
+  const reclaimedOver = payment.status === 3 && decided !== null && decided !== undefined && payment.verdict !== decided.verdict;
 
   return (
     <main className="case-page">
@@ -97,7 +102,10 @@ export default async function CasePage({
               ? " (verdict written, money moves on finalization)"
               : " (verdict written; on this runtime the settlement does not move)"
             : ""}
-          {payment.status === 3 ? " (money moved)" : ""}
+          {payment.status === 3 && !reclaimedOver ? " (money moved)" : ""}
+          {reclaimedOver
+            ? " (reclaimed after the dispute window: the escrow paid the unclear split, the seller keeping the payment and the buyer getting the bond back, not this verdict)"
+            : ""}
         </dd>
         <dt>verdict</dt>
         <dd className={`verdict ${verdict}`}>{payment.status < 2 ? "not contested" : verdict.replace("_", " ")}</dd>

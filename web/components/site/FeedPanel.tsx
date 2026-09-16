@@ -141,9 +141,10 @@ export default function FeedPanel({ data, limit = 6 }: { data: FeedData; limit?:
 
   const rows = shown.map((row) => {
     const state = stateOf(row, now);
-    // The escrow carries the verdict once it settles. Until then, and on a
-    // network where it never does, the case carries the committee's.
-    const code = row.status !== 3 && row.case ? row.case.verdict : row.verdict;
+    // The committee's verdict wherever a case was written; the escrow's field
+    // only for a dispute with no case. The case page says when reclaim paid a
+    // different split from the verdict.
+    const code = row.case ? row.case.verdict : row.verdict;
     const verdict = VERDICT_NAMES[code] ?? String(code);
     const citation = row.case ? toCitation(row.pid, row.case.decided_at) : null;
     const isOpen = open === row.pid;

@@ -375,3 +375,17 @@ def test_reclaim_is_described_with_its_studio_next_limitation():
     answer = faq[faq.index('question: "What if judgment never lands?"'):faq.index('agents: [')]
     assert "forever" not in answer
     assert "does not check for an existing verdict" in answer and "confirmed working on Studio Next" in answer
+
+
+def test_a_case_shows_the_committees_verdict_even_after_reclaim():
+    """
+    p-000014 was decided not_honored, then reclaimed after its window, which
+    wrote unclear into the escrow's own field. The case page showed UNCLEAR
+    beside the committee's not honored reason. The committee's verdict is the
+    case's wherever one exists, and a reclaim over it is said in the status.
+    """
+    page = (ROOT / "web" / "app" / "case" / "[id]" / "page.tsx").read_text(encoding="utf-8")
+    assert "const verdictCode = decided ? decided.verdict : payment.verdict;" in page
+    assert "payment.verdict !== decided.verdict" in page and "not this verdict" in page
+    feed = (ROOT / "web" / "components" / "site" / "FeedPanel.tsx").read_text(encoding="utf-8")
+    assert "const code = row.case ? row.case.verdict : row.verdict;" in feed
