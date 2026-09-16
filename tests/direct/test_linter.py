@@ -422,6 +422,63 @@ def test_an_empty_environment_asks_the_default_model_at_the_sdks_own_address(mon
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://openrouter.ai/api")
     assert service.configured_model() == agent.configured_model() == "anthropic/claude-opus-5"
     assert service.client_options() == {"base_url": "https://openrouter.ai/api"}
+    # The SDK adds /v1/messages itself, so a base written with /v1 loses it.
+    for written in ("https://openrouter.ai/api/v1", "https://openrouter.ai/api/v1/", "https://openrouter.ai/api/"):
+        monkeypatch.setenv("ANTHROPIC_BASE_URL", written)
+        assert service.client_options() == {"base_url": "https://openrouter.ai/api"}, written
+
+
+def test_an_endpoint_that_refuses_is_a_named_503_never_a_crash(monkeypatch):
+    """
+    The hosted linter called https://openrouter.ai/api/v1/v1/messages, got
+    OpenRouter's 404 page, and the SDK's NotFoundError went through lint() and
+    the handler unhandled: Vercel answered FUNCTION_INVOCATION_FAILED. Any
+    status the endpoint answers is now ModelUnavailable, named with the status
+    and the URL called, and the handler turns that into its 503. An address
+    that answers a web page with 200 is named too, instead of an
+    AttributeError on a string.
+    """
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    from linter import service
+
+    class Page(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            # Read the request before answering. A socket closed with unread
+            # bytes is reset on Windows, and the client reports a connection
+            # error instead of the status this stub is here to send.
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            status = 404 if "/v1/v1/" in self.path else 200
+            body = b"<!DOCTYPE html><html><body>not the api</body></html>"
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Page)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    root = f"http://127.0.0.1:{server.server_address[1]}"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a-key-that-is-never-sent")
+    promise = "Returns pricing data for the requested pair, refreshed regularly."
+    try:
+        # A 404 from the endpoint, reached here by bypassing the /v1 fix.
+        model = service.ClaudeModel("anthropic/claude-opus-5")
+        import anthropic
+
+        model._client = anthropic.Anthropic(base_url=f"{root}/api/v1", max_retries=0)
+        with pytest.raises(ModelUnavailable, match=r"^the model endpoint answered 404 for .*/api/v1/v1/messages$"):
+            lint(promise, model=model)
+        # A web page served with 200.
+        monkeypatch.setenv("ANTHROPIC_BASE_URL", root)
+        model = service.ClaudeModel("anthropic/claude-opus-5")
+        with pytest.raises(ModelUnavailable, match="not with a Messages API response"):
+            lint(promise, model=model)
+    finally:
+        server.shutdown()
 
 
 def test_the_judge_answers_one_shape_and_says_when_there_is_no_model():

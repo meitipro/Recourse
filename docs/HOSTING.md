@@ -54,7 +54,7 @@ Two things a hand check gets wrong, and the script does not:
 | Project name | `recourse-linter` |
 | Root directory | `.` (the repository root; the functions are `api/lint.py` and `api/judge.py`) |
 | Framework | Other. Not Python: the first import used the Python preset, which looks for a single app entrypoint, and failed with "No python entrypoint found" |
-| Environment | `ANTHROPIC_API_KEY`, for Production and not only Preview. Without it stage 1 still answers, and stage 2 and the judge say 503. Optional: `RECOURSE_MODEL` and `ANTHROPIC_BASE_URL`, to run both through another endpoint that speaks the Messages API; unset, Claude Opus 5 at Anthropic's own address |
+| Environment | `ANTHROPIC_API_KEY`, for Production and not only Preview. Without it stage 1 still answers, and stage 2 and the judge say 503. Optional: `RECOURSE_MODEL` and `ANTHROPIC_BASE_URL`, to run both through another endpoint that speaks the Messages API; unset, Claude Opus 5 at Anthropic's own address. For OpenRouter the base is `https://openrouter.ai/api`: the SDK adds `/v1/messages` itself, and a base written with `/v1` has it dropped rather than called twice |
 
 `api/judge.py` is what the site's clerk reaches: the clerk turns `LINTER_URL`'s
 `/api/lint` into `/api/judge`. Before that file existed the clerk worked

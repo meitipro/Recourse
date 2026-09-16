@@ -531,6 +531,9 @@ class ClaudeChat:
             raise ChatUnavailable("the model could not be reached") from error
         except anthropic.APIStatusError as error:
             raise ChatUnavailable(f"the model answered with an error ({error.status_code})") from error
+        if not hasattr(response, "stop_reason"):
+            # An address that serves a web page with 200 comes back as a string.
+            raise ChatUnavailable(f"{client.base_url} answered, but not with a Messages API response")
         return _turn(response.stop_reason, list(response.content))
 
 

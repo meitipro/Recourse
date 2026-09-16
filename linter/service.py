@@ -49,8 +49,17 @@ def client_options() -> dict:
     What the Anthropic client is built with. ANTHROPIC_BASE_URL points it at
     another endpoint that speaks the Messages API, such as OpenRouter's; unset,
     nothing is passed and the SDK uses its own default address.
+
+    The SDK appends /v1/messages to the base itself, so a base that already
+    ends in /v1, the way OpenAI style addresses are written, called
+    /v1/v1/messages. On the hosted linter that was
+    https://openrouter.ai/api/v1/v1/messages, a 404 page, and every stage 2
+    call crashed the function. One trailing /v1 is dropped here for that
+    reason and for no other.
     """
-    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+    base_url = (os.environ.get("ANTHROPIC_BASE_URL") or "").strip().rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[: -len("/v1")]
     return {"base_url": base_url} if base_url else {}
 
 
@@ -137,6 +146,18 @@ class ClaudeModel:
         except anthropic.APIConnectionError as error:
             self.last_error = f"could not reach the model: {error}"
             raise ModelUnavailable(self.last_error) from error
+        except anthropic.APIStatusError as error:
+            # Everything the endpoint refused that is not a credential: a
+            # wrong address, a model name it does not carry, a field it does
+            # not accept, a rate limit. Named with the status and the URL that
+            # was called, never with the body, which can be a whole HTML page.
+            self.last_error = f"the model endpoint answered {error.status_code} for {error.response.request.url}"
+            raise ModelUnavailable(self.last_error) from error
+        if not hasattr(response, "stop_reason"):
+            # An address that serves a web page with 200 comes back as a
+            # string rather than a message.
+            self.last_error = f"{client.base_url} answered, but not with a Messages API response: check ANTHROPIC_BASE_URL"
+            raise ModelUnavailable(self.last_error)
         if response.stop_reason == "refusal":
             raise ModelUnavailable("the model declined to answer this promise")
         self.last_error = None
