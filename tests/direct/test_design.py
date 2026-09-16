@@ -225,8 +225,9 @@ def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
     TypeScript, web/lib/quote.ts, ported from seller/main.py and agent/run.py.
     A port that drifts would freeze a response on chain the demo never sends,
     as JSON.stringify writing 118400 where the seller writes 118400.0 did.
-    Node runs the port itself, with no build step, and every mode's frozen
-    string and the promise bounds are compared with the Python sources.
+    Node runs the port itself, transpiled by the site's own TypeScript, and
+    every mode's frozen string and the promise bounds are compared with the
+    Python sources.
     """
     import datetime
     import shutil
@@ -236,8 +237,9 @@ def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
     import pytest
 
     node = shutil.which("node")
-    if not node:
-        pytest.skip("node is not installed")
+    compiler = ROOT / "web" / "node_modules" / "typescript" / "lib" / "typescript.js"
+    if not node or not compiler.exists():
+        pytest.skip("node or the site's dependencies are not installed")
     sys.path.insert(0, str(ROOT))
     import seller.main as seller
     from agent.run import read_promise_bounds
@@ -250,7 +252,10 @@ def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
         "Accurate market data.",
     ]
     script = (
-        "const q = await import(process.argv[1]);"
+        "const ts = (await import(process.argv[3])).default;"
+        "const source = (await import('node:fs')).readFileSync(new URL(process.argv[1]), 'utf8');"
+        "const js = ts.transpileModule(source, {compilerOptions: {module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022}}).outputText;"
+        "const q = await import('data:text/javascript;base64,' + Buffer.from(js).toString('base64'));"
         "const at = new Date('2026-09-16T11:22:07Z');"
         "const out = {modes: q.MODES, book: q.BOOK, stale: q.STALE_HOURS, bodies: {}, bounds: []};"
         "for (const pair of Object.keys(q.BOOK)) for (const mode of q.MODES) out.bodies[pair + ' ' + mode] = q.serialize(q.buildBody(pair, mode, at));"
@@ -258,7 +263,7 @@ def test_the_app_misbehaves_and_checks_exactly_the_way_the_demo_does():
         "console.log(JSON.stringify(out));"
     )
     url = (ROOT / "web" / "lib" / "quote.ts").as_uri()
-    ran = subprocess.run([node, "--input-type=module", "-e", script, url, json.dumps(promises)], capture_output=True, text=True, timeout=60)
+    ran = subprocess.run([node, "--input-type=module", "-e", script, url, json.dumps(promises), compiler.as_uri()], capture_output=True, text=True, timeout=60)
     assert ran.returncode == 0, ran.stderr
     port = json.loads(ran.stdout)
 
