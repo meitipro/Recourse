@@ -66,6 +66,43 @@ def client_options() -> dict:
 MODEL = configured_model()
 
 
+def final_json_object(text: str) -> str:
+    """
+    The last complete JSON object in an answer that holds more than one, and
+    the answer unchanged otherwise.
+
+    Through OpenRouter the judge's answers come back with no thinking block,
+    and a model that has not deliberated first sometimes answers, writes "Wait,
+    let me reconsider", and answers again. Measured on the hosted judge for
+    committed case 02, both objects arrived in one text block:
+    {"verdict":"honored",...} then prose then {"verdict":"not_honored",...}.
+    The frozen contract's parse_verdict reads from the first brace to the last,
+    which spans both and is not JSON, so the case failed "[LLM_ERROR] bad json"
+    twice and the clerk returned nothing. The contract cannot change. What
+    changes is what the adapter hands it: the model's final answer, byte for
+    byte as the model wrote it. One answer, fenced or with prose around it,
+    passes through untouched and the parser handles it as before.
+    """
+    decoder = json.JSONDecoder()
+    spans = []
+    at = text.find("{")
+    while at != -1:
+        try:
+            value, end = decoder.raw_decode(text, at)
+        except ValueError:
+            at = text.find("{", at + 1)
+            continue
+        if isinstance(value, dict):
+            spans.append((at, end))
+            at = text.find("{", end)
+        else:
+            at = text.find("{", at + 1)
+    if len(spans) < 2:
+        return text
+    start, end = spans[-1]
+    return text[start:end]
+
+
 class ModelUnavailable(RuntimeError):
     """No model to ask. Consumers turn this into an error state, never a result."""
 
@@ -171,7 +208,7 @@ class ClaudeModel:
         if response.stop_reason == "refusal":
             raise ModelUnavailable("the model declined to answer this promise")
         self.last_error = None
-        return self.last_text
+        return final_json_object(self.last_text)
 
 
 class CliModel:

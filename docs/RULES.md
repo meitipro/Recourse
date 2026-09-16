@@ -159,7 +159,7 @@ Anybody reviewing GenLayer contracts has `genlayer-test` installed, so
 `pytest tests/` collects the integration file. It is gated behind an explicit
 `RECOURSE_INTEGRATION=1`, not a probe: the transport failures here are
 intermittent, so a probe would answer correctly most of the time, which is worse
-than no gate. A reviewer gets **429 passed, 1 skipped**, in seconds, and
+than no gate. A reviewer gets **430 passed, 1 skipped**, in seconds, and
 `scripts/test.py` fails when this line and what pytest collects disagree.
 
 **20 - Generate anything the repo offers to be copied.**

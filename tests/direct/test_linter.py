@@ -428,6 +428,63 @@ def test_an_empty_environment_asks_the_default_model_at_the_sdks_own_address(mon
         assert service.client_options() == {"base_url": "https://openrouter.ai/api"}, written
 
 
+#: What the hosted judge returned for committed case 02 through OpenRouter,
+#: verbatim: one text block, no thinking block, stop_reason end_turn, and two
+#: answers with the model changing its mind between them.
+TWO_ANSWERS = '{"verdict":"honored","reason":"ETH-USD pair returned, sources=3 meets \u22653 venue requirement, timestamp 2026-09-04T09:20:02Z is ~9h before chain record\u2014wait, measuring ts age against chain response time 18:20:04Z gives ~9h gap, exceeding 5s."}\n\nWait, let me reconsider.\n\nThe timestamp in the response is `2026-09-04T09:20:02Z` and the response was recorded on chain at `2026-09-04T18:20:04Z`. That\'s roughly 9 hours old, far exceeding the 5-second freshness requirement.\n\n{"verdict":"not_honored","reason":"Response timestamp 09:20:02Z is ~9 hours older than chain recording time 18:20:04Z, violating the \u22645-second freshness requirement."}'
+
+
+def test_a_model_that_answers_twice_is_judged_on_its_final_answer(monkeypatch):
+    """
+    The frozen parse_verdict reads from the first brace to the last. Given the
+    answer above it read both objects and the prose between as one, raised
+    "[LLM_ERROR] bad json", retried into the same answer, and the clerk
+    returned nothing for case 02. The adapter now hands the contract the last
+    complete object, exactly as written, and a single answer through unchanged.
+    """
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    from linter import service
+    from linter.judgment import answer
+
+    assert service.final_json_object(TWO_ANSWERS).startswith('{"verdict":"not_honored"')
+    assert service.final_json_object(TWO_ANSWERS).endswith("requirement.\"}")
+    single = '```json\n{"verdict": "honored", "reason": "fresh"}\n```'
+    assert service.final_json_object(single) == single
+    assert service.final_json_object("no json here") == "no json here"
+
+    class Messages(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length") or 0))
+            body = json.dumps({
+                "id": "msg_stub", "type": "message", "role": "assistant", "model": "stub",
+                "content": [{"type": "text", "text": TWO_ANSWERS}],
+                "stop_reason": "end_turn", "stop_sequence": None,
+                "usage": {"input_tokens": 1, "output_tokens": 1},
+            }).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Messages)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a-key-that-is-never-sent")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", f"http://127.0.0.1:{server.server_address[1]}")
+    try:
+        cases = {c["id"]: c for c in json.loads((ROOT / "eval" / "cases.json").read_text(encoding="utf-8"))}
+        case = cases["02"]
+        code, body = answer({k: case[k] for k in ("promise", "request", "response", "timing")}, model=service.ClaudeModel("stub"))
+        assert code == 200, body
+        assert body["verdict"] == "not_honored" and body["agreed"] == "yes"
+    finally:
+        server.shutdown()
+
+
 def test_an_endpoint_that_refuses_is_a_named_503_never_a_crash(monkeypatch):
     """
     The hosted linter called https://openrouter.ai/api/v1/v1/messages, got
