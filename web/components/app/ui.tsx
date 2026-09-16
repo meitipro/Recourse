@@ -63,7 +63,9 @@ export function Steps({ steps }: { steps: StepView[] }) {
       {steps.map((step, index) => {
         const mark = step.state === "done" ? "✓" : step.state === "failed" ? "×" : step.state === "skipped" ? "-" : String(index + 1);
         const tone = step.state === "done" ? T.pass : step.state === "failed" ? T.fail : step.state === "active" ? T.accent : T.muted;
-        const open = step.state === "active" || step.state === "failed" || (step.state === "done" && step.detail && step.key === "checks");
+        // A finished step stays open: its hash, the promise and the checks are the
+        // evidence, and a visitor reads them after the run as much as during it.
+        const open = step.state !== "waiting";
         return (
           <li key={step.key} style={{ border: `1px solid ${step.state === "active" ? "rgba(34,211,238,0.35)" : T.line}`, borderRadius: T.radius, background: T.inset, padding: "10px 12px", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "10px", minWidth: 0 }}>

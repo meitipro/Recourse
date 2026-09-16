@@ -83,7 +83,7 @@ export default function RunNow({ explorer, amountGen, bondGen }: { explorer: str
       title: "An account for this run",
       state: state("fund", Boolean(e.funded), running && !e.funded),
       summary: e.funded ? `${short(e.account.address)}, ${gen(e.funded.after)} GEN from Studio's faucet` : e.account ? short(e.account.address) : undefined,
-      detail: e.error?.failed === "fund" ? e.error.message : "Created on the server for this run and never stored. Funding it from Studio's faucet.",
+      detail: e.error?.failed === "fund" ? e.error.message : e.funded ? "Created on the server for this run and never stored." : "Created on the server for this run and never stored. Funding it from Studio's faucet.",
     },
     {
       key: "promise",
