@@ -31,9 +31,14 @@ import typing
 
 from bot.records import Unavailable, case_record, seller_record, stats_record, verdict_split
 from linter.rules import precheck
+from linter.service import DEFAULT_MODEL, client_options
 
-#: The model behind free text. Overridable, never silently.
-MODEL = os.environ.get("RECOURSE_BOT_MODEL", "claude-opus-5")
+def configured_model() -> str:
+    """The model behind free text: RECOURSE_MODEL unchanged, then the older RECOURSE_BOT_MODEL, then the default."""
+    return os.environ.get("RECOURSE_MODEL") or os.environ.get("RECOURSE_BOT_MODEL") or DEFAULT_MODEL
+
+
+MODEL = configured_model()
 MAX_READS = 3
 MAX_LINES = 6
 HERE = pathlib.Path(__file__).resolve().parent
@@ -474,7 +479,7 @@ class ClaudeChat:
             except ImportError as error:
                 raise ChatUnavailable("the anthropic package is not installed") from error
             try:
-                client = anthropic.Anthropic()
+                client = anthropic.Anthropic(**client_options())
             except (TypeError, anthropic.AnthropicError) as error:
                 raise ChatUnavailable(NO_CREDENTIAL) from error
             # The SDK builds a client with no credential at all and fails only

@@ -396,6 +396,34 @@ def test_the_hosted_linter_answers_every_route_the_site_calls():
     assert "from linter.judgment import answer" in hosted and "from linter.judgment import answer" in local
 
 
+def test_an_empty_environment_asks_the_default_model_at_the_sdks_own_address(monkeypatch):
+    """
+    RECOURSE_MODEL and ANTHROPIC_BASE_URL can send the linter, the clerk and
+    the bot through another endpoint that speaks the Messages API. With neither
+    set nothing moves: the same model name, and a client built with no address
+    of its own, so the SDK's default is the one used, exactly as before either
+    variable existed.
+    """
+    import anthropic
+
+    from bot import agent
+    from linter import service
+
+    for name in ("RECOURSE_MODEL", "RECOURSE_LINTER_MODEL", "RECOURSE_BOT_MODEL", "ANTHROPIC_BASE_URL"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a-key-that-is-never-sent")
+    assert service.configured_model() == "claude-opus-5"
+    assert agent.configured_model() == "claude-opus-5"
+    assert service.client_options() == {}
+    client = service.ClaudeModel()._connect()
+    assert str(client.base_url) == str(anthropic.Anthropic(api_key="x").base_url)
+    # And the variables, when set, arrive untouched.
+    monkeypatch.setenv("RECOURSE_MODEL", "anthropic/claude-opus-5")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://openrouter.ai/api")
+    assert service.configured_model() == agent.configured_model() == "anthropic/claude-opus-5"
+    assert service.client_options() == {"base_url": "https://openrouter.ai/api"}
+
+
 def test_the_judge_answers_one_shape_and_says_when_there_is_no_model():
     from linter.judgment import answer
 

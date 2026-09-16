@@ -30,9 +30,31 @@ import typing
 from linter.question import REWRITE_INSTRUCTION, build_gate_question, fence
 from linter.rules import precheck
 
-#: The one model this asks, by default. Overridable for a test double or a
-#: cheaper tier, never silently.
-MODEL = os.environ.get("RECOURSE_LINTER_MODEL", "claude-opus-5")
+#: The one model this asks when nothing names another.
+DEFAULT_MODEL = "claude-opus-5"
+
+
+def configured_model() -> str:
+    """
+    RECOURSE_MODEL, passed through unchanged, so a gateway's own spelling of a
+    model, OpenRouter's anthropic/claude-opus-5 among them, goes in the
+    variable and never in code. RECOURSE_LINTER_MODEL is the older name for
+    the same setting and is still read. Neither set: the default above.
+    """
+    return os.environ.get("RECOURSE_MODEL") or os.environ.get("RECOURSE_LINTER_MODEL") or DEFAULT_MODEL
+
+
+def client_options() -> dict:
+    """
+    What the Anthropic client is built with. ANTHROPIC_BASE_URL points it at
+    another endpoint that speaks the Messages API, such as OpenRouter's; unset,
+    nothing is passed and the SDK uses its own default address.
+    """
+    base_url = os.environ.get("ANTHROPIC_BASE_URL")
+    return {"base_url": base_url} if base_url else {}
+
+
+MODEL = configured_model()
 
 
 class ModelUnavailable(RuntimeError):
@@ -77,7 +99,7 @@ class ClaudeModel:
             except ImportError as error:
                 raise ModelUnavailable("the anthropic package is not installed") from error
             try:
-                client = anthropic.Anthropic()
+                client = anthropic.Anthropic(**client_options())
             except (TypeError, anthropic.AnthropicError) as error:
                 raise ModelUnavailable(
                     "no Anthropic credential is configured: set ANTHROPIC_API_KEY"

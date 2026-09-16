@@ -366,7 +366,7 @@ The refusals are on chain there too, recorded by
 reviewer can run, each with what it printed when it was last run.
 
 ```bash
-python scripts/test.py         # freeze, house style, both pairs linted, 426 direct tests
+python scripts/test.py         # freeze, house style, both pairs linted, 427 direct tests
 python scripts/mutate.py --table docs/MUTATIONS.md   # 32 defences, each verified in both pairs
 python scripts/verify.py       # the deployed bytes still match this repository
 python scripts/evidence.py     # put the refusals on chain and record them
@@ -385,7 +385,7 @@ checks, that the payment reaches resolved and the seller's record moves with
 it, run where a verdict's settlement pays out, which in this record is
 studionet. It has not been run since it was split that way.
 
-The 426 direct tests cover both pairs of contracts through the double, the buyer agent,
+The 427 direct tests cover both pairs of contracts through the double, the buyer agent,
 the seller, the linter with a model double that counts its calls, the bot with
 every dependency injected, and the dry run judge. Many of them check the
 repository itself rather than the code: the contracts' hashes against
@@ -447,9 +447,13 @@ python -m linter.examples --dry               # the six worked examples
 
 The MCP advises; the agent's own wallet acts. Paying, disputing, withdrawing
 and signing are not tools anywhere in this project, and nothing in it ever asks
-for a private key. Stage 2 of the linter needs a model behind the service:
+for a private key. Stage 2 of the linter and the clerk's judge ask one model,
+Claude Opus 5 through the Anthropic SDK unless configured otherwise:
 `ANTHROPIC_API_KEY` in the environment, or a signed in `claude` CLI on the
-machine. Without one it says so and offers nothing.
+machine. `RECOURSE_MODEL` names another model, passed through unchanged, and
+`ANTHROPIC_BASE_URL` another endpoint that speaks the Messages API, such as
+OpenRouter's. Without a model it says so and offers nothing. None of this
+touches a published number: the evaluation ran on chain, through validators.
 
 The site is `web/`: `npm install && npm run dev` on port 4500, reading the
 frozen contracts from `contracts/FROZEN.json` on Studio Next. A network in
