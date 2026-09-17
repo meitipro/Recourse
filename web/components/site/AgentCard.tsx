@@ -16,16 +16,19 @@ export const SITE = "https://www.userecourse.xyz";
 export const SKILL_COMMAND = `curl -s ${SITE}/skill.md`;
 export const SKILL_REPO = "https://github.com/meitipro/recourse-skill";
 export const NOTARY = "https://t.me/AskRecourseBot";
+/** Inside Claude Code: the marketplace is the skill repository, and the plugin in it is named recourse. */
+export const PLUGIN_COMMANDS = ["/plugin marketplace add meitipro/recourse-skill", "/plugin install recourse@recourse"];
 
 const MONO = "'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace";
 const LABEL = { font: `500 10px ${MONO}`, letterSpacing: "0.16em", textTransform: "uppercase" } as React.CSSProperties;
 
-export default function AgentCard() {
+/** One terminal line and its own copy button, which copies exactly the text shown. */
+function Command({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(SKILL_COMMAND);
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
     } catch {
@@ -33,6 +36,31 @@ export default function AgentCard() {
     }
   }
 
+  return (
+    <div className="rc-agent-command">
+      <code style={{ flex: "1 1 auto", minWidth: 0, font: `400 clamp(12.5px, 1.2vw, 14.5px)/1.6 ${MONO}`, color: "#EEF3F8", overflowWrap: "anywhere" } as React.CSSProperties}>
+        {text.startsWith("/") ? null : <span aria-hidden="true" style={{ color: "#22D3EE" }}>$ </span>}
+        {text}
+      </code>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={copied ? "Copied" : `Copy: ${text}`}
+        title={copied ? "Copied" : "Copy"}
+        style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", background: copied ? "rgba(34,211,238,0.08)" : "transparent", border: `1px solid ${copied ? "#22D3EE" : "#263048"}`, borderRadius: "4px", color: copied ? "#22D3EE" : "#AEB9C8", cursor: "pointer", transition: "border-color 0.2s ease, background 0.2s ease, color 0.2s ease" } as React.CSSProperties}
+        className="rc-hover-2"
+      >
+        {copied ? (
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M11 3H3.5a1 1 0 0 0-1 1v7" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+export default function AgentCard() {
   return (
     <section aria-labelledby="rc-skill-card" className="rc-agent-card">
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "8px 16px", padding: "16px 20px", borderBottom: "1px solid #1B2130" } as React.CSSProperties}>
@@ -46,27 +74,18 @@ export default function AgentCard() {
       </div>
 
       <div style={{ padding: "22px 20px 18px" } as React.CSSProperties}>
-        <div className="rc-agent-command">
-          <code style={{ flex: "1 1 auto", minWidth: 0, font: `400 clamp(12.5px, 1.2vw, 14.5px)/1.6 ${MONO}`, color: "#EEF3F8", overflowWrap: "anywhere" } as React.CSSProperties}>
-            <span aria-hidden="true" style={{ color: "#22D3EE" }}>$ </span>
-            {SKILL_COMMAND}
-          </code>
-          <button
-            type="button"
-            onClick={copy}
-            aria-label={copied ? "Copied" : "Copy the command"}
-            title={copied ? "Copied" : "Copy"}
-            style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: "36px", height: "36px", background: copied ? "rgba(34,211,238,0.08)" : "transparent", border: `1px solid ${copied ? "#22D3EE" : "#263048"}`, borderRadius: "4px", color: copied ? "#22D3EE" : "#AEB9C8", cursor: "pointer", transition: "border-color 0.2s ease, background 0.2s ease, color 0.2s ease" } as React.CSSProperties}
-            className="rc-hover-2"
-          >
-            {copied ? (
-              <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" /><path d="M11 3H3.5a1 1 0 0 0-1 1v7" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg>
-            )}
-          </button>
-        </div>
+        <Command text={SKILL_COMMAND} />
         <p style={{ ...LABEL, margin: "12px 0 0", color: "#7C8798" }}>For your agent</p>
+      </div>
+
+      <div style={{ padding: "18px 20px", borderTop: "1px solid #1B2130" } as React.CSSProperties}>
+        <p style={{ ...LABEL, margin: "0 0 12px", color: "#AEB9C8" }}>Or install as a plugin</p>
+        <div style={{ display: "grid", gap: "8px" } as React.CSSProperties}>
+          {PLUGIN_COMMANDS.map((line) => (
+            <Command key={line} text={line} />
+          ))}
+        </div>
+        <p style={{ ...LABEL, margin: "12px 0 0", color: "#7C8798" }}>For Claude Code users</p>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px 16px", padding: "14px 20px", borderTop: "1px solid #1B2130", background: "#0C1018" } as React.CSSProperties}>
