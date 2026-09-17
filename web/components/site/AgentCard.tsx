@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 
-export const SITE = "https://recourse-site-seven.vercel.app";
+export const SITE = "https://www.userecourse.xyz";
 export const SKILL_COMMAND = `curl -s ${SITE}/skill.md`;
 export const SKILL_REPO = "https://github.com/meitipro/recourse-skill";
 export const NOTARY = "https://t.me/AskRecourseBot";

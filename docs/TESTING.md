@@ -172,7 +172,7 @@ none of them.
 ## 8. The hosted services
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://recourse-site-seven.vercel.app/
+curl -s -o /dev/null -w "%{http_code}\n" https://www.userecourse.xyz/
 curl -s -X POST https://recourse-linter.vercel.app/api/lint \
   -H "Content-Type: application/json" -d '{"promise":"Returns accurate market data."}'
 ```
@@ -210,7 +210,7 @@ It answered HTTP 200 at stage 2, a refusal with a rewrite:
 The site's clerk asks the same host's judge:
 
 ```bash
-curl -s -X POST https://recourse-site-seven.vercel.app/api/clerk \
+curl -s -X POST https://www.userecourse.xyz/api/clerk \
   -H "Content-Type: application/json" \
   -d '{"promise":"Returns the spot price for the requested pair from at least three venues.","request":"GET /quote?pair=ETH-USD","response":"pair ETH-USD price 4182.10 sources 3"}'
 ```

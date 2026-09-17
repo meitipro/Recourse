@@ -109,7 +109,7 @@ Ninety seconds. About two hundred words.
   committed case. It says plainly that this is not the chain.* It is filmed at
   1:12, after the withdraw shot when both are recorded, and the edit keeps
   whichever the running time has room for.
-- **The live site**: the hosted site at `https://recourse-site-seven.vercel.app`
+- **The live site**: the hosted site at `https://www.userecourse.xyz`
   reads Studio Next and nothing else, the same as
   `http://localhost:4500`, the production build this take uses. `--hosted`
   films the hosted site instead.

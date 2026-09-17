@@ -52,7 +52,7 @@ import typing
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPT_MD = ROOT / "docs" / "SCRIPT.md"
 LOCAL_SITE = "http://localhost:4500"
-HOSTED_SITE = "https://recourse-site-seven.vercel.app"
+HOSTED_SITE = "https://www.userecourse.xyz"
 WIDTH = 74
 
 if hasattr(sys.stdout, "reconfigure"):

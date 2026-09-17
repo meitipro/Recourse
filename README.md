@@ -30,7 +30,7 @@ Every claim above that rests on something outside this repository, and every
 one on the site, is traced to its source in [docs/SOURCES.md](docs/SOURCES.md).
 
 **Run one yourself, with nothing installed.**
-[recourse-site-seven.vercel.app/app](https://recourse-site-seven.vercel.app/app)
+[userecourse.xyz/app](https://www.userecourse.xyz/app)
 runs one real contested cycle on Studio Next. It reads the demo seller's promise
 from the escrow, pays, shows the response beside the buyer's three checks with
 their numbers, opens the dispute with the bond, and reads the adjudicate
@@ -491,7 +491,7 @@ frozen contracts from `contracts/FROZEN.json` on Studio Next. A network in
 the address is redirected away; the first deployment is on the page as the
 record, its addresses and its evaluation column, and not as somewhere to go.
 
-**Hosted.** The site is at https://recourse-site-seven.vercel.app, the promise
+**Hosted.** The site is at https://www.userecourse.xyz, the promise
 linter at https://recourse-linter.vercel.app/api/lint and the MCP server at
 https://recourse-mcp-eight.vercel.app/api/mcp, three Vercel projects from these
 two repositories. [docs/HOSTING.md](docs/HOSTING.md) has every setting each one

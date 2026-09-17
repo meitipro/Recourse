@@ -82,7 +82,7 @@ export const FAQS: Record<string, Item[]> = {
       question: "How does my agent learn to use it?",
       answer: (
         <>
-          Hand it the skill: <C>curl -s https://recourse-site-seven.vercel.app/skill.md</C>, or install it as a Claude Code plugin from <A href="https://github.com/meitipro/recourse-skill">meitipro/recourse-skill</A>. <A href="#skill">Section 07</A> has the card and every address it is published at.
+          Hand it the skill: <C>curl -s https://www.userecourse.xyz/skill.md</C>, or install it as a Claude Code plugin from <A href="https://github.com/meitipro/recourse-skill">meitipro/recourse-skill</A>. <A href="#skill">Section 07</A> has the card and every address it is published at.
         </>
       ),
     },

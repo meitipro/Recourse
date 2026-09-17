@@ -311,7 +311,7 @@ def test_the_agent_card_and_the_telegram_link_point_where_they_say():
     own /skill.md route, and both ways to Notary open the same bot.
     """
     card = (ROOT / "web" / "components" / "site" / "AgentCard.tsx").read_text(encoding="utf-8")
-    assert 'SITE = "https://recourse-site-seven.vercel.app"' in card
+    assert 'SITE = "https://www.userecourse.xyz"' in card
     assert "SKILL_COMMAND = `curl -s ${SITE}/skill.md`" in card and "writeText(SKILL_COMMAND)" in card
     assert (ROOT / "web" / "app" / "skill.md" / "route.ts").exists(), "the command needs the route it fetches"
     assert 'NOTARY = "https://t.me/AskRecourseBot"' in card and "href={NOTARY}" in card

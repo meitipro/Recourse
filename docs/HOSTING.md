@@ -8,7 +8,7 @@ changing.
 The projects are `recourse-linter`, `recourse-site` and `recourse-mcp`. Two of
 the plain addresses were already taken when they were imported, so Vercel added
 a suffix: the linter is `recourse-linter.vercel.app`, the site
-`recourse-site-seven.vercel.app` and the MCP server
+`recourse-site-seven.vercel.app`, now served at `www.userecourse.xyz`, and the MCP server
 `recourse-mcp-eight.vercel.app`. `recourse-skill/reference/07-addresses.json`
 and `recourse-skill/.claude-plugin/plugin.json` name those addresses; a project
 imported again under another name means updating both files.
@@ -81,8 +81,10 @@ team scoped address instead, and every smoke test aimed at the short name
 would be testing a stranger's site, where a case permalink returns nothing and
 reads as our bug. `recourse-site.vercel.app` was unclaimed the same day, and so
 were `recourse-linter` and `recourse-mcp`. By the import two of the three had
-been taken, so the site's address is `recourse-site-seven.vercel.app`, which is
-what the smoke script now tests by default.
+been taken, so the site's project address is `recourse-site-seven.vercel.app`.
+Its domain is `www.userecourse.xyz`, which is what the smoke script tests by
+default. The bare `userecourse.xyz` redirects there with a 308, so a plain
+`curl -s` against the bare domain prints nothing.
 
 | | |
 | --- | --- |
@@ -101,9 +103,9 @@ the judge's address from it.
 Smoke test by hand:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://recourse-site-seven.vercel.app/
-curl -s https://recourse-site-seven.vercel.app/case/RC-2026-0003 | grep -c "not honored"     # 1
-curl -s -X POST https://recourse-site-seven.vercel.app/api/lint \
+curl -s -o /dev/null -w "%{http_code} first byte %{time_starttransfer}s\n" https://www.userecourse.xyz/
+curl -s https://www.userecourse.xyz/case/RC-2026-0003 | grep -c "not honored"     # 1
+curl -s -X POST https://www.userecourse.xyz/api/lint \
   -H "Content-Type: application/json" -d '{"promise": "High quality results."}'
 # a stage 1 refusal, not a 503 saying the linter is not configured
 ```
